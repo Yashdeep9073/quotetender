@@ -1,0 +1,56 @@
+<link
+  rel="stylesheet"
+  href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css"
+/>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+<table id="example" class="display" style="width: 100%">
+  <button id="delete-button">Delete Selected</button>
+
+  <thead>
+    <tr>
+      <th><input type="checkbox" id="checkAll" /></th>
+      <th>Name</th>
+
+      <th>Email</th>
+      <!-- Add more columns as needed -->
+    </tr>
+  </thead>
+  <tbody>
+    <td></td>
+    <td>dfsdfs</td>
+    <td>dfsdfs</td>
+
+    <!-- Table data will be loaded here -->
+  </tbody>
+</table>
+<script>
+  var dataTable = $("#example").DataTable({
+    // DataTables options here
+  });
+  dataTable.rows().every(function () {
+    var row = this.node();
+    var checkboxCell = $(
+      "<td><input type='checkbox' class='checkbox-row'></td>"
+    ).prependTo(row);
+  });
+  $("#checkAll").on("change", function () {
+    var checkboxes = $(".checkbox-row", dataTable.rows().nodes());
+    checkboxes.prop("checked", this.checked);
+  });
+
+  $("#delete-button").on("click", function () {
+    var selectedRows = dataTable.rows(".selected").data();
+    var selectedIDs = selectedRows.toArray().map((row) => row[0]); // Assuming the first column contains unique IDs
+
+    $.ajax({
+      url: "delete.php",
+      type: "POST",
+      data: { selectedIDs: selectedIDs },
+      success: function (response) {
+        // Handle the response (e.g., refresh the DataTable)
+        dataTable.ajax.reload();
+      },
+    });
+  });
+</script>
