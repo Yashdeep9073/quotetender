@@ -27,7 +27,7 @@ while ($row = mysqli_fetch_row($result)) {
 }
 // echo "<pre>";
 
-$email = "ydeep9073@gmail.com";
+$email = "quotetenderindia@gmail.com";
 
 $mail = new PHPMailer(true);
 
