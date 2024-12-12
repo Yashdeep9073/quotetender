@@ -1,6 +1,6 @@
 <?php
 
-ini_set('display_errors', 0);
+ini_set('display_errors', 1);
 
 session_start();
 
@@ -19,46 +19,47 @@ $adminPermissionResult = mysqli_query($db, $adminPermissionQuery);
 $allowDelete=mysqli_num_rows($adminPermissionResult) > 0 ? true : false;
 
 $queryMain = "SELECT DISTINCT
-sm.name, 
-sm.email_id,
-sm.firm_name,
-sm.mobile, 
-ur.tender_no, 
-department.department_name,
-ur.name_of_work,
-ur.reminder_days,
-ur.allotted_at,
-ur.file_name,
-ur.id, 
-ur.reference_code,
-ur.tenderID,
-ur.file_name2,
-dv.division_name,
-se.section_name,
-sd.subdivision,
-ur.tentative_cost
-FROM 
-    user_tender_requests ur 
-inner join 
-    members m on ur.member_id= m.member_id
-inner join 
-    department on ur.department_id = department.department_id 
-inner join 
-    section se on ur.section_id = se.section_id
-inner join 
-    members sm on ur.selected_user_id= sm.member_id
-inner join 
-    division dv on dv.section_id = ur.section_id
-INNER JOIN 
+    MAX(sm.name) AS name,
+    MAX(sm.email_id) AS email_id,
+    MAX(sm.firm_name) AS firm_name,
+    MAX(sm.mobile) AS mobile,
+    ur.tender_no,
+    MAX(department.department_name) AS department_name,
+    ur.name_of_work,
+    ur.reminder_days,
+    ur.allotted_at,
+    ur.file_name,
+    ur.id,
+    ur.reference_code,
+    ur.tenderID,
+    ur.file_name2,
+    MAX(dv.division_name) AS division_name,
+    MAX(se.section_name) AS section_name,
+    MAX(sd.subdivision) AS subdivision,
+    ur.tentative_cost
+FROM
+    user_tender_requests ur
+INNER JOIN
+    members m ON ur.member_id = m.member_id
+INNER JOIN
+    department ON ur.department_id = department.department_id
+INNER JOIN
+    section se ON ur.section_id = se.section_id
+INNER JOIN
+    members sm ON ur.selected_user_id = sm.member_id
+INNER JOIN
+    division dv ON dv.section_id = ur.section_id
+INNER JOIN
     sub_division sd ON ur.division_id = sd.division_id
-where ur.status= 'Allotted' AND ur.delete_tender = '0'
-GROUP BY 
- ur.id
-ORDER BY 
- NOW() >= CAST(ur.due_date AS DATE), 
- CAST(ur.allotted_at AS DATE) ASC, 
- ABS(DATEDIFF(NOW(), CAST(ur.due_date AS DATE)))
-";
+WHERE
+    ur.status = 'Allotted' AND ur.delete_tender = '0'
+GROUP BY
+    ur.id
+ORDER BY
+    NOW() >= CAST(ur.due_date AS DATE),
+    CAST(ur.allotted_at AS DATE) ASC,
+    ABS(DATEDIFF(NOW(), CAST(ur.due_date AS DATE)))";
+    
 $resultMain = mysqli_query($db, $queryMain);
 
 

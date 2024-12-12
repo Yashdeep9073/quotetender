@@ -11,16 +11,16 @@ include("db/config.php");
 $name = $_SESSION['login_user'];
 
 
-$adminID= $_SESSION['login_user_id'];
+$adminID = $_SESSION['login_user_id'];
 $adminPermissionQuery = "SELECT nm.title FROM admin_permissions ap 
 INNER JOIN navigation_menus nm ON ap.navigation_menu_id = nm.id WHERE ap.admin_id='" . $adminID . "'";
 $adminPermissionResult = mysqli_query($db, $adminPermissionQuery);
 
 while ($row = mysqli_fetch_row($adminPermissionResult)) {
-    $userPermissions[]=$row[0];
+    $userPermissions[] = $row[0];
 }
-$allowedAction=!in_array('All',$userPermissions) && in_array( 'Update Tenders',$userPermissions) ? 'update' :
- (!in_array('All',$userPermissions) && in_array( 'View Tenders',$userPermissions) ? 'view' : 'all');
+$allowedAction = !in_array('All', $userPermissions) && in_array('Update Tenders', $userPermissions) ? 'update' :
+    (!in_array('All', $userPermissions) && in_array('View Tenders', $userPermissions) ? 'view' : 'all');
 
 $query = "SELECT DISTINCT
 m.name, 
@@ -53,18 +53,18 @@ ORDER BY
 $result = mysqli_query($db, $query);
 
 $tenders = [];
-while($row = mysqli_fetch_assoc($result)){
+while ($row = mysqli_fetch_assoc($result)) {
     $tenders[$row['tenderID']][] = $row;
 }
 
-$adminID= $_SESSION['login_user_id'];
+$adminID = $_SESSION['login_user_id'];
 $adminPermissionQuery = "SELECT nm.title FROM admin_permissions ap 
 inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_id='" . $adminID . "' ";
 $adminPermissionResult = mysqli_query($db, $adminPermissionQuery);
 
-$permissions=[];
+$permissions = [];
 while ($item = mysqli_fetch_row($adminPermissionResult)) {
-    array_push($permissions,$item[0]);
+    array_push($permissions, $item[0]);
 }
 
 ?>
@@ -91,25 +91,29 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
     <link rel="stylesheet" href="assets/css/plugins/dataTables.bootstrap4.min.css">
 
     <link rel="stylesheet" href="assets/css/style.css">
-    
+
     <style>
-    .center-text {
-        text-align: center;
+        .center-text {
+            text-align: center;
 
-    }
+        }
 
-       /* Change the background color of the table header */
-       #basic-btn thead th {
-        background-color: #33cc33; /* Change this color as per your preference */
-        color: white; /* This will make the text color white */
-    }
+        /* Change the background color of the table header */
+        #basic-btn thead th {
+            background-color: #33cc33;
+            /* Change this color as per your preference */
+            color: white;
+            /* This will make the text color white */
+        }
 
-    /* Optional: Add border or other styles */
-    #basic-btn thead th {
-        border: 1px solid #ddd; /* Adds a border to the table header */
-        padding: 10px; /* Adds some padding */
-    }
-</style>
+        /* Optional: Add border or other styles */
+        #basic-btn thead th {
+            border: 1px solid #ddd;
+            /* Adds a border to the table header */
+            padding: 10px;
+            /* Adds some padding */
+        }
+    </style>
 
 </head>
 
@@ -149,7 +153,8 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                     </div>
                 </li>
                 <li class="nav-item">
-                    <a href="#!" class="full-screen" onClick="javascript:toggleFullScreen()"><i class="feather icon-maximize"></i></a>
+                    <a href="#!" class="full-screen" onClick="javascript:toggleFullScreen()"><i
+                            class="feather icon-maximize"></i></a>
                 </li>
             </ul>
 
@@ -202,169 +207,192 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
             </div>
 
 
-    <?php if (isset($_GET['status'])) {
-    $st = $_GET['status'];
-    $st1 = base64_decode($st);
+            <?php if (isset($_GET['status'])) {
+                $st = $_GET['status'];
+                $st1 = base64_decode($st);
 
-    if ($st1 > 0) {
-        echo " <div class='alert alert-success alert-dismissible fade show' role='alert' style='font-size:16px;' id='updateuser'>
+                if ($st1 > 0) {
+                    echo " <div class='alert alert-success alert-dismissible fade show' role='alert' style='font-size:16px;' id='updateuser'>
     <strong><i class='feather icon-check'></i>Thanks!</strong> Tender has been Updated Successfully.
     <button type='button' class='close' data-dismiss='alert' aria-label='Close'>
         <span aria-hidden='true'>&times;</span>
     </button>
     </div> ";
-    } else {
+                } else {
 
-        echo " <div class='alert alert-danger alert-dismissible fade show' role='alert' style='font-size:16px;' id='updateuser'>
+                    echo " <div class='alert alert-danger alert-dismissible fade show' role='alert' style='font-size:16px;' id='updateuser'>
         <strong>Error!</strong> Tender has been not Updated
         <button type='button' class='close' data-dismiss='alert' aria-label='Close'>
             <span aria-hidden='true'>&times;</span>
         </button>
         </div> ";
-        }
-    }
-    // if($allowedAction=='all' || $allowedAction=='update' || $allowedAction=='recycle bin'  ){
-        echo '<div class="row">';
-        echo '<div class="col-sm-12">';
-        echo '<div class="card">';
-        echo '<div class="card-body">';
-        echo'<div class="col-md row">';
-        
-        if((in_array('All', $permissions)) || (in_array('Tender Request', $permissions)) || (in_array('Recycle Bin', $permissions)) ){
-            echo "<a href='#'/ id='recycle_records' class='btn btn-danger'> <i class='feather icon-trash'></i>  &nbsp;
-            Move to Bin Selected Items</a> &nbsp; &nbsp; &nbsp";
-        }
-        if((in_array('All', $permissions)) || (in_array('Update Tenders', $permissions)) || (in_array('Tender Request', $permissions)) ){
-        echo "<a href='#' class='update_records px-1'><button type='button' class='btn btn-warning'>
-        <i class='feather icon-edit'></i> &nbsp;Update Selected Items</button>
-        </a>
-        ";
-        }
-        echo '</div><br />';
-        echo '</div>';
-        echo '</div>';
-        echo '</div>';
-        echo '</div>';
-        
-    // }
-    ?>
-        
-        <?php 
-        foreach($tenders as $tenderID => $tenderRequests){
+                }
+            }
+            // if($allowedAction=='all' || $allowedAction=='update' || $allowedAction=='recycle bin'  ){
             echo '<div class="row">';
+            echo '<div class="col-sm-12">';
+            echo '<div class="card">';
+            echo '<div class="card-body">';
+            echo '<div class="col-md row">';
+
+            // Action Buttons
+            if ((in_array('All', $permissions)) || (in_array('Tender Request', $permissions)) || (in_array('Recycle Bin', $permissions))) {
+                echo "<a href='#' id='recycle_records' class='btn btn-danger me-3'> 
+                    <i class='feather icon-trash'></i> &nbsp; Move to Bin Selected Items
+                  </a>&nbsp&nbsp&nbsp&nbsp";
+            }
+            if ((in_array('All', $permissions)) || (in_array('Update Tenders', $permissions)) || (in_array('Tender Request', $permissions))) {
+                echo "<a href='#' class='update_records'><button type='button' class='btn btn-warning me-3'>
+                    <i class='feather icon-edit'></i> &nbsp; Update Selected Items
+                  </button></a>";
+            }
+
+            // Search Bar Section with Dynamic Filter Functionality
+            echo "<div class='col-md-4 ms-auto'> <!-- Add offset for alignment -->
+                    <div class='input-group'>
+                        <input type='text' class='form-control' id='searchInput' placeholder='Search on this page' aria-label='Search'>
+                        <button class='btn btn-success' type='button' onclick='clearSearch()'>
+                            <i class='feather icon-search'></i> &nbsp; Search
+                        </button>
+                    </div>
+              </div>";
+
+            echo '</div><br />';
+            echo '<div id="contentArea">';
+            // Example Content to Search
+            // echo '<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>';
+            // echo '<p>Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.</p>';
+            // echo '<p>Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia.</p>';
+            echo '</div>';
+            echo '</div>';
+            echo '</div>';
+            echo '</div>';
+            echo '</div>';
+
+
+            // }
+            ?>
+
+            <?php
+            $_count = 1;
+            foreach ($tenders as $tenderID => $tenderRequests) {
+                echo '<div class="row">';
                 echo '<div class="col-sm-12">';
-                    echo '<div class="card">';
-                        echo  '<div class="card-header table-card-header">';
-                        echo '</div>';
+                echo '<div class="card">';
+                echo '<div class="card-header table-card-header">';
+                echo '</div>';
 
-                        echo '<div class="card-body">';
-                            echo '<div class="dt-responsive table-responsive">';
-                            echo "<br />";
-                                // echo "<div class='col-md row'>";
-                                
-                                echo '<table  id="basic-btn" class="table table-striped table-bordered nowrap">';
-                                
-                                echo "<thead>";
-                                    echo "<tr class='table-success thead-light'>";
-                                    echo "<th colspan='12' class='text-center'><h4 style='color:#fff;' class=''>Tender ID : <span class=''>". $tenderID ."</span></h4></th>";
-                                    echo "</tr>";
+                echo '<div class="card-body">';
+                echo '<div class="dt-responsive table-responsive">';
+                echo "<br />";
+                // echo "<div class='col-md row'>";
+            
+                echo '<table  id="basic-btn" class="table table-striped table-bordered nowrap">';
 
-                                echo "<tr>";
-                                echo "<th>SNO</th>";
-                                echo "<th>User</th>";
-                                echo "<th>Firm Name</th>";
-                                echo "<th>Mobile</th>";
-                                echo "<th>Email</th>";
+                echo "<thead>";
+                echo "<tr class='table-success thead-light'>";
+                echo "<th colspan='12' class='text-center'><h4 style='color:#fff;' class=''>S.NO : " . $_count . ") " . " Tender ID : <span class=''>" . $tenderID . "</span></h4></th>";
 
-                                echo "<th>Department</th>";
-                                echo "<th>Add Date</th>";
-                                echo "<th>Add Time</th>";
-                                
-                                echo "<th>Due Date</th>";
-                                echo "<th>File Names </th>";
-                                if( (in_array('All', $permissions)) || (in_array('Tender Request', $permissions)) || (in_array('Update Tenders', $permissions)) || (in_array('Recycle Bin', $permissions)) || (in_array('View Tenders', $permissions))  ){
-                                echo "<th>Edit</th>";
-                                    }
-                                echo "</tr>";
-                                echo "</thead>";
-                                
-                                $count = 1;
-                                foreach($tenderRequests as $row){
-                                echo "<tbody>";
-                                    
-                                    echo "<tr class='record'>";
-                                    echo "<td><div class='custom-control custom-checkbox'>
-                                    <input type='checkbox' class='custom-control-input request_checkbox' id='customCheck" .  $row['id'] . "' data-request-id='" . $row['id'] . "'>
-                                    <label class='custom-control-label' for='customCheck" .  $row['id'] . "'>" . $count . "</label>
+                echo "</tr>";
+
+                echo "<tr>";
+                echo "<th>SNO</th>";
+                echo "<th>User</th>";
+                echo "<th>Firm Name</th>";
+                echo "<th>Mobile</th>";
+                echo "<th>Email</th>";
+
+                echo "<th>Department</th>";
+                echo "<th>Add Date</th>";
+                echo "<th>Add Time</th>";
+
+                echo "<th>Due Date</th>";
+                echo "<th>File Names </th>";
+                if ((in_array('All', $permissions)) || (in_array('Tender Request', $permissions)) || (in_array('Update Tenders', $permissions)) || (in_array('Recycle Bin', $permissions)) || (in_array('View Tenders', $permissions))) {
+                    echo "<th>Edit</th>";
+                }
+                echo "</tr>";
+                echo "</thead>";
+
+                $count = 1;
+                foreach ($tenderRequests as $row) {
+                    echo "<tbody>";
+
+                    echo "<tr class='record'>";
+                    echo "<td><div class='custom-control custom-checkbox'>
+                                    <input type='checkbox' class='custom-control-input request_checkbox' id='customCheck" . $row['id'] . "' data-request-id='" . $row['id'] . "'>
+                                    <label class='custom-control-label' for='customCheck" . $row['id'] . "'>" . $count . "</label>
                                     </div>
                                     </td>";
 
-                                
-                                
-                                    echo "<td>" . "<span style='color:red;'> " . $row['name'] . "</td>";
-                                    
-                                    echo "<td>" . $row['firm_name'] . "</td>";
-                                    
-                                    echo "<td>" . $row['mobile'] . "</td>";
-                                    echo "<td>" . $row['email_id'] . "</td>";
 
-                                    echo "<td>" . $row['department_name'] . "</td>";                                    
 
-                                    // Convert and display the date in 'd-m-Y' format
-                                    $originalDate = $row['created_at'];
-                                    $timestamp = strtotime($originalDate);
-                                    $istDate = date('d-m-Y', $timestamp);
-                                    $istTime = date('h:i A', $timestamp + 5.5 * 3600);
-                                    echo "<td>" . $istDate . "</td>";
-                                    echo "<td>" . $istTime . "</td>";
-                                    
-                                    
-                                    
-                                    echo "<td>" . date_format(date_create($row['due_date']), "d-m-Y") . "</td>";
+                    echo "<td>" . "<span style='color:red;'> " . $row['name'] . "</td>";
 
-                                    if (!empty($row['file_name'])) {
-                                        echo "<td>" . '<a href="../login/tender/' . $row['file_name'] . '" target="_blank" style="padding:6px 15.2px;" />View </a>' . "</br>";
-                                    } else {
-                                        echo "<td>" . '<a href="../login/tender/' . $row['file_name'] . '" class="btn disabled" target="_blank"/>No file </a>' . "</br>";
-                                    }
-                                    if (!empty($row['file_name2'])) {
-                                        echo  '<a href="../login/tender/' . $row['file_name2'] . '" target="_blank" style="padding:6px 15.2px;" />View </a>' . "</td>";
-                                    } else {
-                                        echo '<a href="../login/tender/' . $row['file_name2'] . '" class="btn disabled" target="_blank"/>No file </a>' . "</td>";
-                                    }
-                                    $res = $row['id'];
-                                    $res = base64_encode($res);
-                                    
-                                    echo "<td>";  
-                                    if((in_array('All', $permissions)) || (in_array('Tender Request', $permissions)) || (in_array('Update Tenders', $permissions))) {
-                                    echo "<a href='tender-edit.php?id=$res'>
+                    echo "<td>" . $row['firm_name'] . "</td>";
+
+                    echo "<td>" . $row['mobile'] . "</td>";
+                    echo "<td>" . $row['email_id'] . "</td>";
+
+                    echo "<td>" . $row['department_name'] . "</td>";
+
+                    // Convert and display the date in 'd-m-Y' format
+                    $originalDate = $row['created_at'];
+                    $timestamp = strtotime($originalDate);
+                    $istDate = date('d-m-Y', $timestamp);
+                    $istTime = date('h:i A', $timestamp + 5.5 * 3600);
+                    echo "<td>" . $istDate . "</td>";
+                    echo "<td>" . $istTime . "</td>";
+
+
+
+                    echo "<td>" . date_format(date_create($row['due_date']), "d-m-Y") . "</td>";
+
+                    if (!empty($row['file_name'])) {
+                        echo "<td>" . '<a href="../login/tender/' . $row['file_name'] . '" target="_blank" style="padding:6px 15.2px;" />View </a>' . "</br>";
+                    } else {
+                        echo "<td>" . '<a href="../login/tender/' . $row['file_name'] . '" class="btn disabled" target="_blank"/>No file </a>' . "</br>";
+                    }
+                    if (!empty($row['file_name2'])) {
+                        echo '<a href="../login/tender/' . $row['file_name2'] . '" target="_blank" style="padding:6px 15.2px;" />View </a>' . "</td>";
+                    } else {
+                        echo '<a href="../login/tender/' . $row['file_name2'] . '" class="btn disabled" target="_blank"/>No file </a>' . "</td>";
+                    }
+                    $res = $row['id'];
+                    $res = base64_encode($res);
+
+                    echo "<td>";
+                    if ((in_array('All', $permissions)) || (in_array('Tender Request', $permissions)) || (in_array('Update Tenders', $permissions))) {
+                        echo "<a href='tender-edit.php?id=$res'>
                                     <button type='button' class='btn btn-warning'>
                                     <i class='feather icon-edit'></i> &nbsp;Update</button>
-                                    </a>"; 
-                                    } 
-                                    
-                                    echo "<br/>";echo "<br/>";
-                                    if((in_array('All', $permissions)) || (in_array('Tender Request', $permissions)) || (in_array('Recycle Bin', $permissions)) ){
-                                        echo"<a href='#' id='" . $row['id'] . "' class='recyclebutton btn btn-danger' title='Click To Delete'> 
+                                    </a>";
+                    }
+
+                    echo "<br/>";
+                    echo "<br/>";
+                    if ((in_array('All', $permissions)) || (in_array('Tender Request', $permissions)) || (in_array('Recycle Bin', $permissions))) {
+                        echo "<a href='#' id='" . $row['id'] . "' class='recyclebutton btn btn-danger' title='Click To Delete'> 
                                         <i class='feather icon-trash'></i>  &nbsp; Move to Bin
                                         </a>";
-                                    } 
-                                    echo "</td>";
-                                
-                                    echo "</tr>";
-                                    $count++;
-                                }
-                                    echo "</tfoot>";
-                                    echo "</table>";
-                                    
-                                    echo '</div>';
-                                    echo '</div>';
-                                    echo '</div>';
-                                    echo '</div>';
-                                    echo '</div>';
-                                }
-                                ?>
-            </div>;
+                    }
+                    echo "</td>";
+
+                    echo "</tr>";
+                    $count++;
+                }
+                echo "</tfoot>";
+                echo "</table>";
+
+                echo '</div>';
+                echo '</div>';
+                echo '</div>';
+                echo '</div>';
+                echo '</div>';
+                $_count++;
+            }
+            ?>
+        </div>;
     </section>
 
 
@@ -376,29 +404,29 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
     <script src="assets/js/pcoded.min.js"></script>
     <!--<script src="assets/js/menu-setting.min.js"></script>-->
 
-    <!--<script src="assets/js/plugins/jquery.dataTables.min.js"></script>-->
+    <script src="assets/js/plugins/jquery.dataTables.min.js"></script>
     <script src="assets/js/plugins/dataTables.bootstrap4.min.js"></script>
     <script src="assets/js/plugins/buttons.colVis.min.js"></script>
     <script src="assets/js/plugins/buttons.print.min.js"></script>
     <script src="assets/js/plugins/pdfmake.min.js"></script>
     <script src="assets/js/plugins/jszip.min.js"></script>
-    <!-- <script src="assets/js/plugins/dataTables.buttons.min.js"></script> -->
+    <script src="assets/js/plugins/dataTables.buttons.min.js"></script>
     <script src="assets/js/plugins/buttons.html5.min.js"></script>
     <script src="assets/js/plugins/buttons.bootstrap4.min.js"></script>
-    <script src="assets/js/pages/data-export-custom.js"></script>
+    <!-- <script src="assets/js/pages/data-export-custom.js"></script> -->
 
 
 
     <script>
-        $(document).ready(function() {
+        $(document).ready(function () {
             $("#updateuser").delay(5000).slideUp(300);
         });
     </script>
 
     <script type="text/javascript">
-        $(function() {
+        $(function () {
 
-            $(".recyclebutton").click(function() {
+            $(".recyclebutton").click(function () {
                 let element = $(this);
 
                 let res_id = element.attr("id");
@@ -409,31 +437,31 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                         type: "GET",
                         url: "recycleuser.php",
                         data: info,
-                        success: function() {}
+                        success: function () { }
                     });
                     $(this).parents(".record").animate({
-                            backgroundColor: "#FF3"
-                        }, "fast")
+                        backgroundColor: "#FF3"
+                    }, "fast")
                         .animate({
                             opacity: "hide"
                         }, "slow");
                     setTimeout(function () {
                         window.location.reload();
-                    },2000);
+                    }, 2000);
                 }
                 return false;
             });
 
-            $('#recycle_records').on('click', function(e) {
+            $('#recycle_records').on('click', function (e) {
                 let requestIDs = [];
 
-                $(".request_checkbox:checked").each(function() {
+                $(".request_checkbox:checked").each(function () {
                     requestIDs.push($(this).data('request-id'));
                 });
 
                 if (requestIDs.length <= 0) {
                     alert("Please select records.");
-                } 
+                }
                 else {
                     const WRN_PROFILE_DELETE = "Are you sure you want to delete " + (requestIDs.length > 1 ? "these" : "this") + " Record" + (requestIDs.length > 1 ? "s?" : "?");
                     let checked = confirm(WRN_PROFILE_DELETE);
@@ -443,55 +471,83 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                             type: "POST",
                             url: "recycleuser.php",
                             cache: false,
-                            data: {tender_request_ids:selected_values},
-                            success: function(response) {
-                                $(".request_checkbox:checked").each(function(){
+                            data: { tender_request_ids: selected_values },
+                            success: function (response) {
+                                $(".request_checkbox:checked").each(function () {
                                     $(this).closest(".record").animate({
-                                        backgroundColor:"#FF3"
-                                    },"fast").animate({
-                                        opacity:"hide"
-                                    },"slow",function(){
+                                        backgroundColor: "#FF3"
+                                    }, "fast").animate({
+                                        opacity: "hide"
+                                    }, "slow", function () {
                                         $(this).remove();
                                     });
                                 });
-                                setInterval(function(){
+                                setInterval(function () {
                                     window.location.reload();
-                                },2000);
-                                
+                                }, 2000);
+
                             }
                         });
                     }
                 }
             });
 
-            $('.update_records').on('click', function() {
+            $('.update_records').on('click', function () {
                 let updateIDs = [];
-                if ($(".request_checkbox:checked").length == 0){
+                if ($(".request_checkbox:checked").length == 0) {
                     alert("Please select records.");
                     return;
                 }
 
-                $(".request_checkbox:checked").each(function() {
+                $(".request_checkbox:checked").each(function () {
                     updateIDs.push($(this).data('request-id'));
 
-                    $('.update_records').attr('href',"update-tender-requests.php?tenderIds="+btoa(updateIDs));
+                    $('.update_records').attr('href', "update-tender-requests.php?tenderIds=" + btoa(updateIDs));
                     console.log(updateIDs);
                 });
 
                 let selected_values = requestIDs.join(",");
                 $.ajax({
                     type: "GET",
-                    url:"update-tender-requests.php",
-                    cache:false,
-                    data:"tenderIds" + selected_values,
+                    url: "update-tender-requests.php",
+                    cache: false,
+                    data: "tenderIds" + selected_values,
                 })
 
-                
+
+            });
+        });
+    </script>
+    <script>
+        // jQuery for searching and auto-focusing on <th> tags
+        $(document).ready(function () {
+            $('#searchInput').on('input', function () {
+                const query = $(this).val().toLowerCase();
+                let found = false;
+
+                $('th h4').each(function () {
+                    const th = $(this);
+                    if (th.text().toLowerCase().includes(query)) {
+                        th.css('color', '#F1F5F8'); // Highlight with the desired color
+                        if (!found) {
+                            th[0].scrollIntoView({ behavior: 'smooth', block: 'center' }); // Scroll to the first match
+                            found = true;
+                        }
+                    } else {
+                        th.css('background-color', ''); // Reset non-matching <th>
+                    }
+                });
+            });
+
+            // Function to clear the search
+            $('#clearSearch').on('click', function () {
+                $('#searchInput').val('');
+                $('th').css('background-color', ''); // Reset all highlights
             });
         });
     </script>
 
-    
+
 
 </body>
 

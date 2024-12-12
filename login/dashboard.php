@@ -62,7 +62,7 @@ $type = $row11[5];
     </div>
 
 
-        <?php include 'navbar.php'; ?>
+    <?php include 'navbar.php'; ?>
 
     <header class="navbar pcoded-header navbar-expand-lg navbar-light headerpos-fixed header-blue">
         <div class="m-header">
@@ -141,7 +141,8 @@ $type = $row11[5];
                                     </div>
                                     <div class="col-md-4">
                                         <h6 style=" color:#006666; font-size:22px; font-weight:500; "> Welcome : &nbsp;
-                                            <?php echo $name ?></h6>
+                                            <?php echo $name ?>
+                                        </h6>
                                     </div>
                                 </div>
                             </div>
@@ -169,11 +170,11 @@ $type = $row11[5];
 
                 if ($st1 > 0) {
                     echo " <div class='alert alert-success alert-dismissible fade show' role='alert' style='font-size:16px;' id='logged'>
-  <strong><i class='feather icon-check'></i>Welcome!</strong> User has been Login Successfully.
-  <button type='button' class='close' data-dismiss='alert' aria-label='Close'>
-    <span aria-hidden='true'>&times;</span>
-  </button>
-</div> ";
+                        <strong><i class='feather icon-check'></i>Welcome!</strong> User has been Login Successfully.
+                        <button type='button' class='close' data-dismiss='alert' aria-label='Close'>
+                            <span aria-hidden='true'>&times;</span>
+                        </button>
+                        </div> ";
                 }
             }
 
@@ -204,7 +205,7 @@ $type = $row11[5];
                 <div class="col-md-6 col-xl-3">
                     <div class="card bg-c-yellow order-card">
                         <div class="card-body">
-                            <h6 class="text-white">Registered  Members</h6>
+                            <h6 class="text-white">Registered Members</h6>
                             <h2 class="text-right text-white"><i class="feather icon-users float-left"></i><span
                                     id="user"></span></h2>
 
@@ -217,7 +218,6 @@ $type = $row11[5];
                             <h6 class="text-white">Alot Tender</h6>
                             <h2 class="text-right text-white"><i class="feather icon-home float-left"></i><span
                                     id="category"></span></h2>
-
                         </div>
                     </div>
                 </div>
@@ -226,13 +226,8 @@ $type = $row11[5];
 
 
             <div class="row">
-
                 <div class="col-sm-12">
-                  
                 </div>
-
-
-
                 <div class="col-md-12 col-lg-4">
                     <div class="card">
                         <div class="card-block text-center">
@@ -264,14 +259,7 @@ $type = $row11[5];
                     </div>
                 </div>
                 <!-- social statustic end -->
-
-
-
-
-
-
             </div>
-
         </div>
     </section>
 
@@ -296,76 +284,76 @@ $type = $row11[5];
     <script src="assets/js/pages/data-export-custom.js"></script>
 </body>
 <script>
-$(document).ready(function() {
-    setInterval(function() {
+    $(document).ready(function () {
+        setInterval(function () {
 
 
-        $("#new").load("load.php");
-        refresh();
+            $("#new").load("load.php");
+            refresh();
 
-    }, 100);
-});
+        }, 100);
+    });
 </script>
 
 <script>
-$(document).ready(function() {
-    setInterval(function() {
+    $(document).ready(function () {
+        setInterval(function () {
 
 
-        $("#total").load("load-total.php");
-        refresh();
+            $("#total").load("load-total.php");
+            refresh();
 
-    }, 100);
-});
+        }, 100);
+    });
 </script>
 
 <script>
-$(document).ready(function() {
-    setInterval(function() {
+    $(document).ready(function () {
+        setInterval(function () {
 
 
-        $("#user").load("loadgold.php");
-        refresh();
+            $("#user").load("loadgold.php");
+            refresh();
 
-    }, 100);
-});
+        }, 100);
+    });
 </script>
 
 <script>
-$(document).ready(function() {
-    setInterval(function() {
+    $(document).ready(function () {
+        setInterval(function () {
 
 
-        $("#category").load("loadmembers.php");
-        refresh();
+            $("#category").load("loadmembers.php");
+            refresh();
 
-    }, 100);
-});
+        }, 100);
+    });
 </script>
 
 <script>
-$(document).ready(function() {
-    $("#logged").delay(5000).slideUp(300);
-});
+    $(document).ready(function () {
+        $("#logged").delay(5000).slideUp(300);
+    });
 </script>
 
 <script>
-function display_ct6() {
-    var x = new Date()
-    var ampm = x.getHours() >= 12 ? ' PM' : ' AM';
-    hours = x.getHours() % 12;
-    hours = hours ? hours : 12;
-    var x1 = x.getMonth() + 1 + "-" + x.getDate() + "-" + x.getFullYear();
-    x1 = x1 + " - " + hours + ":" + x.getMinutes() + ":" + x.getSeconds() + ":" + ampm;
-    document.getElementById('ct6').innerHTML = x1;
-    display_c6();
-}
+    function display_ct6() {
+        var x = new Date()
+        var ampm = x.getHours() >= 12 ? ' PM' : ' AM';
+        hours = x.getHours() % 12;
+        hours = hours ? hours : 12;
+        var x1 = x.getMonth() + 1 + "-" + x.getDate() + "-" + x.getFullYear();
+        x1 = x1 + " - " + hours + ":" + x.getMinutes() + ":" + x.getSeconds() + ":" + ampm;
+        document.getElementById('ct6').innerHTML = x1;
+        display_c6();
+    }
 
-function display_c6() {
-    var refresh = 1000; // Refresh rate in milli seconds
-    mytime = setTimeout('display_ct6()', refresh)
-}
-display_c6()
+    function display_c6() {
+        var refresh = 1000; // Refresh rate in milli seconds
+        mytime = setTimeout('display_ct6()', refresh)
+    }
+    display_c6()
 </script>
 
 

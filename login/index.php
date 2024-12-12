@@ -2,11 +2,11 @@
 session_start();
 error_reporting(E_ALL);
 
-  // username and password sent from form 
-    require "./db/config.php";
+// username and password sent from form 
+require "./db/config.php";
 
 if (!isset($_SESSION["login_user"])) {
-    
+
 
     if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
@@ -17,7 +17,7 @@ if (!isset($_SESSION["login_user"])) {
 
         $sql = "SELECT * FROM admin WHERE username = '$myusername2' and password = '$mypassword' and status='1'";
         $result = mysqli_query($db, $sql);
-        $adminData=mysqli_fetch_row($result);
+        $adminData = mysqli_fetch_row($result);
         $row = mysqli_fetch_array($result, MYSQLI_ASSOC);
         $active = $row['active'];
 
@@ -85,7 +85,7 @@ if (!isset($_SESSION["login_user"])) {
 
             // Decode the JSON response
             $data = json_decode($response, true);
-            
+
             $ip = $data['ip'];
             $city = $data['city'];
             $region = $data['region'];
@@ -141,7 +141,7 @@ if (!isset($_SESSION["login_user"])) {
 
     <link rel="stylesheet" href="assets/css/style.css">
     <script language="javascript" type="text/javascript">
-    window.history.forward();
+        window.history.forward();
     </script>
 
     <script src="https://www.google.com/recaptcha/api.js" async defer>
@@ -153,7 +153,7 @@ if (!isset($_SESSION["login_user"])) {
         <div class="h-100 d-md-flex align-items-center auth-side-img">
 
         </div>
-        <div class="auth-side-form"style="background-color:#f8f7f2;">
+        <div class="auth-side-form" style="background-color:#f8f7f2;">
 
             <form action="" method="post">
 
@@ -165,11 +165,11 @@ if (!isset($_SESSION["login_user"])) {
                     <h3 class="mb-4 f-w-400">Signin</h3>
                     <?php if (isset($status)) {
                         echo " <div class='alert alert-danger alert-dismissible fade show' role='alert' style='font-size:16px;' id='successMessage'>
-  <strong><i class=' feather  icon icon-info'></i>Error!</strong> $error.
-  <button type='button' class='close' data-dismiss='alert' aria-label='Close'>
-    <span aria-hidden='true'>&times;</span>
-  </button>
-</div> ";
+                        <strong><i class=' feather  icon icon-info'></i>Error!</strong> $error.
+                        <button type='button' class='close' data-dismiss='alert' aria-label='Close'>
+                            <span aria-hidden='true'>&times;</span>
+                        </button>
+                        </div> ";
                     }
                     ?>
                     <div class="input-group mb-3">
@@ -179,14 +179,17 @@ if (!isset($_SESSION["login_user"])) {
                         </div>
 
                         <input type="text" class="form-control" placeholder="Username" name="username" required
-                            oninvalid="this.setCustomValidity('Please Enter Username')" oninput="setCustomValidity('')" style="border-color:#33cc33">
+                            oninvalid="this.setCustomValidity('Please Enter Username')" oninput="setCustomValidity('')"
+                            style="border-color:#33cc33">
                     </div>
                     <div class="input-group mb-4">
                         <div class="input-group-prepend">
-                            <span class="input-group-text" style="background-color:#33cc33;color:#fff;"><i class="feather icon-lock"></i></span>
+                            <span class="input-group-text" style="background-color:#33cc33;color:#fff;"><i
+                                    class="feather icon-lock"></i></span>
                         </div>
                         <input type="password" class="form-control" placeholder="Password" name="password" required
-                            oninvalid="this.setCustomValidity('Please Enter Password')" oninput="setCustomValidity('')" style="border-color:#33cc33">
+                            oninvalid="this.setCustomValidity('Please Enter Password')" oninput="setCustomValidity('')"
+                            style="border-color:#33cc33">
                     </div>
                     <div class="form-group">
                         <div class="g-recaptcha" data-sitekey="6LeyShEqAAAAAJIMoyXfN7DmfesxwLNYOgBHIh4N"
@@ -196,19 +199,13 @@ if (!isset($_SESSION["login_user"])) {
                     <button type="submit" class="btn btn-secondary " name="submit" id="submit" disabled>
                         <i class="feather icon-save lg"></i>&nbsp;Sign In
                     </button>
-                    
-                    
             </form>
-          
-            <br/> <br/>
-              <hr style="border-color:#33cc33">
-        <p style="color:#000;">HelpDesk/Helpline No:+91-9870443528</p> 
-          
-
-
-            </div>
+            <br /> <br />
+            <hr style="border-color:#33cc33">
+            <p style="color:#000;">HelpDesk/Helpline No:+91-9870443528</p>
         </div>
     </div>
+</div>
 </div>
 </div>
 
@@ -219,15 +216,15 @@ if (!isset($_SESSION["login_user"])) {
 </body>
 
 <script>
-$(document).ready(function() {
-    $("#successMessage").delay(5000).slideUp(300);
-});
+    $(document).ready(function () {
+        $("#successMessage").delay(5000).slideUp(300);
+    });
 </script>
-    <script type="text/javascript">
+<script type="text/javascript">
     function callback() {
         const submitButton = document.getElementById("submit");
         submitButton.removeAttribute("disabled");
     }
-    </script>
+</script>
 
 </html>
