@@ -119,7 +119,7 @@ $activationToken = bin2hex(random_bytes(16)); // Replace with your activation to
     <meta name="keywords" content="">
     <meta name="author" content="#" />
 
-    <link rel="icon" href="assets/images/favicon.ico" type="image/x-icon">
+    <link rel="shortcut icon" href="../assets/images/x-icon.png" type="image/x-icon">
 
     <link rel="stylesheet" href="assets/css/plugins/dataTables.bootstrap4.min.css">
 

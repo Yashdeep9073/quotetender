@@ -99,7 +99,7 @@ if (isset($_POST['submit1'])) {
     <meta name="keywords" content="">
     <meta name="author" content="Codedthemes" />
 
-    <link rel="icon" href="assets/images/favicon.ico" type="image/x-icon">
+    <link rel="shortcut icon" href="../assets/images/x-icon.png" type="image/x-icon">
 
     <link rel="stylesheet" href="assets/css/plugins/dataTables.bootstrap4.min.css">
 

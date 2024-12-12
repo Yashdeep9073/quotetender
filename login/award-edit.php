@@ -86,7 +86,7 @@ $result = mysqli_query($db, $ct);
     <meta name="keywords" content="">
     <meta name="author" content="#" />
 
-    <link rel="icon" href="assets/images/favicon.ico" type="image/x-icon">
+    <link rel="shortcut icon" href="../assets/images/x-icon.png" type="image/x-icon">
 
     <link rel="stylesheet" href="assets/css/plugins/dataTables.bootstrap4.min.css">
 
