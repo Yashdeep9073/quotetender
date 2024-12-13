@@ -12,11 +12,11 @@ $name = $_SESSION['login_user'];
 
 include("db/config.php");
 
-$adminID= $_SESSION['login_user_id'];
+$adminID = $_SESSION['login_user_id'];
 $adminPermissionQuery = "SELECT nm.title FROM admin_permissions ap 
 inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_id='" . $adminID . "' and ap.navigation_menu_id=1 ";
 $adminPermissionResult = mysqli_query($db, $adminPermissionQuery);
-$allowDelete=mysqli_num_rows($adminPermissionResult) > 0 ? true : false;
+$allowDelete = mysqli_num_rows($adminPermissionResult) > 0 ? true : false;
 
 $queryMain = "SELECT DISTINCT
     MAX(sm.name) AS name,
@@ -59,18 +59,18 @@ ORDER BY
     NOW() >= CAST(ur.due_date AS DATE),
     CAST(ur.allotted_at AS DATE) ASC,
     ABS(DATEDIFF(NOW(), CAST(ur.due_date AS DATE)))";
-    
+
 $resultMain = mysqli_query($db, $queryMain);
 
 
-$adminID= $_SESSION['login_user_id'];
+$adminID = $_SESSION['login_user_id'];
 $adminPermissionQuery = "SELECT nm.title FROM admin_permissions ap 
 inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_id='" . $adminID . "' ";
 $adminPermissionResult = mysqli_query($db, $adminPermissionQuery);
 
-$permissions=[];
+$permissions = [];
 while ($item = mysqli_fetch_row($adminPermissionResult)) {
-    array_push($permissions,$item[0]);
+    array_push($permissions, $item[0]);
 }
 ?>
 
@@ -90,7 +90,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
 
     <link rel="shortcut icon" href="../assets/images/x-icon.png" type="image/x-icon">
 
-    
+
 
     <link rel="stylesheet" href="assets/css/plugins/dataTables.bootstrap4.min.css">
 
@@ -127,7 +127,8 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                     </div>
                 </li>
                 <li class="nav-item">
-                    <a href="#!" class="full-screen" onClick="javascript:toggleFullScreen()"><i class="feather icon-maximize"></i></a>
+                    <a href="#!" class="full-screen" onClick="javascript:toggleFullScreen()"><i
+                            class="feather icon-maximize"></i></a>
                 </li>
             </ul>
         </div>
@@ -183,40 +184,36 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                         </div>
                         <div class="card-body">
                             <div class="dt-responsive table-responsive">
-
                                 <?php
-
                                 if (isset($_GET['status'])) {
                                     $st = $_GET['status'];
                                     $st1 = base64_decode($st);
-
                                     if ($st1 > 0) {
                                         echo " <div class='alert alert-success alert-dismissible fade show' role='alert' style='font-size:16px;' id='updateuser'>
-  <strong><i class='feather icon-check'></i>Thanks!</strong> Tender has been Updated Successfully.
-  <button type='button' class='close' data-dismiss='alert' aria-label='Close'>
-    <span aria-hidden='true'>&times;</span>
-  </button>
-</div> ";
+                                        <strong><i class='feather icon-check'></i>Thanks!</strong> Tender has been Updated Successfully.
+                                        <button type='button' class='close' data-dismiss='alert' aria-label='Close'>
+                                            <span aria-hidden='true'>&times;</span>
+                                        </button>
+                                        </div> ";
                                     } else {
-
                                         echo " <div class='alert alert-danger alert-dismissible fade show' role='alert' style='font-size:16px;' id='updateuser'>
-  <strong>Error!</strong> Tender has been not Updated
-  <button type='button' class='close' data-dismiss='alert' aria-label='Close'>
-    <span aria-hidden='true'>&times;</span>
-  </button>
-</div> ";
+                                        <strong>Error!</strong> Tender has been not Updated
+                                        <button type='button' class='close' data-dismiss='alert' aria-label='Close'>
+                                            <span aria-hidden='true'>&times;</span>
+                                        </button>
+                                        </div> ";
                                     }
                                 }
                                 ?>
                                 <br />
                                 <?php
-                                if($allowDelete==true || (in_array('All', $permissions)) || (in_array('Recycle Bin', $permissions))){
-                                echo "<div class='col-md row'>
-                                <a href='#' id='recycle_records' class='btn btn-danger'> <i class='feather icon-trash'></i>  &nbsp;
+                                if ($allowDelete == true || (in_array('All', $permissions)) || (in_array('Recycle Bin', $permissions))) {
+                                    echo "<div class='col-md row'>
+                                <a href='#' id='recycle_records' class='btn btn-danger rounded-sm'> <i class='feather icon-trash'></i>  &nbsp;
                                 Move to Bin Selected Items</a>
                                 </div> <br />";
                                 }
-                                
+
                                 echo '<table id="basic-btn2" class="table table-striped table-bordered">';
                                 echo "<thead>";
                                 echo "<tr>";
@@ -246,42 +243,43 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
 
                                     echo "<tr class='record'>";
                                     echo "<td><div class='custom-control custom-checkbox'>
-                                    <input type='checkbox' class='custom-control-input request_checkbox' id='customCheck" .  $count . "' data-request-id='" . $row[10] . "'>
-                                    <label class='custom-control-label' for='customCheck" .  $count . "'>" . $count . "</label>
+                                    <input type='checkbox' class='custom-control-input request_checkbox' id='customCheck" . $count . "' data-request-id='" . $row[10] . "'>
+                                    <label class='custom-control-label' for='customCheck" . $count . "'>" . $count . "</label>
                                     </div>
                                     </td>";
 
                                     echo "<td><span style='color:red;'> " . $row['0'] . " </span></td>";
-                                    echo "<td>  <span style='color:green;'>" . $row['1'] . " </span></td>";    
+                                    echo "<td>  <span style='color:green;'>" . $row['1'] . " </span></td>";
                                     echo "<td>" . $row['2'] . "</td>";
                                     echo "<td>" . $row['3'] . "</td>";
                                     echo "<td>" . $row['12'] . "</td>";
                                     echo "<td>" . $row['11'] . "</td>";
-                                    echo "<td>" . $row['4'] . "</td>";    
+                                    echo "<td>" . $row['4'] . "</td>";
                                     echo "<td>" . $row['5'] . "</td>";
                                     echo "<td>" . $row['15'] . "</td>";
                                     echo "<td>" . $row['14'] . "</td>";
                                     echo "<td>" . $row['16'] . "</td>";
-                                    echo "<td style='white-space:pre-wrap; word-wrap:break-word; max-width:20rem;'>"  . $row['6'] . "</td>";
-                                    echo "<td style='white-space:pre-wrap; word-wrap:break-word; max-width:20rem;'>"  . $row['17'] . " rupees /-</td>";
+                                    echo "<td style='white-space:pre-wrap; word-wrap:break-word; max-width:20rem;'>" . $row['6'] . "</td>";
+                                    echo "<td style='white-space:pre-wrap; word-wrap:break-word; max-width:20rem;'>" . $row['17'] . " rupees /-</td>";
 
                                     echo "<td>" . "<span class='btn btn-success'>" . $row[7] . " days</span>" . "<br/><br/>" .
-                                    "Aloted Date :" . "<br/>" .date_format(date_create($row['8']),"d-m-Y ")  . "<br/>" . '<a href="../login/tender/' . $row['9'] .
-                                    '"  target="_blank"/>View file 1</a> </br>';
+                                        "Aloted Date :" . "<br/>" . date_format(date_create($row['8']), "d-m-Y ") . "<br/>" . '<a href="../login/tender/' . $row['9'] .
+                                        '"  target="_blank"/>View file 1</a> </br>';
                                     if (!empty($row['13'])) {
-                                        echo  '<a href="../login/tender/' . $row['13'] . '" target="_blank"/>View File 2 </a>' . "</td>";
-                                    }else{
+                                        echo '<a href="../login/tender/' . $row['13'] . '" target="_blank"/>View File 2 </a>' . "</td>";
+                                    } else {
                                         echo "</td>";
                                     }
 
                                     $res = $row[10];
                                     $res = base64_encode($res);
-                                    
+
                                     echo "<td>  <a href='alot-tender-update.php?id=$res'><button type='button' class='btn btn-warning'>
                                     <i class='feather icon-edit'></i> &nbsp;Re-Alot</button></a>  &nbsp;";
-                                    echo "<br/>";echo "<br/>";
-                                    if($allowDelete==true || (in_array('All', $permissions)) || (in_array('Recycle Bin', $permissions))){
-                                    echo   "<a href='#' id='".$row['10']."'class='recyclebutton btn btn-danger' title='Click To Delete'> 
+                                    echo "<br/>";
+                                    echo "<br/>";
+                                    if ($allowDelete == true || (in_array('All', $permissions)) || (in_array('Recycle Bin', $permissions))) {
+                                        echo "<a href='#' id='" . $row['10'] . "'class='recyclebutton btn btn-danger' title='Click To Delete'> 
                                     <i class='feather icon-trash'></i>  &nbsp; Move Bin</a></td>";
                                     }
                                     echo "</tr>";
@@ -317,59 +315,59 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
 
 
     <script>
-        $(document).ready(function() {
+        $(document).ready(function () {
 
-    //     if ($.fn.DataTable.isDataTable('#basic-btn2')) {
-    //     $('#basic-btn2').DataTable().clear().destroy();
-    //     }
-    //     let myTable = $("#basic-btn2").DataTable();
-    //     let columnsToFilter = [8,9,10];
+            //     if ($.fn.DataTable.isDataTable('#basic-btn2')) {
+            //     $('#basic-btn2').DataTable().clear().destroy();
+            //     }
+            //     let myTable = $("#basic-btn2").DataTable();
+            //     let columnsToFilter = [8,9,10];
 
 
-    //     columnsToFilter.forEach(function(colID) {
-            
-    //     let mySelectList = $("<br><select class='form-control' />")
-    //         .appendTo(myTable.column(colID).header())
-    //         .on("change", function () {
-    //             myTable.column(colID).search($(this).val());
-    //             // Update the changes using draw() method
-    //             myTable.column(colID).draw();
-    //         });
+            //     columnsToFilter.forEach(function(colID) {
 
-    //     myTable
-    //         .column(colID)
-    //         .cache("search")
-    //         .sort()
-    //         .each(function (param) {
-    //             mySelectList.append(
-    //                 $('<option value="' + param + '">'
-    //                 + param + "</option>")
-    //             );
-    //         });
-    // });
+            //     let mySelectList = $("<br><select class='form-control' />")
+            //         .appendTo(myTable.column(colID).header())
+            //         .on("change", function () {
+            //             myTable.column(colID).search($(this).val());
+            //             // Update the changes using draw() method
+            //             myTable.column(colID).draw();
+            //         });
 
-$('#basic-btn2 thead tr').clone(true).appendTo('#basic-btn2 thead');
+            //     myTable
+            //         .column(colID)
+            //         .cache("search")
+            //         .sort()
+            //         .each(function (param) {
+            //             mySelectList.append(
+            //                 $('<option value="' + param + '">'
+            //                 + param + "</option>")
+            //             );
+            //         });
+            // });
 
-var columnsWithSearch = [5,8,9,10,11,13];
+            $('#basic-btn2 thead tr').clone(true).appendTo('#basic-btn2 thead');
 
-$('#basic-btn2 thead tr:eq(1) th').each(function (i) {
-    
-    if (columnsWithSearch.includes(i) && !$(this).hasClass("noFilter")) {
-        var title = $(this).text();
-        $(this).html('<input type="text" class="form-control" placeholder="Search ' + title + '" />');
+            var columnsWithSearch = [5, 8, 9, 10, 11, 13];
 
-        $('input', this).on('keyup change', function () {
-            if (table.column(i).search() !== this.value) {
-                table
-                    .column(i)
-                    .search(this.value)
-                    .draw();
-            }
-        });
-    } else {
-        $(this).html('<span></span>');
-    }
-});
+            $('#basic-btn2 thead tr:eq(1) th').each(function (i) {
+
+                if (columnsWithSearch.includes(i) && !$(this).hasClass("noFilter")) {
+                    var title = $(this).text();
+                    $(this).html('<input type="text" class="form-control" placeholder="Search ' + title + '" />');
+
+                    $('input', this).on('keyup change', function () {
+                        if (table.column(i).search() !== this.value) {
+                            table
+                                .column(i)
+                                .search(this.value)
+                                .draw();
+                        }
+                    });
+                } else {
+                    $(this).html('<span></span>');
+                }
+            });
 
             var table = $('#basic-btn2').DataTable({
                 orderCellsTop: true,
@@ -378,17 +376,17 @@ $('#basic-btn2 thead tr:eq(1) th').each(function (i) {
                     { targets: 0, visible: true }
                 ]
             });
-        
-        
-        $("#updateuser").delay(5000).slideUp(300);
-        
-        
+
+
+            $("#updateuser").delay(5000).slideUp(300);
+
+
         });
     </script>
 
     <script type="text/javascript">
-        $(function() {
-            $(".recyclebutton").click(function() {
+        $(function () {
+            $(".recyclebutton").click(function () {
 
                 var element = $(this);
 
@@ -400,25 +398,25 @@ $('#basic-btn2 thead tr:eq(1) th').each(function (i) {
                         type: "GET",
                         url: "deleteuser.php",
                         data: info,
-                        success: function() {}
+                        success: function () { }
                     });
                     $(this).parents(".record").animate({
-                            backgroundColor: "#FF3"
-                        }, "fast")
+                        backgroundColor: "#FF3"
+                    }, "fast")
                         .animate({
                             opacity: "hide"
                         }, "slow");
 
-                        setTimeout(function(){
-                            window.location.reload()
-                        },2000);
+                    setTimeout(function () {
+                        window.location.reload()
+                    }, 2000);
                 }
                 return false;
             });
 
-            $('#recycle_records').on('click', function(e) {
+            $('#recycle_records').on('click', function (e) {
                 var requestIDs = [];
-                $(".request_checkbox:checked").each(function() {
+                $(".request_checkbox:checked").each(function () {
                     requestIDs.push($(this).data('request-id'));
                 });
                 if (requestIDs.length <= 0) {
@@ -433,18 +431,19 @@ $('#basic-btn2 thead tr:eq(1) th').each(function (i) {
                             url: "recycleuser.php",
                             cache: false,
                             data: 'alot_request_ids=' + selected_values,
-                            success: function() {
-                                $(".request_checkbox:checked").each(function(){
+                            success: function () {
+                                $(".request_checkbox:checked").each(function () {
                                     $(this).closest(".record").animate({
-                                        backgroundColor:"#FF3"
-                                    },"fast").animate({
-                                        opacity:"hide"
-                                    },"slow",function(){
+                                        backgroundColor: "#FF3"
+                                    }, "fast").animate({
+                                        opacity: "hide"
+                                    }, "slow", function () {
                                         $(this).remove();
                                     });
                                 });
-                                setTimeout(function(){
-                                    window.location.reload();},
+                                setTimeout(function () {
+                                    window.location.reload();
+                                },
                                     2000);
                             }
                         });
@@ -452,12 +451,10 @@ $('#basic-btn2 thead tr:eq(1) th').each(function (i) {
                 }
             });
         });
-        
+
     </script>
 
 
 </body>
 
 </html>
-
-

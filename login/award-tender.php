@@ -11,41 +11,56 @@ $name = $_SESSION['login_user'];
 include("db/config.php");
 
 $query = "SELECT DISTINCT
-sm.name, 
-m.email_id, 
-m.mobile, 
-m.firm_name, 
-ur.tender_no, 
-department.department_name,
-ur.name_of_work,
-ur.remarked_at, 
-ur.file_name, 
-ur.id,
-se.section_name,
-dv.division_name,
-sd.subdivision,
-ur.tenderID
+    sm.name, 
+    m.email_id, 
+    m.mobile, 
+    m.firm_name, 
+    ur.tender_no, 
+    department.department_name,
+    ur.name_of_work,
+    ur.remarked_at, 
+    ur.file_name, 
+    ur.id,
+    se.section_name,
+    dv.division_name,
+    sd.subdivision,
+    ur.tenderID
 FROM 
     user_tender_requests ur 
 INNER JOIN 
-    members m ON ur.member_id= m.member_id
+    members m ON ur.member_id = m.member_id
 INNER JOIN 
-    members sm ON ur.selected_user_id= sm.member_id
+    members sm ON ur.selected_user_id = sm.member_id
 INNER JOIN 
     department ON ur.department_id = department.department_id 
 INNER JOIN 
-    section se on ur.section_id = se.section_id
+    section se ON ur.section_id = se.section_id
 INNER JOIN
-    division dv on dv.section_id = ur.section_id
+    division dv ON dv.section_id = ur.section_id
 INNER JOIN
     sub_division sd ON ur.division_id = sd.division_id
-WHERE ur.remark='accepted' AND ur.delete_tender = '0'
+WHERE 
+    ur.remark = 'accepted' AND ur.delete_tender = '0'
 GROUP BY 
- ur.id
+    ur.id, 
+    sm.name, 
+    m.email_id, 
+    m.mobile, 
+    m.firm_name, 
+    ur.tender_no, 
+    department.department_name,
+    ur.name_of_work,
+    ur.remarked_at, 
+    ur.file_name, 
+    se.section_name,
+    dv.division_name,
+    sd.subdivision,
+    ur.tenderID
 ORDER BY 
- NOW() >= CAST(ur.due_date AS DATE), 
- CAST(ur.remarked_at AS DATE) ASC, 
- ABS(DATEDIFF(NOW(), CAST(ur.due_date AS DATE)))
+    NOW() >= CAST(ur.due_date AS DATE), 
+    CAST(ur.remarked_at AS DATE) ASC, 
+    ABS(DATEDIFF(NOW(), CAST(ur.due_date AS DATE)));
+
  ";
 
 $result = mysqli_query($db, $query);
@@ -254,8 +269,8 @@ $result = mysqli_query($db, $query);
                                     echo "<td> $count</td>";
 
                                     echo "<td>" . $row['0'] . "<br/> " . "<span style='color:red;'> " . $row['1'] . "</span>" . "<br/>"
-                                    . "<span style='color:green;'> " . $row['2'] . "</span>" . "<br/>" . "<span style='color:orange;'> "
-                                    . $row['3'] . "</span>" . "</td>";
+                                        . "<span style='color:green;'> " . $row['2'] . "</span>" . "<br/>" . "<span style='color:orange;'> "
+                                        . $row['3'] . "</span>" . "</td>";
                                     echo "<td>" . $row['4'] . "</td>";
                                     echo "<td>" . $row['13'] . "</td>";
                                     echo "<td>" . $row['5'] . "</td>";
@@ -263,10 +278,10 @@ $result = mysqli_query($db, $query);
                                     echo "<td>" . $row['11'] . "</td>";
                                     echo "<td>" . $row['12'] . "</td>";
 
-                                    echo "<td>"  . $row['6'] . "</td>";
+                                    echo "<td>" . $row['6'] . "</td>";
 
 
-                                    echo "<td>" .  "Award Date :" . "<br/>" .date_format(date_create($row['7']),"d-m-Y h:i A") . "<br/>" . '<a href="../login/tender/' . $row['8'] . '"  target="_blank"/>View file </a>' . "</td>";
+                                    echo "<td>" . "Award Date :" . "<br/>" . date_format(date_create($row['7']), "d-m-Y h:i A") . "<br/>" . '<a href="../login/tender/' . $row['8'] . '"  target="_blank"/>View file </a>' . "</td>";
 
 
                                     $res = $row[9];
@@ -327,95 +342,95 @@ $result = mysqli_query($db, $query);
 
 
     <script>
-    $(document).ready(function() {
-    //     if ($.fn.DataTable.isDataTable('#basic-btn3')) {
-    //     $('#basic-btn3').DataTable().clear().destroy();
-    // }
-    //     let myTable = $("#basic-btn3").DataTable();
-    //     let columnsToFilter = [4,5,6];
+        $(document).ready(function () {
+            //     if ($.fn.DataTable.isDataTable('#basic-btn3')) {
+            //     $('#basic-btn3').DataTable().clear().destroy();
+            // }
+            //     let myTable = $("#basic-btn3").DataTable();
+            //     let columnsToFilter = [4,5,6];
 
-    //     columnsToFilter.forEach(function(colID){
-    //         let mySelectList = $("<br><select class='form-control'/>")
-    //         .appendTo(myTable.column(colID).header())
-    //         .on("change",function(){
-    //             myTable.column(colID).search($(this).val());
+            //     columnsToFilter.forEach(function(colID){
+            //         let mySelectList = $("<br><select class='form-control'/>")
+            //         .appendTo(myTable.column(colID).header())
+            //         .on("change",function(){
+            //             myTable.column(colID).search($(this).val());
 
-    //             myTable.column(colID).draw();
-    //         })
+            //             myTable.column(colID).draw();
+            //         })
 
-    //         myTable
-    //         .column(colID)
-    //         .cache("search")
-    //         .sort()
-    //         .each(function(param){
-    //             mySelectList.append(
-    //                 $('<option value="' + param + '">'
-    //                 + param + "</option>")
-    //             );
-    //         });
-    //     });
+            //         myTable
+            //         .column(colID)
+            //         .cache("search")
+            //         .sort()
+            //         .each(function(param){
+            //             mySelectList.append(
+            //                 $('<option value="' + param + '">'
+            //                 + param + "</option>")
+            //             );
+            //         });
+            //     });
 
-    $('#basic-btn3 thead tr').clone(true).appendTo('#basic-btn3 thead');
-    var columnsWithSearch = [4,5,6];
+            $('#basic-btn3 thead tr').clone(true).appendTo('#basic-btn3 thead');
+            var columnsWithSearch = [4, 5, 6];
 
-    $('#basic-btn3 thead tr:eq(1) th').each(function(i){
-        if (columnsWithSearch.includes(i) && !$(this).hasClass("noFilter")) {
-            var title = $(this).text();
-            $(this).html('<input type="text" class="form-control" placeholder="Search ' + title + '" />');
+            $('#basic-btn3 thead tr:eq(1) th').each(function (i) {
+                if (columnsWithSearch.includes(i) && !$(this).hasClass("noFilter")) {
+                    var title = $(this).text();
+                    $(this).html('<input type="text" class="form-control" placeholder="Search ' + title + '" />');
 
-            $('input',this).on('keyup change',function(){
-                if (table.column(i).search() !== this.value) {
-                    table
-                    .column(i)
-                    .search(this.value)
-                    .draw();
+                    $('input', this).on('keyup change', function () {
+                        if (table.column(i).search() !== this.value) {
+                            table
+                                .column(i)
+                                .search(this.value)
+                                .draw();
+                        }
+                    });
+
+                } else {
+                    $(this).html('<span></span>');
                 }
             });
-            
-        }else{
-            $(this).html('<span></span>');
-        }
-    });
 
-    var table = $('#basic-btn3').DataTable({
-        orderCellsTop: true,
+            var table = $('#basic-btn3').DataTable({
+                orderCellsTop: true,
                 fixedHeader: true,
                 columnDefs: [
                     { targets: 0, visible: true }
                 ]
-    });
+            });
 
 
-        $("#updateuser").delay(5000).slideUp(300);
-    });
+            $("#updateuser").delay(5000).slideUp(300);
+        });
     </script>
 
     <script type="text/javascript">
-    $(function() {
-        $(".delbutton").click(function() {
+        $(function () {
+            $(".delbutton").click(function () {
 
-            var element = $(this);
+                var element = $(this);
 
-            var del_id = element.attr("id");
+                var del_id = element.attr("id");
 
-            var info = 'id=' + del_id;
-            if (confirm("Are you sure you want to delete this Record?")) {
-                $.ajax({
-                    type: "GET",
-                    url: "deleteuser.php",
-                    data: info,
-                    success: function() {}
-                });
-                $(this).parents(".record").animate({
+                var info = 'id=' + del_id;
+                if (confirm("Are you sure you want to delete this Record?")) {
+                    $.ajax({
+                        type: "GET",
+                        url: "deleteuser.php",
+                        data: info,
+                        success: function () { }
+                    });
+                    $(this).parents(".record").animate({
                         backgroundColor: "#FF3"
                     }, "fast")
-                    .animate({
-                        opacity: "hide"
-                    }, "slow");
-            }
-            return false;
+                        .animate({
+                            opacity: "hide"
+                        }, "slow");
+                }
+                return false;
+            });
         });
-    });
     </script>
 
 

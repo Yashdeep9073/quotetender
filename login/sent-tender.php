@@ -267,20 +267,18 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
 
                 if ($st1 > 0) {
                     echo " <div class='alert alert-success alert-dismissible fade show' role='alert' style='font-size:16px;' id='updateuser'>
-  <strong><i class='feather icon-check'></i>Thanks!</strong> Tender has been Updated Successfully.
-  <button type='button' class='close' data-dismiss='alert' aria-label='Close'>
-    <span aria-hidden='true'>&times;</span>
-  </button>
-</div> ";
+                        <strong><i class='feather icon-check'></i>Thanks!</strong> Tender has been Updated Successfully.
+                        <button type='button' class='close' data-dismiss='alert' aria-label='Close'>
+                            <span aria-hidden='true'>&times;</span>
+                        </button>
+                        </div> ";
                 } else {
-
                     echo " <div class='alert alert-danger alert-dismissible fade show' role='alert' style='font-size:16px;' id='updateuser'>
-
-  <strong>Error!</strong> Tender has been not Updated
-  <button type='button' class='close' data-dismiss='alert' aria-label='Close'>
-    <span aria-hidden='true'>&times;</span>
-  </button>
-</div> ";
+                    <strong>Error!</strong> Tender has been not Updated
+                    <button type='button' class='close' data-dismiss='alert' aria-label='Close'>
+                        <span aria-hidden='true'>&times;</span>
+                    </button>
+                    </div> ";
                 }
             }
             // if($allowedAction=='all'){
@@ -292,18 +290,18 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
 
             echo "<div class='col-md row'>";
             if ((in_array('All', $permissions)) || (in_array('Recycle Bin', $permissions))) {
-                echo "<a href='#' id='recycle_records' class='btn btn-danger'> <i class='feather icon-trash'></i>  &nbsp;
+                echo "<a href='#' id='recycle_records' class='btn btn-danger rounded-sm'> <i class='feather icon-trash'></i>  &nbsp;
             Move to Bin Selected Items</a>";
             }
             echo "&nbsp; &nbsp; &nbsp";
-            echo "<a href='#' id='email_records' class='btn btn-primary'> <i class='feather icon-mail'></i>   
+            echo "<a href='#' id='email_records' class='btn btn-primary rounded-sm'> <i class='feather icon-mail'></i>   
                                     Send Email To Selected Items</a>";
 
             // Search Bar Section with Dynamic Filter Functionality
             echo "<div class='col-md-4 ms-auto'> <!-- Add offset for alignment -->
                <div class='input-group'>
                    <input type='text' class='form-control' id='searchInput' placeholder='Search on this page' aria-label='Search'>
-                   <button class='btn btn-success' type='button' onclick='clearSearch()'>
+                   <button class='btn btn-success rounded-sm' type='button' onclick='clearSearch()'>
                        <i class='feather icon-search'></i> &nbsp; Search
                    </button>
                </div>

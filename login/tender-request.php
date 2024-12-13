@@ -76,9 +76,6 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
 
 <head>
     <title>Tender Request</title>
-
-
-
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimal-ui">
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
@@ -94,6 +91,8 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
     <link rel="stylesheet" href="assets/css/style.css">
 
     <style>
+
+        
         .center-text {
             text-align: center;
 
@@ -207,6 +206,19 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                 </div>
             </div>
 
+            <!-- <div class="row"> -->
+            <!-- <div class="col-md-6 col-xl-3">
+                    <div class="card bg-c-blue order-card">
+                        <div class="card-body">
+                            <h6 class="text-white">Tender Request</h6>
+                            <h2 class="text-right text-white"><i class="feather icon-message-square float-left"></i><span id="new">54</span></h2>
+
+                        </div>
+                    </div>
+                </div> -->
+            <!-- </div> -->
+
+
 
             <?php if (isset($_GET['status'])) {
                 $st = $_GET['status'];
@@ -214,19 +226,18 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
 
                 if ($st1 > 0) {
                     echo " <div class='alert alert-success alert-dismissible fade show' role='alert' style='font-size:16px;' id='updateuser'>
-    <strong><i class='feather icon-check'></i>Thanks!</strong> Tender has been Updated Successfully.
-    <button type='button' class='close' data-dismiss='alert' aria-label='Close'>
-        <span aria-hidden='true'>&times;</span>
-    </button>
-    </div> ";
+                            <strong><i class='feather icon-check'></i>Thanks!</strong> Tender has been Updated Successfully.
+                            <button type='button' class='close' data-dismiss='alert' aria-label='Close'>
+                                <span aria-hidden='true'>&times;</span>
+                            </button>
+                            </div> ";
                 } else {
-
                     echo " <div class='alert alert-danger alert-dismissible fade show' role='alert' style='font-size:16px;' id='updateuser'>
-        <strong>Error!</strong> Tender has been not Updated
-        <button type='button' class='close' data-dismiss='alert' aria-label='Close'>
-            <span aria-hidden='true'>&times;</span>
-        </button>
-        </div> ";
+                    <strong>Error!</strong> Tender has been not Updated
+                    <button type='button' class='close' data-dismiss='alert' aria-label='Close'>
+                        <span aria-hidden='true'>&times;</span>
+                    </button>
+                    </div> ";
                 }
             }
             // if($allowedAction=='all' || $allowedAction=='update' || $allowedAction=='recycle bin'  ){
@@ -238,33 +249,33 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
 
             // Action Buttons
             if ((in_array('All', $permissions)) || (in_array('Tender Request', $permissions)) || (in_array('Recycle Bin', $permissions))) {
-                echo "<a href='#' id='recycle_records' class='btn btn-danger me-3'> 
+                echo "<a href='#' id='recycle_records' class='btn btn-danger me-3 rounded-sm'> 
                     <i class='feather icon-trash'></i> &nbsp; Move to Bin Selected Items
                   </a>&nbsp&nbsp&nbsp&nbsp";
             }
             if ((in_array('All', $permissions)) || (in_array('Update Tenders', $permissions)) || (in_array('Tender Request', $permissions))) {
-                echo "<a href='#' class='update_records'><button type='button' class='btn btn-warning me-3'>
+                echo "<a href='#' class='update_records'><button type='button' class='btn btn-warning me-3 rounded-sm'>
                     <i class='feather icon-edit'></i> &nbsp; Update Selected Items
-                  </button></a>";
+                  </button></a>
+                  ";
             }
 
             // Search Bar Section with Dynamic Filter Functionality
-            echo "<div class='col-md-4 ms-auto'> <!-- Add offset for alignment -->
+            echo "<div class='col-md-3 col-sm-6 ms-auto'> <!-- Add offset for alignment -->
                     <div class='input-group'>
                         <input type='text' class='form-control' id='searchInput' placeholder='Search on this page' aria-label='Search'>
-                        <button class='btn btn-success' type='button' onclick='clearSearch()'>
+                        <button class='btn btn-success rounded-sms' type='button' onclick='clearSearch()'>
                             <i class='feather icon-search'></i> &nbsp; Search
                         </button>
                     </div>
               </div>";
 
             echo '</div><br />';
+
             echo '<div id="contentArea">';
-            // Example Content to Search
-            // echo '<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>';
-            // echo '<p>Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.</p>';
-            // echo '<p>Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia.</p>';
+            //Something Special
             echo '</div>';
+
             echo '</div>';
             echo '</div>';
             echo '</div>';

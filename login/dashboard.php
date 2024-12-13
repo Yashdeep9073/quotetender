@@ -185,7 +185,7 @@ $type = $row11[5];
                 <div class="col-md-6 col-xl-3">
                     <div class="card bg-c-blue order-card">
                         <div class="card-body">
-                            <h6 class="text-white">New Request</h6>
+                            <h6 class="text-white">Tender Request</h6>
                             <h2 class="text-right text-white"><i
                                     class="feather icon-message-square float-left"></i><span id="new"></span></h2>
 
@@ -195,7 +195,7 @@ $type = $row11[5];
                 <div class="col-md-6 col-xl-3">
                     <div class="card bg-c-green order-card">
                         <div class="card-body">
-                            <h6 class="text-white">Quoted Request</h6>
+                            <h6 class="text-white">Sent Tenders</h6>
                             <h2 class="text-right text-white"><i
                                     class="feather icon-message-square float-left"></i><span id="total"></span></h2>
 
@@ -286,11 +286,8 @@ $type = $row11[5];
 <script>
     $(document).ready(function () {
         setInterval(function () {
-
-
             $("#new").load("load.php");
             refresh();
-
         }, 100);
     });
 </script>
@@ -298,11 +295,8 @@ $type = $row11[5];
 <script>
     $(document).ready(function () {
         setInterval(function () {
-
-
             $("#total").load("load-total.php");
             refresh();
-
         }, 100);
     });
 </script>
@@ -322,8 +316,6 @@ $type = $row11[5];
 <script>
     $(document).ready(function () {
         setInterval(function () {
-
-
             $("#category").load("loadmembers.php");
             refresh();
 
