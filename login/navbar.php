@@ -179,10 +179,10 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                             </span></a>
                         <ul class="pcoded-submenu">
                             <?php if ((in_array('Tender Request', $permissions)) || (in_array('All', $permissions)) || (in_array('View Tenders', $permissions))) {
-                                echo "<li><a href='tender-request.php'>Tender Request</a></li>";
+                                echo "<li><a href='tender-request2.php'>Tender Request</a></li>";
                             }
                             if ((in_array('Sent Tender', $permissions)) || (in_array('All', $permissions))) {
-                                echo " <li><a href='sent-tender.php'> Sent Tender</a></li>";
+                                echo " <li><a href='sent-tender2.php'> Sent Tender</a></li>";
                             }
                             if ((in_array('Alot Tender', $permissions)) || (in_array('All', $permissions))) {
                                 echo "<li><a href='alot-tender.php'> Alot Tender</a></li>";

@@ -346,41 +346,49 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
             //         });
             // });
 
-            $('#basic-btn2 thead tr').clone(true).appendTo('#basic-btn2 thead');
+               // Initialize the DataTable only once
+    var table = $('#basic-btn2').DataTable({
+        orderCellsTop: true,
+        fixedHeader: true,
+        columnDefs: [
+            { targets: 0, visible: true }
+        ]
+    });
 
-            var columnsWithSearch = [5, 8, 9, 10, 11, 13];
+    // Clone the header row for filtering
+    $('#basic-btn2 thead tr').clone(true).appendTo('#basic-btn2 thead');
+    var columnsWithSearch = [5, 8, 9, 10, 11, 13]; // Columns for filtering
 
-            $('#basic-btn2 thead tr:eq(1) th').each(function (i) {
+    // Add filters to the cloned header
+    $('#basic-btn2 thead tr:eq(1) th').each(function (i) {
+        if (columnsWithSearch.includes(i) && !$(this).hasClass("noFilter")) {
+            var title = $(this).text();
+            var column = table.column(i); // Use the existing DataTable instance
+            var select = $('<select class="form-control"><option value="">'+ title +'</option></select>')
+                .appendTo($(this).empty())
+                .on('change', function () {
+                    var val = $.fn.dataTable.util.escapeRegex($(this).val());
+                    column
+                        .search(val ? '^' + val + '$' : '', true, false)
+                        .draw();
+                });
 
-                if (columnsWithSearch.includes(i) && !$(this).hasClass("noFilter")) {
-                    var title = $(this).text();
-                    $(this).html('<input type="text" class="form-control" placeholder="Search ' + title + '" />');
-
-                    $('input', this).on('keyup change', function () {
-                        if (table.column(i).search() !== this.value) {
-                            table
-                                .column(i)
-                                .search(this.value)
-                                .draw();
-                        }
-                    });
-                } else {
-                    $(this).html('<span></span>');
+            // Populate the select dropdown with unique values from the column
+            column.data().unique().sort().each(function (d, j) {
+                if (d) {
+                    select.append('<option value="' + d + '">' + d + '</option>');
                 }
             });
+        } else {
+            $(this).html('<span></span>');
+        }
+    });
 
-            var table = $('#basic-btn2').DataTable({
-                orderCellsTop: true,
-                fixedHeader: true,
-                columnDefs: [
-                    { targets: 0, visible: true }
-                ]
-            });
-
-
-            $("#updateuser").delay(5000).slideUp(300);
+    // Optional: Hide update message after 5 seconds
+    $("#updateuser").delay(5000).slideUp(300);
 
 
+            
         });
     </script>
 

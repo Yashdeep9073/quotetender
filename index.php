@@ -1,7 +1,7 @@
 <?php
 // ini_set('display_errors', 1);
 // ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
+error_reporting(0);
 
 session_start();
 
@@ -13,40 +13,30 @@ require_once "./env.php";
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
-error_reporting(0);
-// Storing google recaptcha response
-// in $recaptcha variable
-$recaptcha = $_POST['g-recaptcha-response'];
-
-// Put secret key here, which we get
-// from google console
-$secret_key = '6LeyShEqAAAAAKVRQAie1sCk9E5rBjvR9Ce0x5k_';
-
-// Hitting request to the URL, Google will
-// respond with success or error scenario
-$url = 'https://www.google.com/recaptcha/api/siteverify?secret='
-    . $secret_key . '&response=' . $recaptcha;
-
-// Making request to verify captcha
-$response = file_get_contents($url);
-
-// Response return by google is in
-// JSON format, so we have to parse
-// that json
-$response = json_decode($response);
-
-// Checking, if response is true or not
-if ($response->success == true) {
-    $msg1 = "Google reCAPTACHA verified";
-} else {
-    $msg1 = "Error in Google reCAPTACHA";
-}
-
 date_default_timezone_set('Asia/Kolkata');
 $sent_at = date('Y-m-d H:i:s A');
 
 // Register user
-if (isset($_POST['submit'])) {
+if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['submit'])) {
+
+    $recaptcha = $_POST['g-recaptcha-response'];
+
+    $secret_key = '6LeyShEqAAAAAKVRQAie1sCk9E5rBjvR9Ce0x5k_';
+
+    $url = 'https://www.google.com/recaptcha/api/siteverify?secret='
+        . $secret_key . '&response=' . $recaptcha;
+
+    // Making request to verify captcha
+    $response = file_get_contents($url);
+
+    $response = json_decode($response);
+
+    // Checking, if response is true or not
+    if ($response->success == true) {
+        $msg1 = "Google reCAPTACHA verified";
+    } else {
+        $msg1 = "Error in Google reCAPTACHA";
+    } 
 
     if (!isset($_SESSION["login_register"])) {
         header("location: login.php");
@@ -65,9 +55,9 @@ if (isset($_POST['submit'])) {
             $row = mysqli_fetch_row($result);
 
             $email = $row[4];
-                $name_user = $row[1];
-                
-                $_SESSION['user_name']=$name_use;
+            $name_user = $row[1];
+
+            $_SESSION['user_name'] = $name_use;
             $member_id = $row[0];
             $pendingRequests = $row[12] - 1;
 
@@ -79,7 +69,7 @@ if (isset($_POST['submit'])) {
             $tender = $_POST['tenderid'];
             $due_date = $_POST['datepicker'];
 
-            $unique_filename1=$unique_filename2=null;
+            $unique_filename1 = $unique_filename2 = null;
             if (!empty($_FILES["uploaded_file1"]["tmp_name"])) {
                 $file_size1 = $_FILES["uploaded_file1"]["size"];
                 if (isset($file_size1) && $file_size1 < 3 * 1024 * 1024) {
@@ -113,7 +103,7 @@ if (isset($_POST['submit'])) {
             }
 
 
-        $tenderExistsQuery = "
+            $tenderExistsQuery = "
         SELECT 
         ur.file_name,
         ur.tenderID, 
@@ -133,24 +123,23 @@ if (isset($_POST['submit'])) {
         AND (ur.auto_quotation = '1' OR ur.auto_quotation = '0')
         ORDER BY ur.created_at DESC 
         LIMIT 1
-";
+        ";
 
 
             $tenderExistsResult = mysqli_query($db, $tenderExistsQuery);
             $rowTender = mysqli_num_rows($tenderExistsResult);
 
 
-            $userExist = mysqli_query($db,"SELECT * FROM user_tender_requests ur WHERE ur.tenderID='"  . $tender . "' AND ur.member_id = '$member_id'");
+            $userExist = mysqli_query($db, "SELECT * FROM user_tender_requests ur WHERE ur.tenderID='" . $tender . "' AND ur.member_id = '$member_id'");
             $userExistResult = mysqli_num_rows($userExist);
 
-            if($userExistResult > 0){
+            if ($userExistResult > 0) {
                 $msg = "<div class='alert alert-danger alert-dismissible fade show' role='alert' style='font-size:16px;' id='goldmessage'>
                 <strong><i class='feather icon-check'></i>Error !</strong> You Already Sent Request On This Tender Id.
                 </div>
                 ";
-            }
-            else{
-                    // Check if there are existing tenders
+            } else {
+                // Check if there are existing tenders
                 if ($rowTender > 0) {
                     // Fetch tender quote details
                     $tenderQuote = mysqli_fetch_row($tenderExistsResult);
@@ -188,64 +177,64 @@ if (isset($_POST['submit'])) {
                     }
                 }
 
-            
-            $adminEmail = "quotetenderindia@gmail.com";
-            $mail = new PHPMailer(true);
 
-            //Enable SMTP debugging.
+                $adminEmail = "quotetenderindia@gmail.com";
+                $mail = new PHPMailer(true);
 
-            $mail->SMTPDebug = 0;
+                //Enable SMTP debugging.
 
-
-            //Set PHPMailer to use SMTP.
-
-            $mail->isSMTP();
-
-            //Set SMTP host name                      
-
-            $mail->Host = getenv('SMTP_HOST');
-
-            //Set this to true if SMTP host requires authentication to send email
-
-            $mail->SMTPAuth = true;
-
-            //Provide username and password
-
-            $mail->Username = getenv('SMTP_USER_NAME');
-
-            $mail->Password = getenv('SMTP_PASSCODE');
-
-            //If SMTP requires TLS encryption then set it
-
-            $mail->SMTPSecure = "ssl";
-
-            //Set TCP port to connect to
-
-            $mail->Port = getenv('SMTP_PORT');
-
-            $mail->From = getenv('SMTP_USER_NAME');
-
-            $mail->FromName = "Quote Tender";
-
-            $mail->addAddress($email, "Recepient Name");
-            $mail->addAddress($adminEmail);
+                $mail->SMTPDebug = 0;
 
 
-            $mail->isHTML(true);
+                //Set PHPMailer to use SMTP.
 
-            $membersQuery = " SELECT ur.tenderID, m.name, m.firm_name, ur.file_name, ur.file_name2
+                $mail->isSMTP();
+
+                //Set SMTP host name                      
+
+                $mail->Host = getenv('SMTP_HOST');
+
+                //Set this to true if SMTP host requires authentication to send email
+
+                $mail->SMTPAuth = true;
+
+                //Provide username and password
+
+                $mail->Username = getenv('SMTP_USER_NAME');
+
+                $mail->Password = getenv('SMTP_PASSCODE');
+
+                //If SMTP requires TLS encryption then set it
+
+                $mail->SMTPSecure = "ssl";
+
+                //Set TCP port to connect to
+
+                $mail->Port = getenv('SMTP_PORT');
+
+                $mail->From = getenv('SMTP_USER_NAME');
+
+                $mail->FromName = "Quote Tender";
+
+                $mail->addAddress($email, "Recepient Name");
+                $mail->addAddress($adminEmail);
+
+
+                $mail->isHTML(true);
+
+                $membersQuery = " SELECT ur.tenderID, m.name, m.firm_name, ur.file_name, ur.file_name2
                 FROM user_tender_requests ur
                 INNER JOIN members m ON ur.member_id = m.member_id  WHERE m.email_id='" . $_SESSION["login_register"] . "'";
 
-            $membersResult = mysqli_query($db, $membersQuery);
-            $memberData = mysqli_fetch_row($membersResult);
+                $membersResult = mysqli_query($db, $membersQuery);
+                $memberData = mysqli_fetch_row($membersResult);
 
-            if($userExistResult == 0) {
+                if ($userExistResult == 0) {
 
-                $activationLink = 'https://quotetender.in/reset-password.php?token=' . $activationToken;
-                $mail->Subject = "Tender Request";
+                    $activationLink = 'https://quotetender.in/reset-password.php?token=' . $activationToken;
+                    $mail->Subject = "Tender Request";
 
-                 $mail->Body = "
+                    $mail->Body = "
 <div style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
     <div style='text-align: center; margin-bottom: 20px;'>
         <img src='https://www.quotetender.in/assets/images/logo/logo.png' alt='Quote Tender Logo' style='max-width: 200px; height: auto;'>
@@ -275,46 +264,46 @@ if (isset($_POST['submit'])) {
 </div>";
 
 
-            } else {
+                } else {
 
-                $mail->Subject = "Tender Request Approved";
+                    $mail->Subject = "Tender Request Approved";
 
-                $mail->addAttachment($upload_directory . $memberData[3]);
-                if(!empty($memberData[4])){
-                    $mail->addAttachment($upload_directory . $memberData[4]);
-                }
-                $mail->Body =  "<p> Dear " . $memberData[1] ." , <br/>" .
-                    "The <b>Tender ID: </b> " .  $tender . "</b>  has been approved. Quotation file is attached below. For the further process, feel free to contact us.<br/><br/>
+                    $mail->addAttachment($upload_directory . $memberData[3]);
+                    if (!empty($memberData[4])) {
+                        $mail->addAttachment($upload_directory . $memberData[4]);
+                    }
+                    $mail->Body = "<p> Dear " . $memberData[1] . " , <br/>" .
+                        "The <b>Tender ID: </b> " . $tender . "</b>  has been approved. Quotation file is attached below. For the further process, feel free to contact us.<br/><br/>
                 <strong>Thanks, <br /> Admin Quote Tender</strong> <br/>
                 Mobile: +91-9417601244 | Email: info@quotender.com ";
-            }
+                }
 
                 $membersQuery2 = "SELECT m.email_id,  m.name, ur.file_name, ur.file_name2, ur.tenderID, ur.id FROM user_tender_requests ur 
-                inner join members m on ur.member_id= m.member_id  WHERE ur.auto_quotation = '1' AND ur.member_id='$member_id' AND ur.tenderID='" . $tender ."' ";
+                inner join members m on ur.member_id= m.member_id  WHERE ur.auto_quotation = '1' AND ur.member_id='$member_id' AND ur.tenderID='" . $tender . "' ";
                 $membersResult2 = mysqli_query($db, $membersQuery2);
-                
-                while($memberData2 = mysqli_fetch_row($membersResult2)){
+
+                while ($memberData2 = mysqli_fetch_row($membersResult2)) {
                     $mail->addAddress($memberData2[0], "Recepient Name");
-                $mail->Subject = "Tender Request Approved";
-                $mail->addAttachment($upload_directory.$memberData2[2]);
-                if(!empty($memberData2[3])){
-                $mail->addAttachment($upload_directory.$memberData2[3]);
-                }
-                $mail->Body =  "<p> Dear, ".$memberData2[1]." <br/>" .
-                "The <b>Tender ID: </b> " .  $memberData2[4] . "</b>  has been approved to you. Quotation file is attached below. For the further process, feel free to contact us.<br/><br/>
+                    $mail->Subject = "Tender Request Approved";
+                    $mail->addAttachment($upload_directory . $memberData2[2]);
+                    if (!empty($memberData2[3])) {
+                        $mail->addAttachment($upload_directory . $memberData2[3]);
+                    }
+                    $mail->Body = "<p> Dear, " . $memberData2[1] . " <br/>" .
+                        "The <b>Tender ID: </b> " . $memberData2[4] . "</b>  has been approved to you. Quotation file is attached below. For the further process, feel free to contact us.<br/><br/>
                 <strong>Thanks, <br /> Admin Quote Tender</strong> <br/>
                 Mobile: +91-9417601244 | Email: info@quotender.com ";
                 }
-            
 
-            
 
-            if (!$mail->send()) {
 
-                echo "Mailer Error: " . $mail->ErrorInfo;
-            }
 
-            $msg = "<div class='alert alert-success alert-dismissible fade show' role='alert' style='font-size:16px;' id='goldmessage'>
+                if (!$mail->send()) {
+
+                    echo "Mailer Error: " . $mail->ErrorInfo;
+                }
+
+                $msg = "<div class='alert alert-success alert-dismissible fade show' role='alert' style='font-size:16px;' id='goldmessage'>
                 <strong><i class='feather icon-check'></i>Thanks!</strong>Your request sent successfully.We will contact you soon.
                 </div>
                 ";
@@ -362,8 +351,10 @@ $q = mysqli_query($db, $q);
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <meta name="description" content="Quotetender is your leading edge partner in finding the right tenders. Government Tenders , e-Tenders , online Tender Information." />
-    <meta name="keywords" content="Online Tenders , Tender Info , Free government Tenders , government tenders , e Tenders India , Indian Tender notifications, Industry Tenders , Tender India , best tender sites, get tenders online ,  Indian Tenders portal ,quotetender.in/,Government eMarket place,Tender submission" />
+    <meta name="description"
+        content="Quotetender is your leading edge partner in finding the right tenders. Government Tenders , e-Tenders , online Tender Information." />
+    <meta name="keywords"
+        content="Online Tenders , Tender Info , Free government Tenders , government tenders , e Tenders India , Indian Tender notifications, Industry Tenders , Tender India , best tender sites, get tenders online ,  Indian Tenders portal ,quotetender.in/,Government eMarket place,Tender submission" />
 
     <!-- canonical tags -->
     <link rel="canonical" href="https://www.quotetender.in/" />
@@ -377,7 +368,8 @@ $q = mysqli_query($db, $q);
     <meta property="og:title" content="Your Business Solutions:Price List & Tender Quote">
     <meta property="og:site_name" content="Quetetender">
     <meta property="og:url" content="https://www.quotetender.in/">
-    <meta property="og:description" content="Quotetender is your leading edge partner in finding the right tenders. Government Tenders, e-Tenders, online Tender Information.">
+    <meta property="og:description"
+        content="Quotetender is your leading edge partner in finding the right tenders. Government Tenders, e-Tenders, online Tender Information.">
     <meta property="og:type" content="">
     <meta property="og:image" content="https://www.quotetender.in/assets/images/logo/logo.png" />
     <!-- closing open graph tags -->
@@ -464,13 +456,14 @@ $q = mysqli_query($db, $q);
                             </h1>
                             <div class="row">
                                 <?php
-                                if ($msg) {
+                                if (isset($msg)) {
                                     echo $msg;
                                 }
                                 ?>
 
                                 <br />
-                                <form action="" method="post" autocomplete="off" enctype="multipart/form-data" id="myForm">
+                                <form action="" method="post" autocomplete="off" enctype="multipart/form-data"
+                                    id="myForm">
                                     <div class="col-lg-12">
 
                                         <?php
@@ -480,7 +473,6 @@ $q = mysqli_query($db, $q);
                                             echo '<select name="dept" required = "true" class="dept"  required style="border-color: #4CBB17" >';
                                             echo "<option value=''>Select Department</option>";
                                             while ($row = mysqli_fetch_row($dept)) {
-
 
                                                 echo "<option value='" . $row['0'] . "'>" . $row['1'] . "</option>";
                                             }
@@ -507,32 +499,42 @@ $q = mysqli_query($db, $q);
                                     </div>
                                     <br />
                                     <div class="col-lg-12">
-                                        <input type="text" class="" placeholder=" Tender Id" name="tenderid" style="border-color: #4CBB17" required />
+                                        <input type="text" class="" placeholder=" Tender Id" name="tenderid"
+                                            style="border-color: #4CBB17" required />
                                     </div>
                                     <br />
 
                                     <div class="col-lg-12">
-                                        <input type="text" class="" placeholder="Enter Bid End Date " required name="datepicker" style="border-color: #4CBB17" id="datepicker" />
+                                        <input type="text" class="" placeholder="Enter Bid End Date " required
+                                            name="datepicker" style="border-color: #4CBB17" id="datepicker" />
                                     </div>
                                     <br />
 
                                     <div class="col-lg-12 d-flex">
                                         <div class="col-lg-6" style="padding-right: 4px;">
-                                            <input name="uploaded_file1" id="uploaded_file1" type="file" class="form-control input-md" accept="application/pdf,application/vnd.ms-excel" style="background-color: #fff; border-color: #4CBB17;">
+                                            <input name="uploaded_file1" id="uploaded_file1" type="file"
+                                                class="form-control input-md"
+                                                accept="application/pdf,application/vnd.ms-excel"
+                                                style="background-color: #fff; border-color: #4CBB17;">
                                         </div>
                                         <div class="col-lg-6">
-                                            <input name="uploaded_file2" id="uploaded_file2" type="file" class="form-control input-md" accept="application/pdf,application/vnd.ms-excel" style="background-color: #fff; border-color: #4CBB17" disabled>
+                                            <input name="uploaded_file2" id="uploaded_file2" type="file"
+                                                class="form-control input-md"
+                                                accept="application/pdf,application/vnd.ms-excel"
+                                                style="background-color: #fff; border-color: #4CBB17" disabled>
                                         </div>
                                     </div>
                                     <br />
                                     <div class="col-lg-12">
-                                        <div class="g-recaptcha" data-sitekey="6LeyShEqAAAAAJIMoyXfN7DmfesxwLNYOgBHIh4N" data-callback="callback" style="border:none;">
+                                        <div class="g-recaptcha" data-sitekey="6LeyShEqAAAAAJIMoyXfN7DmfesxwLNYOgBHIh4N"
+                                            data-callback="callback" style="border:none;">
                                         </div>
                                     </div>
                                     <br />
                                     <div class="col-lg-12">
 
-                                        <button type="submit" class="btn lab-btn btn-block" name="submit" id="submit" disabled>
+                                        <button type="submit" class="btn lab-btn btn-block" name="submit" id="submit"
+                                            disabled>
                                             <i class="feather icon-save"></i>&nbsp; Send Request
                                         </button>
                                     </div>
@@ -649,7 +651,8 @@ $q = mysqli_query($db, $q);
                         <div class="post-item">
                             <div class="post-inner">
                                 <div class="post-thumb">
-                                    <a href="public-sector.php"><img src="assets/images/blog/public.jpg" alt="blog thumb"></a>
+                                    <a href="public-sector.php"><img src="assets/images/blog/public.jpg"
+                                            alt="blog thumb"></a>
                                 </div>
                                 <div class="post-content">
                                     <a href="public-sector.php">
@@ -658,7 +661,8 @@ $q = mysqli_query($db, $q);
                                 </div>
                                 <div class="post-footer">
                                     <div class="pf-left">
-                                        <a href="public-sector.php" class="lab-btn-text">Read more <i class="icofont-external-link"></i></a>
+                                        <a href="public-sector.php" class="lab-btn-text">Read more <i
+                                                class="icofont-external-link"></i></a>
                                     </div>
 
                                 </div>
@@ -669,7 +673,8 @@ $q = mysqli_query($db, $q);
                         <div class="post-item">
                             <div class="post-inner">
                                 <div class="post-thumb">
-                                    <a href="private-sector.php"><img src="assets/images/blog/private.jpg" alt="blog thumb"></a>
+                                    <a href="private-sector.php"><img src="assets/images/blog/private.jpg"
+                                            alt="blog thumb"></a>
                                 </div>
                                 <div class="post-content">
                                     <a href="private-sector.php">
@@ -679,7 +684,8 @@ $q = mysqli_query($db, $q);
                                 </div>
                                 <div class="post-footer">
                                     <div class="pf-left">
-                                        <a href="private-sector.php" class="lab-btn-text">Read more <i class="icofont-external-link"></i></a>
+                                        <a href="private-sector.php" class="lab-btn-text">Read more <i
+                                                class="icofont-external-link"></i></a>
                                     </div>
 
                                 </div>
@@ -690,7 +696,8 @@ $q = mysqli_query($db, $q);
                         <div class="post-item">
                             <div class="post-inner">
                                 <div class="post-thumb">
-                                    <a href="Govt-Sector.php"><img src="assets/images/blog/govt.jpg" alt="blog thumb"></a>
+                                    <a href="Govt-Sector.php"><img src="assets/images/blog/govt.jpg"
+                                            alt="blog thumb"></a>
                                 </div>
                                 <div class="post-content">
                                     <a href="Govt-Sector.php">
@@ -701,7 +708,8 @@ $q = mysqli_query($db, $q);
                                 </div>
                                 <div class="post-footer">
                                     <div class="pf-left">
-                                        <a href="Govt-Sector.php" class="lab-btn-text">Read more <i class="icofont-external-link"></i></a>
+                                        <a href="Govt-Sector.php" class="lab-btn-text">Read more <i
+                                                class="icofont-external-link"></i></a>
                                     </div>
 
                                 </div>
@@ -734,7 +742,7 @@ $q = mysqli_query($db, $q);
                                     echo '  <div class="meta-post">';
                                     echo '   <ul class="lab-ul">
                                 <li><i class="icofont-ui-home"></i> Brand Name :' . $row[3] . '</li>
-                                                        <li><i class="icofont-calendar">  </i> Date Added :' .  $row[5] . '</li>
+                                                        <li><i class="icofont-calendar">  </i> Date Added :' . $row[5] . '</li>
                                                         
                                                     
                                                     </ul>';
@@ -1005,8 +1013,10 @@ $q = mysqli_query($db, $q);
                             <span class="subtitle">About Our Quote tender</span>
                             <h2 class="title">Good Quality of Products</h2>
                             <p>
-                               We pride ourselves on delivering top-notch products that meet the highest standards of quality and reliability.
-                               Our commitment to quality ensures that you receive only the best, tailored to meet your specific needs.
+                                We pride ourselves on delivering top-notch products that meet the highest standards of
+                                quality and reliability.
+                                Our commitment to quality ensures that you receive only the best, tailored to meet your
+                                specific needs.
                             </p>
                         </div>
                         <div class="section-wrapper">
@@ -1018,7 +1028,7 @@ $q = mysqli_query($db, $q);
                                     <div class="sr-right">
                                         <h5>Skilled Teams</h5>
                                         <p>
-                                          Our experts ensure the highest standards of service and support.
+                                            Our experts ensure the highest standards of service and support.
                                         </p>
                                     </div>
                                 </li>
@@ -1073,7 +1083,8 @@ $q = mysqli_query($db, $q);
                                 quotetender.com</p>
                         </div>
 
-                        <div class="col-lg-4"><br /> <a href="registration.php" align="right" style="background-color: #4CBB17; color: #fff;padding:10px ;">Get Registered & Try
+                        <div class="col-lg-4"><br /> <a href="registration.php" align="right"
+                                style="background-color: #4CBB17; color: #fff;padding:10px ;">Get Registered & Try
                                 Now</a></div>
                     </div>
 
@@ -1096,7 +1107,8 @@ $q = mysqli_query($db, $q);
                         <div class="sf-left">
                             <div class="sfl-thumb">
                                 <img src="assets/images/feedback/youtube.jpg" alt="student feedback" />
-                                <a href="https://www.youtube.com/embed/Fu7eJeot8Xg" class="video-button" data-rel="lightcase"><i class="icofont-ui-play"></i></a>
+                                <a href="https://www.youtube.com/embed/Fu7eJeot8Xg" class="video-button"
+                                    data-rel="lightcase"><i class="icofont-ui-play"></i></a>
                             </div>
                         </div>
                     </div>
@@ -1127,7 +1139,11 @@ $q = mysqli_query($db, $q);
                                 </div>
                                 <div class="stu-feed-bottom">
                                     <p>
-                                        Quotetender has been instrumental in shaping the trajectory of our venture towards obtaining resources for a groundbreaking project. The distinctive approach of Quotetender has undeniably laid the foundation for the ambitious pursuits of our company. We wholeheartedly endorse their services and commend the profound impact they have had on our journey.
+                                        Quotetender has been instrumental in shaping the trajectory of our venture
+                                        towards obtaining resources for a groundbreaking project. The distinctive
+                                        approach of Quotetender has undeniably laid the foundation for the ambitious
+                                        pursuits of our company. We wholeheartedly endorse their services and commend
+                                        the profound impact they have had on our journey.
                                     </p>
                                 </div>
                             </div>
@@ -1158,7 +1174,11 @@ $q = mysqli_query($db, $q);
                                 </div>
                                 <div class="stu-feed-bottom">
                                     <p>
-                                        Quotetender played a big role in helping us get the things we needed for a new and creative project. Their advice was really important & changed our first project meetings into team efforts. Quotetender's special approach not only made things different but also gave a strong base for our company's big plans. We strongly suggest their help for anyone starting a similar journey.
+                                        Quotetender played a big role in helping us get the things we needed for a new
+                                        and creative project. Their advice was really important & changed our first
+                                        project meetings into team efforts. Quotetender's special approach not only made
+                                        things different but also gave a strong base for our company's big plans. We
+                                        strongly suggest their help for anyone starting a similar journey.
                                     </p>
                                 </div>
                             </div>
@@ -1231,7 +1251,8 @@ $q = mysqli_query($db, $q);
                                     <div class="count-inner">
                                         <div class="count-content">
                                             <h2>
-                                                <span class="count" data-to="200" data-speed="1500"></span><span>+</span>
+                                                <span class="count" data-to="200"
+                                                    data-speed="1500"></span><span>+</span>
                                             </h2>
                                             <p>Projects</p>
                                         </div>
@@ -1255,7 +1276,8 @@ $q = mysqli_query($db, $q);
                                     <div class="count-inner">
                                         <div class="count-content">
                                             <h2>
-                                                <span class="count" data-to="300" data-speed="1500"></span><span>+</span>
+                                                <span class="count" data-to="300"
+                                                    data-speed="1500"></span><span>+</span>
                                             </h2>
                                             <p>Clients</p>
                                         </div>
@@ -1295,7 +1317,8 @@ $q = mysqli_query($db, $q);
                                                 Seamlessly engage technically sound coaborative
                                                 reintermed goal oriented content rather than ethica
                                             </p>
-                                            <a href="registration.php" class="lab-btn"><span>Register For Free</span></a>
+                                            <a href="registration.php" class="lab-btn"><span>Register For
+                                                    Free</span></a>
                                         </div>
                                     </div>
                                 </div>
@@ -1436,14 +1459,14 @@ $q = mysqli_query($db, $q);
                     "phoneNumber": "+919417601244"
                 }
             };
-            s.onload = function() {
+            s.onload = function () {
                 CreateWhatsappChatWidget(options);
             };
             var x = document.getElementsByTagName('script')[0];
             x.parentNode.insertBefore(s, x);
         </script>
         <script>
-            $(document).ready(function() {
+            $(document).ready(function () {
                 $("#goldmessage").delay(8000).slideUp(300);
             });
         </script>
@@ -1456,13 +1479,13 @@ $q = mysqli_query($db, $q);
         </script>
 
         <script>
-            $(document).ready(function() {
+            $(document).ready(function () {
                 $("#datepicker").datepicker({
                     dateFormat: 'yy-mm-dd'
                 });
             });
 
-            document.getElementById('uploaded_file1').addEventListener('change', function() {
+            document.getElementById('uploaded_file1').addEventListener('change', function () {
                 var file1Input = this;
                 var file2Input = document.getElementById('uploaded_file2');
 
@@ -1472,12 +1495,11 @@ $q = mysqli_query($db, $q);
 
 
 
-<script>
-  if ( window.history.replaceState ) 
-  {
-    window.history.replaceState( null, null, window.location.href );
-  }
-</script>
+        <script>
+            if (window.history.replaceState) {
+                window.history.replaceState(null, null, window.location.href);
+            }
+        </script>
 
 
 </body>

@@ -370,67 +370,99 @@ $result = mysqli_query($db, $query);
             //         });
             //     });
 
-            $('#basic-btn3 thead tr').clone(true).appendTo('#basic-btn3 thead');
-            var columnsWithSearch = [4, 5, 6];
+                $('#basic-btn3 thead tr').clone(true).appendTo('#basic-btn3 thead');
+                var columnsWithSearch = [4, 5, 6];
 
-            $('#basic-btn3 thead tr:eq(1) th').each(function (i) {
-                if (columnsWithSearch.includes(i) && !$(this).hasClass("noFilter")) {
-                    var title = $(this).text();
-                    $(this).html('<input type="text" class="form-control" placeholder="Search ' + title + '" />');
+                $('#basic-btn3 thead tr:eq(1) th').each(function (i) {
+                    if (columnsWithSearch.includes(i) && !$(this).hasClass("noFilter")) {
+                        var title = $(this).text();
+                        $(this).html('<input type="text" class="form-control" placeholder="Search ' + title + '" />');
 
-                    $('input', this).on('keyup change', function () {
-                        if (table.column(i).search() !== this.value) {
-                            table
-                                .column(i)
-                                .search(this.value)
-                                .draw();
-                        }
-                    });
+                        $('input', this).on('keyup change', function () {
+                            if (table.column(i).search() !== this.value) {
+                                table
+                                    .column(i)
+                                    .search(this.value)
+                                    .draw();
+                            }
+                        });
 
-                } else {
-                    $(this).html('<span></span>');
-                }
-            });
+                    } else {
+                        $(this).html('<span></span>');
+                    }
+                });
 
-            var table = $('#basic-btn3').DataTable({
-                orderCellsTop: true,
-                fixedHeader: true,
-                columnDefs: [
-                    { targets: 0, visible: true }
-                ]
-            });
+                var table = $('#basic-btn3').DataTable({
+                    orderCellsTop: true,
+                    fixedHeader: true,
+                    columnDefs: [
+                        { targets: 0, visible: true }
+                    ]
+                });
 
 
-            $("#updateuser").delay(5000).slideUp(300);
+                $("#updateuser").delay(5000).slideUp(300);
+            // });
+
+            // Clone the header row for filtering
+            // $('#basic-btn3 thead tr').clone(true).appendTo('#basic-btn3 thead');
+            // var columnsWithSearch = [5, 8, 9, 10, 11, 13]; // Columns for filtering
+
+            // // Add filters to the cloned header
+            // $('#basic-btn3 thead tr:eq(1) th').each(function (i) {
+            //     if (columnsWithSearch.includes(i) && !$(this).hasClass("noFilter")) {
+            //         var column = table.column(i); // Use the existing DataTable instance
+            //         var select = $('<select class="form-control"><option value="">Select</option></select>')
+            //             .appendTo($(this).empty())
+            //             .on('change', function () {
+            //                 var val = $.fn.dataTable.util.escapeRegex($(this).val());
+            //                 column
+            //                     .search(val ? '^' + val + '$' : '', true, false)
+            //                     .draw();
+            //             });
+
+            //         // Populate the select dropdown with unique values from the column
+            //         column.data().unique().sort().each(function (d, j) {
+            //             if (d) {
+            //                 select.append('<option value="' + d + '">' + d + '</option>');
+            //             }
+            //         });
+            //     } else {
+            //         $(this).html('<span></span>');
+            //     }
+            // });
+            
+            // // Optional: Hide update message after 5 seconds
+            // $("#updateuser").delay(5000).slideUp(300);
         });
     </script>
 
     <script type="text/javascript">
-        $(function () {
-            $(".delbutton").click(function () {
+            $(function () {
+                $(".delbutton").click(function () {
 
-                var element = $(this);
+                    var element = $(this);
 
-                var del_id = element.attr("id");
+                    var del_id = element.attr("id");
 
-                var info = 'id=' + del_id;
-                if (confirm("Are you sure you want to delete this Record?")) {
-                    $.ajax({
-                        type: "GET",
-                        url: "deleteuser.php",
-                        data: info,
-                        success: function () { }
-                    });
-                    $(this).parents(".record").animate({
-                        backgroundColor: "#FF3"
-                    }, "fast")
-                        .animate({
-                            opacity: "hide"
-                        }, "slow");
-                }
-                return false;
+                    var info = 'id=' + del_id;
+                    if (confirm("Are you sure you want to delete this Record?")) {
+                        $.ajax({
+                            type: "GET",
+                            url: "deleteuser.php",
+                            data: info,
+                            success: function () { }
+                        });
+                        $(this).parents(".record").animate({
+                            backgroundColor: "#FF3"
+                        }, "fast")
+                            .animate({
+                                opacity: "hide"
+                            }, "slow");
+                    }
+                    return false;
+                });
             });
-        });
     </script>
 
 
