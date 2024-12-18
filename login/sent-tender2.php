@@ -247,8 +247,8 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                 // echo "<th>Mobile</th>";
                                 echo "<th>Tender ID</th>";
                                 echo "<th>Department</th>";
+                                echo "<th>Due Date</th>";
                                 echo "<th>Add Date </th>";
-                                // echo "<th>Due Date</th>";
                                 // echo "<th>Due Date</th>";
                                 
                                 echo "<th>Edit</th>";
@@ -273,7 +273,12 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                     // echo "<td>" . $row['mobile'] . "</td>";
                                     echo "<td><a class='tender_id' href='sent-tender3.php?tender_id=" . $row['tenderID'] . "'>" . $row['tenderID'] . "</a></td>";
                                     echo "<td>" . $row['department_name'] . "</td>";
-                                    echo "<td>" . $row['created_at'] . "</td>";
+                                    $dueDate = new DateTime($row['due_date']);
+                                    $formattedDueDate = $dueDate->format('d-m-Y');
+                                    echo "<td>" .  $formattedDueDate . "</td>";
+                                    $createdDate = new DateTime($row['created_at']);
+                                    $formattedCreatedDate = $createdDate->format('d-m-Y H:i:s');
+                                    echo "<td>" . $formattedCreatedDate . "</td>";
                                     // echo "<td>" . $row['due_date'] . "</td>";
                                     // if (!empty($row['file_name'])) {
                                     //     echo "<td>" . '<a href="../login/tender/' . $row['file_name'] . '" target="_blank" style="padding:6px 15.2px;" />View </a>' . "</br>";
@@ -366,7 +371,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
 
             $('#basic-btn2 thead tr').clone(true).appendTo('#basic-btn2 thead');
 
-            var columnsWithSearch = [5, 8, 9, 10, 11, 13];
+            var columnsWithSearch = [6, 8, 9, 10, 11, 13];
 
             $('#basic-btn2 thead tr:eq(1) th').each(function (i) {
 
