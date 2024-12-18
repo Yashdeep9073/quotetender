@@ -178,6 +178,15 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
             </div>
 
             <div class="row">
+                <div class="col-md-6 col-xl-3">
+                    <div class="card bg-c-red order-card">
+                        <div class="card-body">
+                            <h6 class="text-white">Alot Tender</h6>
+                            <h2 class="text-right text-white"><i class="feather icon-home float-left"></i><span
+                                    id="category"></span></h2>
+                        </div>
+                    </div>
+                </div>
                 <div class="col-sm-12">
                     <div class="card">
                         <div class="card-header table-card-header">
@@ -346,49 +355,50 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
             //         });
             // });
 
-               // Initialize the DataTable only once
-    var table = $('#basic-btn2').DataTable({
-        orderCellsTop: true,
-        fixedHeader: true,
-        columnDefs: [
-            { targets: 0, visible: true }
-        ]
-    });
+            // Initialize the DataTable only once
+            var table = $('#basic-btn2').DataTable({
+                orderCellsTop: true,
+                fixedHeader: true,
+                columnDefs: [
+                    { targets: 0, visible: true }
+                ]
+            });
 
-    // Clone the header row for filtering
-    $('#basic-btn2 thead tr').clone(true).appendTo('#basic-btn2 thead');
-    var columnsWithSearch = [5, 8, 9, 10, 11, 13]; // Columns for filtering
+            // Clone the header row for filtering
+            $('#basic-btn2 thead tr').clone(true).appendTo('#basic-btn2 thead');
+            var columnsWithSearch = [5, 8, 9, 10, 11, 13
+            ]; // Columns for filtering
 
-    // Add filters to the cloned header
-    $('#basic-btn2 thead tr:eq(1) th').each(function (i) {
-        if (columnsWithSearch.includes(i) && !$(this).hasClass("noFilter")) {
-            var title = $(this).text();
-            var column = table.column(i); // Use the existing DataTable instance
-            var select = $('<select class="form-control"><option value="">'+ title +'</option></select>')
-                .appendTo($(this).empty())
-                .on('change', function () {
-                    var val = $.fn.dataTable.util.escapeRegex($(this).val());
-                    column
-                        .search(val ? '^' + val + '$' : '', true, false)
-                        .draw();
-                });
+            // Add filters to the cloned header
+            $('#basic-btn2 thead tr:eq(1) th').each(function (i) {
+                if (columnsWithSearch.includes(i) && !$(this).hasClass("noFilter")) {
+                    var title = $(this).text();
+                    var column = table.column(i); // Use the existing DataTable instance
+                    var select = $('<select class="form-control"><option value="">' + title + '</option></select>')
+                        .appendTo($(this).empty())
+                        .on('change', function () {
+                            var val = $.fn.dataTable.util.escapeRegex($(this).val());
+                            column
+                                .search(val ? '^' + val + '$' : '', true, false)
+                                .draw();
+                        });
 
-            // Populate the select dropdown with unique values from the column
-            column.data().unique().sort().each(function (d, j) {
-                if (d) {
-                    select.append('<option value="' + d + '">' + d + '</option>');
+                    // Populate the select dropdown with unique values from the column
+                    column.data().unique().sort().each(function (d, j) {
+                        if (d) {
+                            select.append('<option value="' + d + '">' + d + '</option>');
+                        }
+                    });
+                } else {
+                    $(this).html('<span></span>');
                 }
             });
-        } else {
-            $(this).html('<span></span>');
-        }
-    });
 
-    // Optional: Hide update message after 5 seconds
-    $("#updateuser").delay(5000).slideUp(300);
+            // Optional: Hide update message after 5 seconds
+            $("#updateuser").delay(5000).slideUp(300);
 
 
-            
+
         });
     </script>
 
@@ -462,7 +472,15 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
 
     </script>
 
+    <script>
+        $(document).ready(function () {
+            setInterval(function () {
+                $("#category").load("loadmembers.php");
+                refresh();
 
+            }, 100);
+        });
+    </script>
 </body>
 
 </html>

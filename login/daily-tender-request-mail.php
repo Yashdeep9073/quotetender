@@ -18,14 +18,17 @@ ur.due_date, ur.created_at, sm.name, ur.allotted_at FROM user_tender_requests ur
 inner join members m on ur.member_id= m.member_id 
 left join members sm on ur.selected_user_id= sm.member_id
 inner join department on ur.department_id = department.department_id
-where (ur.status='Requested' or ur.status='Allotted' )";
+where (ur.status='Requested' or ur.status='Sent' or ur.status='Allotted' )";
 
-$requestedTenders = $allottedTenders = [];
+$requestedTenders = $sentTenders = $allottedTenders = [];
 $result = mysqli_query($db, $query);
 
 while ($row = mysqli_fetch_row($result)) {
     if ($row[6] == 'Requested') {
         $requestedTenders[] = $row;
+    }
+    if ($row[6] == 'Sent') {
+        $sentTenders[] = $row;
     }
     if ($row[6] == 'Allotted') {
         $allottedTenders[] = $row;
@@ -37,30 +40,115 @@ $spreadsheet = new Spreadsheet();
 $sheet = $spreadsheet->getActiveSheet();
 $sheet->setTitle("Tender Requests");
 
-// Set Column Headers for Requested Tenders
-$sheet->setCellValue('A1', 'User Name')
-      ->setCellValue('B1', 'Firm Name')
-      ->setCellValue('C1', 'Mobile')
-      ->setCellValue('D1', 'Email')
-      ->setCellValue('E1', 'Department')
-      ->setCellValue('F1', 'Tender ID')
-      ->setCellValue('G1', 'Status')
-      ->setCellValue('H1', 'Due Date')
-      ->setCellValue('I1', 'Requested Date');
+// === Style for Column Headers ===
+$headerStyleArray = [
+    'font' => [
+        'bold' => true,
+        'color' => ['argb' => 'FFFFFFFF'], // White text
+    ],
+    'fill' => [
+        'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+        'startColor' => ['argb' => 'FF4CAF50'], // Green background
+    ],
+    'alignment' => [
+        'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER,
+        'vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER,
+    ],
+];
 
+// === Style for Section Headers (Requested, Sent, Allotted) ===
+$sectionStyleArray = [
+    'font' => [
+        'bold' => true,
+        'color' => ['argb' => 'FF000000'], // Black text
+    ],
+    'fill' => [
+        'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+        'startColor' => ['argb' => 'FFFFC107'], // Yellow background
+    ],
+    'alignment' => [
+        'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,
+        'vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER,
+    ],
+];
+
+// Set Column Headers
+$sheet->setCellValue('A1', 'User Name')
+    ->setCellValue('B1', 'Firm Name')
+    ->setCellValue('C1', 'Mobile')
+    ->setCellValue('D1', 'Email')
+    ->setCellValue('E1', 'Department')
+    ->setCellValue('F1', 'Tender ID')
+    ->setCellValue('G1', 'Status')
+    ->setCellValue('H1', 'Due Date')
+    ->setCellValue('I1', 'Requested/Updated Date')
+    ->setCellValue('J1', 'Alotted User');
+// Apply Header Style
+$sheet->getStyle('A1:J1')->applyFromArray($headerStyleArray);
+
+// Start row index after headers
 $rowIndex = 2;
+
+// === Add Requested Tenders ===
+$sheet->setCellValue('A' . $rowIndex, '--- Requested Tenders ---');
+$sheet->mergeCells('A' . $rowIndex . ':J' . $rowIndex); // Merge cells for the section header
+$sheet->getStyle('A' . $rowIndex . ':J' . $rowIndex)->applyFromArray($sectionStyleArray);
+$rowIndex++;
+
 foreach ($requestedTenders as $item) {
     $sheet->setCellValue('A' . $rowIndex, $item[0])
-          ->setCellValue('B' . $rowIndex, $item[1])
-          ->setCellValue('C' . $rowIndex, $item[2])
-          ->setCellValue('D' . $rowIndex, $item[3])
-          ->setCellValue('E' . $rowIndex, $item[4])
-          ->setCellValue('F' . $rowIndex, $item[5])
-          ->setCellValue('G' . $rowIndex, $item[6])
-          ->setCellValue('H' . $rowIndex, date_format(date_create($item[7]), 'd-m-Y'))
-          ->setCellValue('I' . $rowIndex, date_format(date_create($item[8]), 'd-m-Y'));
+        ->setCellValue('B' . $rowIndex, $item[1])
+        ->setCellValue('C' . $rowIndex, $item[2])
+        ->setCellValue('D' . $rowIndex, $item[3])
+        ->setCellValue('E' . $rowIndex, $item[4])
+        ->setCellValue('F' . $rowIndex, $item[5])
+        ->setCellValue('G' . $rowIndex, $item[6])
+        ->setCellValue('H' . $rowIndex, date_format(date_create($item[7]), 'd-m-Y'))
+        ->setCellValue('I' . $rowIndex, date_format(date_create($item[8]), 'd-m-Y'))
+        ->setCellValue('J' . $rowIndex, '');
     $rowIndex++;
 }
+
+// === Add Sent Tenders ===
+$sheet->setCellValue('A' . $rowIndex, '--- Sent Tenders ---');
+$sheet->mergeCells('A' . $rowIndex . ':J' . $rowIndex);
+$sheet->getStyle('A' . $rowIndex . ':J' . $rowIndex)->applyFromArray($sectionStyleArray);
+$rowIndex++;
+
+foreach ($sentTenders as $item) {
+    $sheet->setCellValue('A' . $rowIndex, $item[0])
+        ->setCellValue('B' . $rowIndex, $item[1])
+        ->setCellValue('C' . $rowIndex, $item[2])
+        ->setCellValue('D' . $rowIndex, $item[3])
+        ->setCellValue('E' . $rowIndex, $item[4])
+        ->setCellValue('F' . $rowIndex, $item[5])
+        ->setCellValue('G' . $rowIndex, $item[6])
+        ->setCellValue('H' . $rowIndex, date_format(date_create($item[7]), 'd-m-Y'))
+        ->setCellValue('I' . $rowIndex, date_format(date_create($item[8]), 'd-m-Y'))
+        ->setCellValue('J' . $rowIndex, '');
+    $rowIndex++;
+}
+
+// === Add Allotted Tenders ===
+$sheet->setCellValue('A' . $rowIndex, '--- Allotted Tenders ---');
+$sheet->mergeCells('A' . $rowIndex . ':J' . $rowIndex);
+$sheet->getStyle('A' . $rowIndex . ':J' . $rowIndex)->applyFromArray($sectionStyleArray);
+$rowIndex++;
+
+foreach ($allottedTenders as $item) {
+    $sheet->setCellValue('A' . $rowIndex, $item[0])
+        ->setCellValue('B' . $rowIndex, $item[1])
+        ->setCellValue('C' . $rowIndex, $item[2])
+        ->setCellValue('D' . $rowIndex, $item[3])
+        ->setCellValue('E' . $rowIndex, $item[4])
+        ->setCellValue('F' . $rowIndex, $item[5])
+        ->setCellValue('G' . $rowIndex, $item[6])
+        ->setCellValue('H' . $rowIndex, date_format(date_create($item[7]), 'd-m-Y'))
+        ->setCellValue('I' . $rowIndex, date_format(date_create($item[8]), 'd-m-Y'))
+        ->setCellValue('J' . $rowIndex, $item[9]);
+    $rowIndex++;
+}
+
 
 // Save Excel File
 $excelFilePath = "tender_requests.xlsx";
@@ -68,7 +156,7 @@ $writer = new Xlsx($spreadsheet);
 $writer->save($excelFilePath);
 
 // === Generate PDF File ===
-$html = "<h3>Requested Tenders</h3><table border='1' cellpadding='5' cellspacing='0'>
+$html = "<h1>Requested Tenders</h1><table border='1' cellpadding='5' cellspacing='0'>
 <tr>
     <th>User Name</th><th>Firm Name</th><th>Mobile</th><th>Email</th>
     <th>Department</th><th>Tender ID</th><th>Status</th><th>Due Date</th><th>Requested Date</th>
@@ -83,7 +171,26 @@ foreach ($requestedTenders as $item) {
 }
 $html .= "</table>";
 
-$html .= "<h3>Allotted Tenders</h3><table border='1' cellpadding='5' cellspacing='0'>
+$html .= "<h1>Sent Tenders</h1><table border='1' cellpadding='5' cellspacing='0'>
+<tr>
+    <th>User Name</th><th>Firm Name</th><th>Mobile</th><th>Email</th>
+    <th>Department</th><th>Tender ID</th><th>Status</th><th>Due Date</th>
+    <th>Requested Date</th>
+</tr>";
+foreach ($sentTenders as $item) {
+    $html .= "<tr>
+        <td>{$item[0]}</td><td>{$item[1]}</td><td>{$item[2]}</td><td>{$item[3]}</td>
+        <td>{$item[4]}</td><td>{$item[5]}</td><td>{$item[6]}</td>
+        <td>" . date_format(date_create($item[7]), 'd-m-Y') . "</td>
+        <td>" . date_format(date_create($item[8]), 'd-m-Y') . "</td>
+        
+        
+    </tr>";
+}
+$html .= "</table>";
+
+
+$html .= "<h1>Allotted Tenders</h1><table border='1' cellpadding='5' cellspacing='0'>
 <tr>
     <th>User Name</th><th>Firm Name</th><th>Mobile</th><th>Email</th>
     <th>Department</th><th>Tender ID</th><th>Status</th><th>Due Date</th>
@@ -120,7 +227,7 @@ $mail->Port = getenv('SMTP_PORT');
 
 $mail->From = getenv('SMTP_USER_NAME');
 $mail->FromName = "Quote Tender";
-$mail->addAddress("quotetenderindia@gmail.com", "Recipient Name");
+$mail->addAddress("dkaur4597@gmail.com", "Recipient Name");
 
 $mail->isHTML(true);
 $mail->Subject = "List of All Tender Requests";

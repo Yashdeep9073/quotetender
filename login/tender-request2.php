@@ -89,6 +89,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
         #basic-btn2_length {
             padding: 10px !important;
         }
+        
     </style>
 </head>
 
@@ -173,7 +174,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
             </div>
 
             <div class="row">
-            <div class="col-md-6 col-xl-3">
+                <div class="col-md-6 col-xl-3">
                     <div class="card bg-c-blue order-card">
                         <div class="card-body">
                             <h6 class="text-white">Tender Request</h6>
@@ -233,7 +234,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                 // echo "<th>Mobile</th>";
                                 echo "<th>Tender ID</th>";
                                 echo "<th>Department</th>";
-                                // echo "<th>Add Date </th>";
+                                echo "<th>Add Date </th>";
                                 // echo "<th>Due Date</th>";
                                 // echo "<th>Due Date</th>";
                                 
@@ -248,7 +249,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
 
                                     echo "<tr class='record'>";
                                     echo "<td><div class='custom-control custom-checkbox'>
-                                    <input type='checkbox' class='custom-control-input request_checkbox' id='customCheck" . $count . "' data-request-id='" . $row['id'] . "'>
+                                    <input type='checkbox' style='margin-bottom:100px;' class='custom-control-input request_checkbox' id='customCheck" . $count . "' data-request-id='" . $row['id'] . "'>
                                     <label class='custom-control-label' for='customCheck" . $count . "'>" . $count . "</label>
                                     </div>
                                     </td>";
@@ -259,7 +260,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                     // echo "<td>" . $row['mobile'] . "</td>";
                                     echo "<td><a class='tender_id' href='tender-request3.php?tender_id=" . $row['tenderID'] . "'>" . $row['tenderID'] . "</a></td>";
                                     echo "<td>" . $row['department_name'] . "</td>";
-                                    // echo "<td>" . $row['created_at'] . "</td>";
+                                    echo "<td>" . $row['created_at'] . "</td>";
                                     // echo "<td>" . $row['due_date'] . "</td>";
                                     // if (!empty($row['file_name'])) {
                                     //     echo "<td>" . '<a href="../login/tender/' . $row['file_name'] . '" target="_blank" style="padding:6px 15.2px;" />View </a>' . "</br>";
@@ -277,7 +278,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                     echo "<td>";
                                     if ((in_array('All', $permissions)) || (in_array('Tender Request', $permissions)) || (in_array('Update Tenders', $permissions))) {
                                         echo "<a href='tender-edit.php?id=$res'>
-                                                    <button type='button' class='btn btn-warning'>
+                                                    <button type='button' class='btn btn-warning rounded-sm'>
                                                     <i class='feather icon-edit'></i> &nbsp;Update</button>
                                                     </a>";
                                     }
@@ -285,7 +286,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                     echo "<br/>";
                                     echo "<br/>";
                                     if ((in_array('All', $permissions)) || (in_array('Tender Request', $permissions)) || (in_array('Recycle Bin', $permissions))) {
-                                        echo "<a href='#' id='" . $row['id'] . "' class='recyclebutton btn btn-danger' title='Click To Delete'> 
+                                        echo "<a href='#' id='" . $row['id'] . "' class='recyclebutton btn btn-danger rounded-sm' title='Click To Delete'> 
                                                         <i class='feather icon-trash'></i>  &nbsp; Move to Bin
                                                         </a>";
                                     }
@@ -293,7 +294,8 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                     echo "</tr>";
                                     $count++;
                                 }
-                                echo "</tfoot>";
+                                echo "</tablebody>";
+                                echo "</tbody>";
                                 echo "</table>";
                                 ?>
                             </div>
@@ -462,7 +464,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
 
     </script>
 
-<!-- <script>
+    <!-- <script>
     $(document).on('click', '.tender_id', function (e) {
         e.preventDefault();
         const tender_id = $(this).text();
@@ -489,14 +491,14 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
 
 
 
-<script>
-    $(document).ready(function () {
-        setInterval(function () {
-            $("#new").load("load.php");
-            refresh();
-        }, 100);
-    });
-</script>
+    <script>
+        $(document).ready(function () {
+            setInterval(function () {
+                $("#new").load("load.php");
+                // refresh();
+            }, 100);
+        });
+    </script>
 
 
 

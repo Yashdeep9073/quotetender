@@ -38,10 +38,10 @@ if (isset($_POST['submit'])) {
     $section = $_POST['coutrycode'];
     $division_id = $_POST['statelist'];
     $sub_division_id = $_POST['city'];
-    $tentative_cost=$_POST['tentative_cost'];
+    $tentative_cost = $_POST['tentative_cost'];
     $autoEmail = $_POST['autoEmail'];
 
-    $unique_filename1=$unique_filename2=null;
+    $unique_filename1 = $unique_filename2 = null;
     if (!empty($_FILES["uploaded_file2"]["tmp_name"])) {
         $file_size2 = $_FILES["uploaded_file2"]["size"];
         if (isset($file_size2) && $file_size2 < 8 * 1024 * 1024) {
@@ -69,104 +69,104 @@ if (isset($_POST['submit'])) {
     }
 
     mysqli_select_db($db, DB_NAME);
-    if($fileUploaded1 == true || $fileUploaded2 == true){
-           
-            // Delete the old file
-            $query = "SELECT user_tender_requests.file_name , user_tender_requests.file_name2,user_tender_requests.tenderID  FROM user_tender_requests WHERE id='"  . $d . "'";
-            $result = mysqli_query($db, $query);
-            $row = mysqli_fetch_row($result);
-            if (!empty($row['0'])) {
-                $old = "tender/" . $row['0']; // Path to the old file
-                unlink($old);
-            }
+    if ($fileUploaded1 == true || $fileUploaded2 == true) {
 
-            if (!empty($row['1'])) {
-                $old = "tender/" . $row['1']; // Path to the old file
-                unlink($old);
-            }
-   
-            date_default_timezone_set('Asia/Kolkata');
+        // Delete the old file
+        $query = "SELECT user_tender_requests.file_name , user_tender_requests.file_name2,user_tender_requests.tenderID  FROM user_tender_requests WHERE id='" . $d . "'";
+        $result = mysqli_query($db, $query);
+        $row = mysqli_fetch_row($result);
+        if (!empty($row['0'])) {
+            $old = "tender/" . $row['0']; // Path to the old file
+            unlink($old);
+        }
 
-            $sent_at = date('Y-m-d H:i:s A');
+        if (!empty($row['1'])) {
+            $old = "tender/" . $row['1']; // Path to the old file
+            unlink($old);
+        }
 
-            $tender2 = $row['2'];
+        date_default_timezone_set('Asia/Kolkata');
 
-            mysqli_query($db, "UPDATE user_tender_requests set `tender_no` ='$tender', `reference_code`='$code',`tenderID`='$tender1', 
+        $sent_at = date('Y-m-d H:i:s');
+
+        $tender2 = $row['2'];
+
+        mysqli_query($db, "UPDATE user_tender_requests set `tender_no` ='$tender', `reference_code`='$code',`tenderID`='$tender1', 
             `tentative_cost`='$tentative_cost', `department_id`='$dept',`section_id`='$section',`sub_division_id`='$sub_division_id',`division_id`='$division_id',`name_of_work`='$work',
-            `file_name`='$unique_filename1',`file_name2`='$unique_filename2',`status`='Sent', `sent_at`='$sent_at' , `auto_quotation`='$autoEmail' WHERE `tenderID`='" . $tender2 ."' ");
+            `file_name`='$unique_filename1',`file_name2`='$unique_filename2',`status`='Sent', `sent_at`='$sent_at' , `auto_quotation`='$autoEmail' WHERE `tenderID`='" . $tender2 . "' ");
 
-            //auto quotation 
-            $autoEmailQuery = mysqli_query($db,"SELECT `auto_quotation` FROM user_tender_requests WHERE `id`= '"  . $d . "' ");
-            $autoEmailResult = mysqli_fetch_assoc($autoEmailQuery); 
-            $autoEmailResponse = $autoEmailResult["auto_quotation"];
+        //auto quotation 
+        $autoEmailQuery = mysqli_query($db, "SELECT `auto_quotation` FROM user_tender_requests WHERE `id`= '" . $d . "' ");
+        $autoEmailResult = mysqli_fetch_assoc($autoEmailQuery);
+        $autoEmailResponse = $autoEmailResult["auto_quotation"];
 
-            $stat = 1;
-            $re = base64_encode($stat);
-            
-            if($autoEmailResponse == 1){
-                $mail = new PHPMailer(true);
-    
-                    //Enable SMTP debugging.
-    
-                    $mail->SMTPDebug = 0;
-    
-                    //Set PHPMailer to use SMTP.
-    
-                    $mail->isSMTP();
-    
-                    //Set SMTP host name                      
-    
-                    $mail->Host = getenv('SMTP_HOST');
-    
-                    //Set this to true if SMTP host requires authentication to send email
-    
-                    $mail->SMTPAuth = true;
-    
-                    //Provide username and password
-    
-                    $mail->Username = getenv('SMTP_USER_NAME');
-    
-                    $mail->Password = getenv('SMTP_PASSCODE');
-    
-                    //If SMTP requires TLS encryption then set it
-    
-                    $mail->SMTPSecure = "ssl";
-    
-                    //Set TCP port to connect to
-    
-                    $mail->Port = getenv('SMTP_PORT');
-    
-                    $mail->From = getenv('SMTP_USER_NAME');
-    
-    
-                    $mail->FromName = "Quote Tender  ";
-                    $adminEmail = getenv('SMTP_USER_NAME');
-    
-                    $mail->addAddress($adminEmail);
-                    $mail->IsHTML(true);
-    
-                    // $membersQuery = "SELECT m.email_id,  m.name, ur.file_name, ur.file_name2, ur.tenderID, ur.id FROM user_tender_requests ur 
-                    // inner join members m on ur.member_id= m.member_id  WHERE ur.id='"  . $d . "'";
-    
-                    $membersQuery = "SELECT m.email_id,  m.name, ur.file_name, ur.file_name2, ur.tenderID, ur.id FROM user_tender_requests ur 
-                    inner join members m on ur.member_id= m.member_id  WHERE ur.auto_quotation = '1' AND ur.tenderID='" . $tender2 ."' ";
-                    $membersResult = mysqli_query($db, $membersQuery);
-                    while($memberData = mysqli_fetch_row($membersResult)){
-                        $mail->addAddress($memberData[0], "Recepient Name");
-                    
-                    
-                    $mail->Subject = "Tender Request Approved";
-                    
-                 // Adding primary attachment
-$mail->addAttachment($upload_directory . $memberData[2]);
+        $stat = 1;
+        $re = base64_encode($stat);
 
-// Adding secondary attachment if available
-if (!empty($memberData[3])) {
-    $mail->addAttachment($upload_directory . $memberData[3]);
-}
+        if ($autoEmailResponse == 1) {
+            $mail = new PHPMailer(true);
 
-// Email body
-$mail->Body = "
+            //Enable SMTP debugging.
+
+            $mail->SMTPDebug = 0;
+
+            //Set PHPMailer to use SMTP.
+
+            $mail->isSMTP();
+
+            //Set SMTP host name                      
+
+            $mail->Host = getenv('SMTP_HOST');
+
+            //Set this to true if SMTP host requires authentication to send email
+
+            $mail->SMTPAuth = true;
+
+            //Provide username and password
+
+            $mail->Username = getenv('SMTP_USER_NAME');
+
+            $mail->Password = getenv('SMTP_PASSCODE');
+
+            //If SMTP requires TLS encryption then set it
+
+            $mail->SMTPSecure = "ssl";
+
+            //Set TCP port to connect to
+
+            $mail->Port = getenv('SMTP_PORT');
+
+            $mail->From = getenv('SMTP_USER_NAME');
+
+
+            $mail->FromName = "Quote Tender  ";
+            $adminEmail = getenv('SMTP_USER_NAME');
+
+            $mail->addAddress($adminEmail);
+            $mail->IsHTML(true);
+
+            // $membersQuery = "SELECT m.email_id,  m.name, ur.file_name, ur.file_name2, ur.tenderID, ur.id FROM user_tender_requests ur 
+            // inner join members m on ur.member_id= m.member_id  WHERE ur.id='"  . $d . "'";
+
+            $membersQuery = "SELECT m.email_id,  m.name, ur.file_name, ur.file_name2, ur.tenderID, ur.id FROM user_tender_requests ur 
+                    inner join members m on ur.member_id= m.member_id  WHERE ur.auto_quotation = '1' AND ur.tenderID='" . $tender2 . "' ";
+            $membersResult = mysqli_query($db, $membersQuery);
+            while ($memberData = mysqli_fetch_row($membersResult)) {
+                $mail->addAddress($memberData[0], "Recepient Name");
+
+
+                $mail->Subject = "Tender Request Approved";
+
+                // Adding primary attachment
+                $mail->addAttachment($upload_directory . $memberData[2]);
+
+                // Adding secondary attachment if available
+                if (!empty($memberData[3])) {
+                    $mail->addAttachment($upload_directory . $memberData[3]);
+                }
+
+                // Email body
+                $mail->Body = "
 <div style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
     <div style='text-align: center; margin-bottom: 20px;'>
         <img src='https://www.quotetender.in/assets/images/logo/logo.png' alt='Quote Tender Logo' style='max-width: 200px; height: auto;'>
@@ -191,38 +191,38 @@ $mail->Body = "
 </div>";
 
 
-                }
-                    if (!$mail->send()) {
-    
-                        echo "Mailer Error: " . $mail->ErrorInfo;
-                    }
-    
-                    echo ("<SCRIPT LANGUAGE='JavaScript'>
-                    window.location.href='tender-request.php?status=$re';
-                    </SCRIPT>");
-            }else{
-                echo ("<SCRIPT LANGUAGE='JavaScript'>
-                    window.location.href='tender-request.php?status=$re';
-                    </SCRIPT>");
+            }
+            if (!$mail->send()) {
+
+                echo "Mailer Error: " . $mail->ErrorInfo;
             }
 
-
+            echo ("<SCRIPT LANGUAGE='JavaScript'>
+                    window.location.href='tender-request2.php?status=$re';
+                    </SCRIPT>");
         } else {
-            $msg = "<div class='alert alert-danger alert-dismissible fade show' role='alert' style='font-size:16px;' id='goldmessage'>
+            echo ("<SCRIPT LANGUAGE='JavaScript'>
+                    window.location.href='tender-request2.php?status=$re';
+                    </SCRIPT>");
+        }
+
+
+    } else {
+        $msg = "<div class='alert alert-danger alert-dismissible fade show' role='alert' style='font-size:16px;' id='goldmessage'>
         <strong><i class='feather icon-check'></i>Error !</strong> File size exceeds the limit of 3MB.
         <button type='button' class='close' data-dismiss='alert' aria-label='Close'>
           <span aria-hidden='true'>&times;</span>
         </button>
       </div>";
-        }
     }
+}
 
 
 
 $requestQuery = mysqli_query($db, "SELECT department.department_name, ur.file_name, ur.tenderID, ur.id 
 FROM user_tender_requests ur 
 inner join members m on ur.member_id= m.member_id
-inner join department on ur.department_id = department.department_id where ur.id='"  . $d . "'");
+inner join department on ur.department_id = department.department_id where ur.id='" . $d . "'");
 
 $requestData = mysqli_fetch_row($requestQuery);
 
@@ -264,7 +264,7 @@ $sections = mysqli_query($db, $sectionQuery);
                 type: "POST",
                 url: "get_state.php",
                 data: 'coutrycode=' + val,
-                success: function(data) {
+                success: function (data) {
                     $("#statelist").html(data);
                 }
             });
@@ -276,7 +276,7 @@ $sections = mysqli_query($db, $sectionQuery);
                 type: "POST",
                 url: "get_city.php",
                 data: 'statecode=' + val,
-                success: function(data) {
+                success: function (data) {
                     $("#city").html(data);
                 }
             });
@@ -320,7 +320,8 @@ $sections = mysqli_query($db, $sectionQuery);
                     </div>
                 </li>
                 <li class="nav-item">
-                    <a href="#!" class="full-screen" onClick="javascript:toggleFullScreen()"><i class="feather icon-maximize"></i></a>
+                    <a href="#!" class="full-screen" onClick="javascript:toggleFullScreen()"><i
+                            class="feather icon-maximize"></i></a>
                 </li>
             </ul>
 
@@ -376,43 +377,51 @@ $sections = mysqli_query($db, $sectionQuery);
                     <div class="card">
 
 
-                            <?php
-                                if (isset($msg)) {
-                                    echo $msg;
-                                }
-                                ?>
+                        <?php
+                        if (isset($msg)) {
+                            echo $msg;
+                        }
+                        ?>
 
                         <div class="card-header table-card-header">
-                            <form class="contact-us" method="post" action="" enctype="multipart/form-data" autocomplete="off">
+                            <form class="contact-us" method="post" action="" enctype="multipart/form-data"
+                                autocomplete="off">
                                 <div class=" ">
                                     <!-- Text input-->
                                     <div class="row">
                                         <div class="col-xl-6 col-lg-6 col-md-4 col-sm-12 col-12">
                                             <div class="form-group">File1*
                                                 <label class="sr-only control-label" for="name">File1*</label>
-                                                <input name="uploaded_file1" type="file" class="form-control input-md" required accept="application/pdf,application/vnd.ms-excel">
+                                                <input name="uploaded_file1" type="file" class="form-control input-md"
+                                                    required accept="application/pdf,application/vnd.ms-excel">
                                             </div>
                                         </div>
                                         <div class="col-xl-6 col-lg-6 col-md-4 col-sm-12 col-12">
                                             <div class="form-group">File2*
                                                 <label class="sr-only control-label" for="name">File2*</label>
-                                                <input name="uploaded_file2" type="file" class="form-control input-md" accept="application/pdf,application/vnd.ms-excel">
+                                                <input name="uploaded_file2" type="file" class="form-control input-md"
+                                                    accept="application/pdf,application/vnd.ms-excel">
                                             </div>
                                         </div>
                                         <div class="col-xl-6 col-lg-6 col-md-4 col-sm-12 col-12">
                                             <div class="form-group">CA No*
-                                                <label class="sr-only control-label" for="name">Firm Name<span class=" ">
+                                                <label class="sr-only control-label" for="name">Firm Name<span
+                                                        class=" ">
                                                     </span></label>
-                                                <input id="tenderno" name="tenderno" type="text" placeholder=" Enter CA No *" class="form-control input-md" required value="">
+                                                <input id="tenderno" name="tenderno" type="text"
+                                                    placeholder=" Enter CA No *" class="form-control input-md" required
+                                                    value="">
                                             </div>
                                         </div>
 
 
                                         <div class="col-xl-6 col-lg-6 col-md-4 col-sm-12 col-12">
                                             <div class="form-group">Reference Code*
-                                                <label class="sr-only control-label" for="name">Reference Code*<span class=" ">
+                                                <label class="sr-only control-label" for="name">Reference Code*<span
+                                                        class=" ">
                                                     </span></label>
-                                                <input id="code" name="code" type="text" placeholder=" Enter Code *" class="form-control input-md" required value="">
+                                                <input id="code" name="code" type="text" placeholder=" Enter Code *"
+                                                    class="form-control input-md" required value="">
                                             </div>
                                         </div>
 
@@ -421,34 +430,42 @@ $sections = mysqli_query($db, $sectionQuery);
                                             <div class="form-group">Name of Work*
                                                 <label class="sr-only control-label" for="name">Email<span class=" ">
                                                     </span></label>
-                                                <input id="work" name="work" type="work" class="form-control input-md" required placeholder="Name of the work" value="">
+                                                <input id="work" name="work" type="work" class="form-control input-md"
+                                                    required placeholder="Name of the work" value="">
                                             </div>
                                         </div>
 
                                         <div class="col-xl-6 col-lg-6 col-md-4 col-sm-12 col-12">
                                             <div class="form-group">Tender ID*
-                                                <label class="sr-only control-label" for="name">Tender ID<span class=" ">
+                                                <label class="sr-only control-label" for="name">Tender ID<span
+                                                        class=" ">
                                                     </span></label>
-                                                <input id="tender" name="tender" type="text" class="form-control input-md" required placeholder="Enter tender id" value="<?php echo $requestData[2]; ?>">
+                                                <input id="tender" name="tender" type="text"
+                                                    class="form-control input-md" required placeholder="Enter tender id"
+                                                    value="<?php echo $requestData[2]; ?>">
                                             </div>
                                         </div>
                                         <div class="col-xl-6 col-lg-6 col-md-4 col-sm-12 col-12">
                                             <div class="form-group">Tentative Cost*
-                                                <label class="sr-only control-label" for="name">Tentative Cost<span class=" ">
+                                                <label class="sr-only control-label" for="name">Tentative Cost<span
+                                                        class=" ">
                                                     </span></label>
-                                                <input id="tentative_cost" name="tentative_cost" type="number" min="0" class="form-control input-md" required placeholder="Enter Tentative Cost" value="">
+                                                <input id="tentative_cost" name="tentative_cost" type="number" min="0"
+                                                    class="form-control input-md" required
+                                                    placeholder="Enter Tentative Cost" value="">
                                             </div>
                                         </div>
 
                                         <div class="col-xl-6 col-lg-6 col-md-4 col-sm-12 col-12">
                                             <div class="form-group">Departments*
-                                                <label class="sr-only control-label" for="name">Departments*<span class=" ">
+                                                <label class="sr-only control-label" for="name">Departments*<span
+                                                        class=" ">
                                                     </span></label>
                                                 <?php
 
                                                 echo "<select class='form-control' name='department' required>";
                                                 while ($row = mysqli_fetch_row($departments)) {
-                                                    $selected = $requestData['0'] ==  $row['1'] ? "selected=''" : '';
+                                                    $selected = $requestData['0'] == $row['1'] ? "selected=''" : '';
 
                                                     echo "<option value='" . $row['0'] . "' " . $selected . ">" . $row['1'] . "</option>";
                                                 }
@@ -461,7 +478,8 @@ $sections = mysqli_query($db, $sectionQuery);
                                             <div class="form-group"> Section
                                                 <label class="sr-only control-label" for="name">Section<span class=" ">
                                                     </span></label>
-                                                <select onChange="getstate(this.value);" name="coutrycode" id="section" class="form-control" required>
+                                                <select onChange="getstate(this.value);" name="coutrycode" id="section"
+                                                    class="form-control" required>
                                                     <option value="">Select Section</option>
                                                     <?php
                                                     while ($row = mysqli_fetch_row($sections)) {
@@ -480,7 +498,8 @@ $sections = mysqli_query($db, $sectionQuery);
                                                 <label class="sr-only control-label" for="name">Section<span class=" ">
                                                     </span></label>
 
-                                                <select class='form-control' name="statelist" id="statelist" onChange="getcity(this.value);">
+                                                <select class='form-control' name="statelist" id="statelist"
+                                                    onChange="getcity(this.value);">
                                                     <option value=''>Select Division </option>
 
                                                 </select>
@@ -497,27 +516,27 @@ $sections = mysqli_query($db, $sectionQuery);
                                                 </select>
                                             </div>
                                         </div>
-                                        
-                                            <div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 col-12">
+
+                                        <div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 col-12">
 
                                             <div class="form-group"> Send Quotation Auotmatically
-                                                <select name="autoEmail" id="auto-email" class="form-control" >
-                                                    
+                                                <select name="autoEmail" id="auto-email" class="form-control">
+
                                                     <option value="">Select</option>
                                                     <option value="1" required>Yes</option>
-                                                    <option value="0"required>No</option>
-                                                    
+                                                    <option value="0" required>No</option>
+
                                                 </select>
                                             </div>
                                         </div>
-                                        
+
                                         <!-- Text input-->
 
                                         <!-- Button -->
                                         <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
 
 
-                                            <button type="submit" class="btn btn-secondary" name="submit" id="submit">
+                                            <button type="submit" class="btn btn-secondary rounded-sm" name="submit" id="submit">
                                                 <i class="feather icon-save lg"></i>&nbsp; Update
                                             </button>
 

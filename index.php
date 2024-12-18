@@ -14,7 +14,7 @@ use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
 date_default_timezone_set('Asia/Kolkata');
-$sent_at = date('Y-m-d H:i:s A');
+$sent_at = date('Y-m-d H:i:s');
 
 // Register user
 if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['submit'])) {
@@ -57,7 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['submit'])) {
             $email = $row[4];
             $name_user = $row[1];
 
-            $_SESSION['user_name'] = $name_use;
+            $_SESSION['user_name'] = $name_user;
             $member_id = $row[0];
             $pendingRequests = $row[12] - 1;
 

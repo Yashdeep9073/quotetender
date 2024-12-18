@@ -287,6 +287,18 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
             // if($allowedAction=='all'){
             
             echo '<div class="row">';
+            echo '
+            <div class="col-md-6 col-xl-3">
+                    <div class="card bg-c-green order-card">
+                        <div class="card-body">
+                            <h6 class="text-white">Sent Tenders</h6>
+                            <h2 class="text-right text-white"><i
+                                    class="feather icon-message-square float-left"></i><span id="total"></span></h2>
+
+                        </div>
+                    </div>
+                </div>
+            ';
             echo '<div class="col-sm-12">';
             echo '<div class="card">';
             echo '<div class="card-body">';
@@ -309,7 +321,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
             //        </button>
             //    </div>
             // </div>";
-
+            
             echo "</div> <br />";
             // echo '<div id="contentArea">';
             // // Example Content to Search
@@ -317,7 +329,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
             // // echo '<p>Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.</p>';
             // // echo '<p>Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia.</p>';
             // echo '</div>';
-
+            
             echo '</div>';
             echo '</div>';
             echo '</div>';
@@ -327,153 +339,153 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
             <?php
             // $_count = 1;
             // foreach ($tenders2 as $tenderID => $tenderRequests) { ?>
-                <div class="row">
-                    <div class="col-sm-12">
-                        <div class="card">
-                            <div class="card-header table-card-header">
-                            </div>
-                            <div class="card-body">
-                                <div class="dt-responsive table-responsive">
-                                    <br />
+            <div class="row">
+                <div class="col-sm-12">
+                    <div class="card">
+                        <div class="card-header table-card-header">
+                        </div>
+                        <div class="card-body">
+                            <div class="dt-responsive table-responsive">
+                                <br />
 
-                                    <?php
+                                <?php
 
 
-                                    echo '<table id="basic-btn" class="table table-striped table-bordered nowrap">';
-                                    echo "<thead>";
-                                    echo "<tr class='table-success thead-light'>";
-                                    echo "<th colspan='20' class='text-center'><h4 class='text-light'>S.NO : " . "   Tender ID : <span class='text-light'>" . $tenderID . "</span></h4></th>";
-                                    echo "</tr>";
-                                    echo "<tr>";
-                                    echo "<th>SNO</th>";
-                                    echo "<th>User</th>";
-                                    echo "<th>Firm Name</th>";
-                                    echo "<th>Mobile</th>";
-                                    echo "<th>Ref. Code </th>";
-                                    echo "<th>Tender No</th>";
-                                    echo "<th>Department</th>";
-                                    echo "<th>Section</th>";
-                                    echo "<th>Division</th>";
-                                    echo "<th>Sub-division</th>";
-                                    echo "<th>Work Name</th>";
-                                    echo "<th>Tentative Cost</th>";
-                                    echo "<th>Due Date</th>";
-                                    echo "<th>Date Added</th>";
-                                    echo "<th>TIME Added</th>";
-                                    echo "<th>Sent Date</th>";
-                                    if ($allowedAction == 'all' || $allowedAction == 'update') {
-                                        echo "<th>Edit</th>";
-                                        echo "<th>Email Sent Status</th>";
-                                        echo "<th>Action</th>";
-                                    }
+                                echo '<table id="basic-btn" class="table table-striped table-bordered nowrap">';
+                                echo "<thead>";
+                                echo "<tr class='table-success thead-light'>";
+                                echo "<th colspan='20' class='text-center'><h4 class='text-light'>S.NO : " . "   Tender ID : <span class='text-light'>" . $tenderID . "</span></h4></th>";
+                                echo "</tr>";
+                                echo "<tr>";
+                                echo "<th>SNO</th>";
+                                echo "<th>User</th>";
+                                echo "<th>Firm Name</th>";
+                                echo "<th>Mobile</th>";
+                                echo "<th>Ref. Code </th>";
+                                echo "<th>Tender No</th>";
+                                echo "<th>Department</th>";
+                                echo "<th>Section</th>";
+                                echo "<th>Division</th>";
+                                echo "<th>Sub-division</th>";
+                                echo "<th>Work Name</th>";
+                                echo "<th>Tentative Cost</th>";
+                                echo "<th>Due Date</th>";
+                                echo "<th>Date Added</th>";
+                                echo "<th>TIME Added</th>";
+                                echo "<th>Sent Date</th>";
+                                if ($allowedAction == 'all' || $allowedAction == 'update') {
+                                    echo "<th>Edit</th>";
+                                    echo "<th>Email Sent Status</th>";
+                                    echo "<th>Action</th>";
+                                }
 
-                                    echo "</tr>";
-                                    echo "</thead>";
-                                    ?>
+                                echo "</tr>";
+                                echo "</thead>";
+                                ?>
 
-                                    <?php
-                                    $count = 1;
-                                    // foreach ($tenderRequests as $row) {
-                                        echo "<tbody>";
-                                        while ($row = mysqli_fetch_assoc($result2)) {
-                                        echo "<tr class='record'>";
-                                        echo "<td>
+                                <?php
+                                $count = 1;
+                                // foreach ($tenderRequests as $row) {
+                                echo "<tbody>";
+                                while ($row = mysqli_fetch_assoc($result2)) {
+                                    echo "<tr class='record'>";
+                                    echo "<td>
                                     <div class='custom-control custom-checkbox'>
                                     <input type='checkbox' class='custom-control-input request_checkbox' id='customCheck" . $row['id'] . "'  data-request-id='" . $row['id'] . "'>
                                     <label class='custom-control-label' for='customCheck" . $row['id'] . "'>" . $count . "</label>
                                     </div>
                                     </td>";
-                                        echo "<td> <span style='color:red;'>" . $row['name'] . "</td>";
-                                        echo "<td> <span style='color:green;'> " . $row['firm_name'] . "</td>";
-                                        echo "<td>" . $row['mobile'] . "</td>";
-                                        // echo "<td>" . $row['tenderID'] . "</td>";
-                                        echo "<td>" . $row['reference_code'] . "</td>";
-                                        echo "<td>" . $row['tender_no'] . "</td>";
-                                        echo "<td>" . $row['department_name'] . "</td>";
-                                        echo "<td>" . $row['section_name'] . "</td>";
-                                        echo "<td>" . $row['division_name'] . "</td>";
-                                        echo "<td>" . $row['subdivision'] . "</td>";
-                                        echo "<td style='white-space:pre-wrap; word-wrap:break-word; max-width:100rem;'>" . $row['name_of_work'] . "</td>";
+                                    echo "<td> <span style='color:red;'>" . $row['name'] . "</td>";
+                                    echo "<td> <span style='color:green;'> " . $row['firm_name'] . "</td>";
+                                    echo "<td>" . $row['mobile'] . "</td>";
+                                    // echo "<td>" . $row['tenderID'] . "</td>";
+                                    echo "<td>" . $row['reference_code'] . "</td>";
+                                    echo "<td>" . $row['tender_no'] . "</td>";
+                                    echo "<td>" . $row['department_name'] . "</td>";
+                                    echo "<td>" . $row['section_name'] . "</td>";
+                                    echo "<td>" . $row['division_name'] . "</td>";
+                                    echo "<td>" . $row['subdivision'] . "</td>";
+                                    echo "<td style='white-space:pre-wrap; word-wrap:break-word; max-width:100rem;'>" . $row['name_of_work'] . "</td>";
 
-                                        if ($row['tentative_cost']) {
-                                            echo "<td>" . $row['tentative_cost'] . "</td>";
-                                        } else {
-                                            echo "<td>-</td>";
-                                        }
-
-                                        echo "<td>" . date_format(date_create($row['due_date']), "d-m-Y ") . "</td>";
-                                        $originalDate = $row['created_at'];
-                                        $timestamp = strtotime($originalDate);
-                                        $istDate = date('d-m-Y', $timestamp);
-                                        $istTime = date('h:i A', $timestamp + 5.5 * 3600);
-                                        echo "<td>" . $istDate . "</td>";
-                                        echo "<td>" . $istTime . "</td>";
-
-                                        echo "<td>" . date_format(date_create($row['sent_at']), "d-m-Y ") . "<br/>" . '<a href="../login/tender/' . $row['file_name'] . '"  target="_blank"/>View file 1 </a> </br> ';
-
-                                        if (!empty($row['file_name2'])) {
-                                            echo '<a href="../login/tender/' . $row['file_name2'] . '" target="_blank"/>View File 2 </a>' . "</td>";
-                                        } else {
-                                            echo "</td>";
-                                        }
-
-
-                                        $res = $row["id"];
-                                        $res = base64_encode($res);
-
-
-                                        if ($allowedAction == 'all' || $allowedAction == 'update') {
-                                            echo "<td>  <a href='sent-edit.php?id=$res'><button type='button' class='btn btn-warning'><i class='feather icon-edit'></i>
-                                        &nbsp;Alot</button></a>  &nbsp;";
-                                        }
-
-                                        echo "<br/>";
-                                        echo "<br/>";
-
-                                        if ((in_array('All', $permissions)) || in_array('Recycle Bin', $permissions)) {
-                                            echo "<a href='#' id='" . $row['id'] . "'class='recyclebutton btn btn-danger' title='Click To Delete'> 
-                                        <i class='feather icon-trash'></i>  &nbsp; Move to Bin</a></td>";
-                                        }
-                                        if ($row['auto_quotation'] != 1) {
-                                            if (!empty($row['email_sent_date']) && strtotime($row['email_sent_date'])) {
-                                                $originalDate2 = $row['email_sent_date'];
-                                                $timestamp2 = strtotime($originalDate2);
-                                                $istDate2 = date('d-m-Y', $timestamp2);
-                                                $istTime2 = date('h:i A', $timestamp2);
-
-                                                echo "<td><p>" . $istDate2 . " " . $istTime2 . "</p></td>";
-                                            } else {
-                                                // Placeholder if the email_sent_date is not set or invalid
-                                                echo "<td><p class='text-warning'>*Please Send Email</p></td>";
-                                            }
-
-                                            echo "<td>  
-                                            <a href='#'><button type='button' id='" . $row['id'] . "' class= 'mail btn btn-success'>
-                                            <i class='feather icon-mail'></i>&nbsp;Mail Send</button></a>  &nbsp;";
-                                            echo "<br/><br/>";
-                                            echo "</td>";
-                                        } else {
-                                            echo "<td><p class=''><i class='feather icon-repeat'></i>&nbsp;Auto Email ON</p></td>";
-                                            echo "<td>  
-                                            <a href='#'><button type='button' id='" . $row['id'] . "' class= 'mail btn btn-success' disabled>
-                                            <i class='feather icon-mail'></i>&nbsp;Mail Send</button></a>  &nbsp;";
-                                            echo "<br/><br/>";
-                                            echo "</td>";
-                                        }
-
-                                        echo "</tr>";
-                                        $count++;
+                                    if ($row['tentative_cost']) {
+                                        echo "<td>" . $row['tentative_cost'] . "</td>";
+                                    } else {
+                                        echo "<td>-</td>";
                                     }
-                                    echo "</tfoot>";
-                                    echo "</table>";
-                                    ?>
-                                </div>
+
+                                    echo "<td>" . date_format(date_create($row['due_date']), "d-m-Y ") . "</td>";
+                                    $originalDate = $row['created_at'];
+                                    $timestamp = strtotime($originalDate);
+                                    $istDate = date('d-m-Y', $timestamp);
+                                    $istTime = date('h:i A', $timestamp + 5.5 * 3600);
+                                    echo "<td>" . $istDate . "</td>";
+                                    echo "<td>" . $istTime . "</td>";
+
+                                    echo "<td>" . date_format(date_create($row['sent_at']), "d-m-Y ") . "<br/>" . '<a href="../login/tender/' . $row['file_name'] . '"  target="_blank"/>View file 1 </a> </br> ';
+
+                                    if (!empty($row['file_name2'])) {
+                                        echo '<a href="../login/tender/' . $row['file_name2'] . '" target="_blank"/>View File 2 </a>' . "</td>";
+                                    } else {
+                                        echo "</td>";
+                                    }
+
+
+                                    $res = $row["id"];
+                                    $res = base64_encode($res);
+
+
+                                    if ($allowedAction == 'all' || $allowedAction == 'update') {
+                                        echo "<td>  <a href='sent-edit.php?id=$res'><button type='button' class='btn btn-warning rounded-sm'><i class='feather icon-edit'></i>
+                                        &nbsp;Alot</button></a>  &nbsp;";
+                                    }
+
+                                    echo "<br/>";
+                                    echo "<br/>";
+
+                                    if ((in_array('All', $permissions)) || in_array('Recycle Bin', $permissions)) {
+                                        echo "<a href='#' id='" . $row['id'] . "'class='recyclebutton btn btn-danger rounded-sm' title='Click To Delete'> 
+                                        <i class='feather icon-trash'></i>  &nbsp; Move to Bin</a></td>";
+                                    }
+                                    if ($row['auto_quotation'] != 1) {
+                                        if (!empty($row['email_sent_date']) && strtotime($row['email_sent_date'])) {
+                                            $originalDate2 = $row['email_sent_date'];
+                                            $timestamp2 = strtotime($originalDate2);
+                                            $istDate2 = date('d-m-Y', $timestamp2);
+                                            $istTime2 = date('h:i A', $timestamp2);
+
+                                            echo "<td><p>" . $istDate2 . " " . $istTime2 . "</p></td>";
+                                        } else {
+                                            // Placeholder if the email_sent_date is not set or invalid
+                                            echo "<td><p class='text-warning'>*Please Send Email</p></td>";
+                                        }
+
+                                        echo "<td>  
+                                            <a href='#'><button type='button' id='" . $row['id'] . "' class= 'mail btn btn-success rounded-sm'>
+                                            <i class='feather icon-mail'></i>&nbsp;Mail Send</button></a>  &nbsp;";
+                                        echo "<br/><br/>";
+                                        echo "</td>";
+                                    } else {
+                                        echo "<td><p class=''><i class='feather icon-repeat'></i>&nbsp;Auto Email ON</p></td>";
+                                        echo "<td>  
+                                            <a href='#'><button type='button' id='" . $row['id'] . "' class= 'mail btn btn-success' rounded-sm disabled>
+                                            <i class='feather icon-mail'></i>&nbsp;Mail Send</button></a>  &nbsp;";
+                                        echo "<br/><br/>";
+                                        echo "</td>";
+                                    }
+
+                                    echo "</tr>";
+                                    $count++;
+                                }
+                                echo "</tfoot>";
+                                echo "</table>";
+                                ?>
                             </div>
                         </div>
                     </div>
                 </div>
-                <?php
-                // $_count++;
+            </div>
+            <?php
+            // $_count++;
             //} ?>
         </div>
     </section>
@@ -706,6 +718,18 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
             });
         });
     </script>
+
+
+    <script>
+        $(document).ready(function () {
+            setInterval(function () {
+                $("#total").load("load-total.php");
+                refresh();
+            }, 100);
+        });
+    </script>
+
+
 
 
 </body>

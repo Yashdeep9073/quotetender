@@ -18,50 +18,51 @@ inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_i
 $adminPermissionResult = mysqli_query($db, $adminPermissionQuery);
 $allowDelete = mysqli_num_rows($adminPermissionResult) > 0 ? true : false;
 
-$queryMain = "SELECT 
+$adminID = $_SESSION['login_user_id'];
+$adminPermissionQuery = "SELECT nm.title FROM admin_permissions ap 
+inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_id='" . $adminID . "'";
+$adminPermissionResult = mysqli_query($db, $adminPermissionQuery);
+$userPermissions2 = [];
+while ($row = mysqli_fetch_row($adminPermissionResult)) {
+    $userPermissions2[] = $row[0];
+}
+$allowedAction = !in_array('All', $userPermissions2) && in_array('Update Tenders', $userPermissions2) ? 'update' :
+    (!in_array('All', $userPermissions2) && in_array('View Tenders', $userPermissions2) ? 'view' : 'all');
+
+
+    $queryMain = "SELECT 
+    ur.id, 
     m.name, 
+    m.member_id, 
     m.firm_name, 
     m.mobile, 
-    ur.tender_no, 
-    dept.department_name, 
-    ur.name_of_work,
+    m.email_id, 
+    department.department_name, 
     ur.due_date, 
-    ur.created_at, 
-    ur.sent_at, 
     ur.file_name, 
     ur.tenderID, 
-    ur.id, 
-    ur.reference_code, 
-    ur.file_name2, 
-    ur.tentative_cost, 
-    ur.section_id, 
-    ur.division_id,
-    MAX(s.section_name) AS section_name,
-    MAX(dv.division_name) AS division_name,
-    MAX(sd.subdivision) AS subdivision,
-    ur.auto_quotation,
-    ur.email_sent_date
+    ur.created_at, 
+    ur.file_name2 
 FROM 
     user_tender_requests ur
 INNER JOIN 
     members m ON ur.member_id = m.member_id
 INNER JOIN 
-    department dept ON ur.department_id = dept.department_id
+    department ON ur.department_id = department.department_id
 INNER JOIN 
-    section s ON ur.section_id = s.section_id
-INNER JOIN 
-    division dv ON ur.section_id = dv.section_id
-INNER JOIN
-    sub_division sd ON ur.division_id = sd.division_id
-WHERE 
-    ur.status = 'Sent' AND ur.delete_tender = '0'
-GROUP BY 
-    ur.id
+    (
+        SELECT MIN(id) AS min_id, tenderID
+        FROM user_tender_requests
+        WHERE status = 'Sent' AND delete_tender = '0'
+        GROUP BY tenderID
+    ) AS unique_tenders ON ur.id = unique_tenders.min_id
 ORDER BY 
-    NOW() >= CAST(ur.sent_at AS DATE), 
-    CAST(ur.sent_at AS DATE) ASC, 
-    ABS(DATEDIFF(NOW(), CAST(ur.sent_at AS DATE)));
+    NOW() >= CAST(ur.created_at AS DATE), 
+    CAST(ur.created_at AS DATE) ASC, 
+    ABS(DATEDIFF(NOW(), CAST(ur.created_at AS DATE)));
 ";
+
+
 
 $resultMain = mysqli_query($db, $queryMain);
 
@@ -83,7 +84,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
 <meta http-equiv="content-type" content="text/html;charset=UTF-8" />
 
 <head>
-    <title>Tender Request 2</title>
+    <title>Sent Tender 2</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimal-ui">
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
@@ -172,7 +173,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                     <div class="row align-items-center">
                         <div class="col-md-12">
                             <div class="page-header-title">
-                                <h5 class="m-b-10">Tender Request
+                                <h5 class="m-b-10">Sent Tender
                                 </h5>
                             </div>
                             <ul class="breadcrumb">
@@ -186,7 +187,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
             </div>
 
             <div class="row">
-            <div class="col-md-6 col-xl-3">
+                <div class="col-md-6 col-xl-3">
                     <div class="card bg-c-green order-card">
                         <div class="card-body">
                             <h6 class="text-white">Sent Tenders</h6>
@@ -246,7 +247,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                 // echo "<th>Mobile</th>";
                                 echo "<th>Tender ID</th>";
                                 echo "<th>Department</th>";
-                                // echo "<th>Add Date </th>";
+                                echo "<th>Add Date </th>";
                                 // echo "<th>Due Date</th>";
                                 // echo "<th>Due Date</th>";
                                 
@@ -272,7 +273,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                     // echo "<td>" . $row['mobile'] . "</td>";
                                     echo "<td><a class='tender_id' href='sent-tender3.php?tender_id=" . $row['tenderID'] . "'>" . $row['tenderID'] . "</a></td>";
                                     echo "<td>" . $row['department_name'] . "</td>";
-                                    // echo "<td>" . $row['created_at'] . "</td>";
+                                    echo "<td>" . $row['created_at'] . "</td>";
                                     // echo "<td>" . $row['due_date'] . "</td>";
                                     // if (!empty($row['file_name'])) {
                                     //     echo "<td>" . '<a href="../login/tender/' . $row['file_name'] . '" target="_blank" style="padding:6px 15.2px;" />View </a>' . "</br>";
@@ -287,22 +288,18 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                     $res = $row['id'];
                                     $res = base64_encode($res);
 
-                                    echo "<td>";
-                                    if ((in_array('All', $permissions)) || (in_array('Tender Request', $permissions)) || (in_array('Update Tenders', $permissions))) {
-                                        echo "<a href='tender-edit.php?id=$res'>
-                                                    <button type='button' class='btn btn-warning'>
-                                                    <i class='feather icon-edit'></i> &nbsp;Update</button>
-                                                    </a>";
+                                    if ($allowedAction == 'all' || $allowedAction == 'update') {
+                                        echo "<td>  <a href='sent-edit.php?id=$res'><button type='button' class='btn btn-warning rounded-sm'><i class='feather icon-edit'></i>
+                                    &nbsp;Alot</button></a>  &nbsp;";
                                     }
 
                                     echo "<br/>";
                                     echo "<br/>";
-                                    if ((in_array('All', $permissions)) || (in_array('Tender Request', $permissions)) || (in_array('Recycle Bin', $permissions))) {
-                                        echo "<a href='#' id='" . $row['id'] . "' class='recyclebutton btn btn-danger' title='Click To Delete'> 
-                                                        <i class='feather icon-trash'></i>  &nbsp; Move to Bin
-                                                        </a>";
+
+                                    if ((in_array('All', $permissions)) || in_array('Recycle Bin', $permissions)) {
+                                        echo "<a href='#' id='" . $row['id'] . "'class='recyclebutton btn btn-danger rounded-sm' title='Click To Delete'> 
+                                    <i class='feather icon-trash'></i>  &nbsp; Move to Bin</a></td>";
                                     }
-                                    echo "</td>";
                                     echo "</tr>";
                                     $count++;
                                 }
@@ -475,7 +472,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
 
     </script>
 
-<!-- <script>
+    <!-- <script>
     $(document).on('click', '.tender_id', function (e) {
         e.preventDefault();
         const tender_id = $(this).text();
@@ -502,14 +499,14 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
 
 
 
-<script>
-    $(document).ready(function () {
-        setInterval(function () {
-            $("#total").load("load-total.php");
-            refresh();
-        }, 100);
-    });
-</script>
+    <script>
+        $(document).ready(function () {
+            setInterval(function () {
+                $("#total").load("load-total.php");
+                refresh();
+            }, 100);
+        });
+    </script>
 
 
 

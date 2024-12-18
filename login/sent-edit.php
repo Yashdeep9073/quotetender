@@ -24,8 +24,7 @@ $d = base64_decode($en);
 
 if (isset($_POST['submit'])) {
     $user = $_POST['user'];
-    $days = $_POST['day'];
-    //     // DEBUG
+    $days = $_POST['day'] ?? 0;    
     // echo"<pre>";
     // print_r($_POST);
 
@@ -42,7 +41,7 @@ if (isset($_POST['submit'])) {
 
         mysqli_query($db, $addMember);
 
-        $newMemberQuery = "SELECT member_id FROM members where email_id='"  . $newUserEmail . "' order by member_id desc limit 1";
+        $newMemberQuery = "SELECT member_id FROM members where email_id='" . $newUserEmail . "' order by member_id desc limit 1";
         $newMemberQueryResult = mysqli_query($db, $newMemberQuery);
 
         $addedUser = mysqli_fetch_row($newMemberQueryResult);
@@ -54,7 +53,7 @@ if (isset($_POST['submit'])) {
     $allotted_at = date('Y-m-d H:i:s');
 
     mysqli_query($db, "UPDATE user_tender_requests set `status`='Allotted',`selected_user_id`='$user',
-    `reminder_days`='$days', `allotted_at`='$allotted_at' WHERE id = '"  . $d . "' 
+    `reminder_days`='$days', `allotted_at`='$allotted_at' WHERE id = '" . $d . "' 
     ");
 
     $query = "SELECT email_id FROM members WHERE member_id='" . $user . "'";
@@ -119,12 +118,12 @@ INNER JOIN members ON user_tender_requests.member_id =members.member_id WHERE id
     $qty = mysqli_fetch_row($qty);
     $uname = $qty[0];
 
-   $mail->Body = "
+    $mail->Body = "
 <div style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
     <div style='text-align: center; margin-bottom: 20px;'>
         <img src='https://www.quotetender.in/assets/images/logo/logo.png' alt='Quote Tender Logo' style='max-width: 200px; height: auto;'>
     </div>
-    <p style='font-size: 18px; color: #555;'>Dear <strong>". $qty[1] ."</strong>,</p>
+    <p style='font-size: 18px; color: #555;'>Dear <strong>" . $qty[1] . "</strong>,</p>
     <p>We are pleased to inform you that the <strong>Tender ID:</strong> " . htmlspecialchars($uname) . " has been allotted to you. For any further assistance or queries regarding the process, please feel free to contact us. We are here to help!</p>
     
     <p style='margin-top: 20px;'>
@@ -149,7 +148,7 @@ INNER JOIN members ON user_tender_requests.member_id =members.member_id WHERE id
     }
 
     echo ("<SCRIPT LANGUAGE='JavaScript'>
-    window.location.href='sent-tender.php?status=$re';
+    window.location.href='sent-tender2.php?status=$re';
     </SCRIPT>");
 }
 
@@ -157,7 +156,7 @@ $requestQuery = mysqli_query($db, "SELECT ur.tenderID, ur.tender_no, ur.referenc
 department.department_name, s.section_name, ur.id 
 FROM user_tender_requests ur 
 inner join section s on ur.section_id=s.section_id
-inner join department on ur.department_id = department.department_id where ur.id = '"  . $d . "'");
+inner join department on ur.department_id = department.department_id where ur.id = '" . $d . "'");
 
 $requestData = mysqli_fetch_row($requestQuery);
 
@@ -208,7 +207,7 @@ $members = mysqli_query($db, $memberQuery);
 
     <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/selectize.js/0.12.6/js/standalone/selectize.min.js" integrity="sha256-+C0A5Ilqmu4QcSPxrlGpaZxJ04VjsRjKu+G82kl5UJk=" crossorigin="anonymous"></script> -->
     <!-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/selectize.js/0.12.6/css/selectize.bootstrap3.min.css" integrity="sha256-ze/OEYGcFbPRmvCnrSeKbRTtjG4vGLHXgOqsyLFTRjg=" crossorigin="anonymous" /> -->
-    
+
     <!-- Include Select2 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <!-- Include Select2 JS -->
@@ -216,24 +215,24 @@ $members = mysqli_query($db, $memberQuery);
 
 
 
-    
-        <script>
-        $(document).ready(function() {
 
-        // $('#myDropdown').selectize({
-        //     sortField: 'text'
-        // });
-        $('#myDropdown').select2({
-        placeholder: "Select User",
-        allowClear: true
-        });
+    <script>
+        $(document).ready(function () {
+
+            // $('#myDropdown').selectize({
+            //     sortField: 'text'
+            // });
+            $('#myDropdown').select2({
+                placeholder: "Select User",
+                allowClear: true
+            });
 
             // Select the dropdown and the other fields
             var $dropdown = $('#myDropdown');
             var $otherFields = $('#otherFields');
 
             // Listen for changes in the dropdown selection
-            $dropdown.on('change', function() {
+            $dropdown.on('change', function () {
                 var selectedValue = $dropdown.val();
 
                 // If "Other" is selected, show the text boxes; otherwise, hide them
@@ -284,7 +283,8 @@ $members = mysqli_query($db, $memberQuery);
                     </div>
                 </li>
                 <li class="nav-item">
-                    <a href="#!" class="full-screen" onClick="javascript:toggleFullScreen()"><i class="feather icon-maximize"></i></a>
+                    <a href="#!" class="full-screen" onClick="javascript:toggleFullScreen()"><i
+                            class="feather icon-maximize"></i></a>
                 </li>
             </ul>
 
@@ -337,26 +337,33 @@ $members = mysqli_query($db, $memberQuery);
                 <div class="col-sm-12">
                     <div class="card">
                         <div class="card-header table-card-header">
-                            <form class="contact-us" method="post" action="" enctype="multipart/form-data" autocomplete="off">
+                            <form class="contact-us" method="post" action="" enctype="multipart/form-data"
+                                autocomplete="off">
                                 <div class=" ">
                                     <!-- Text input-->
                                     <div class="row">
 
                                         <div class="col-xl-6 col-lg-6 col-md-4 col-sm-12 col-12">
                                             <div class="form-group">Tender ID :*
-                                                <label class="sr-only control-label" for="name">Firm Name<span class=" ">
+                                                <label class="sr-only control-label" for="name">Firm Name<span
+                                                        class=" ">
                                                     </span>
                                                 </label>
-                                                <input id="name" name="tenderID" type="text" placeholder=" Enter Tender No *" class="form-control input-md" required value="<?php echo $requestData[0]; ?>" readonly=""  >
+                                                <input id="name" name="tenderID" type="text"
+                                                    placeholder=" Enter Tender No *" class="form-control input-md"
+                                                    required value="<?php echo $requestData[0]; ?>" readonly="">
                                             </div>
                                         </div>
 
 
                                         <div class="col-xl-6 col-lg-6 col-md-4 col-sm-12 col-12">
                                             <div class="form-group">Tender No :
-                                                <label class="sr-only control-label" for="name">Tender No *<span class=" ">
+                                                <label class="sr-only control-label" for="name">Tender No *<span
+                                                        class=" ">
                                                     </span></label>
-                                                <input id="name" name="code" type="text" placeholder=" Enter Code *" class="form-control input-md" required value="<?php echo $requestData[1]; ?>" readonly="">
+                                                <input id="name" name="code" type="text" placeholder=" Enter Code *"
+                                                    class="form-control input-md" required
+                                                    value="<?php echo $requestData[1]; ?>" readonly="">
                                             </div>
                                         </div>
 
@@ -365,7 +372,9 @@ $members = mysqli_query($db, $memberQuery);
                                             <div class="form-group">Ref No :
                                                 <label class="sr-only control-label" for="name">Email<span class=" ">
                                                     </span></label>
-                                                <input id="name" name="work" type="work" class="form-control input-md" required placeholder="Name of the work" value="<?php echo $requestData[2]; ?>" readonly="">
+                                                <input id="name" name="work" type="work" class="form-control input-md"
+                                                    required placeholder="Name of the work"
+                                                    value="<?php echo $requestData[2]; ?>" readonly="">
                                             </div>
                                         </div>
 
@@ -373,7 +382,9 @@ $members = mysqli_query($db, $memberQuery);
                                             <div class="form-group">Work Name :
                                                 <label class="sr-only control-label" for="name">City<span class=" ">
                                                     </span></label>
-                                                <input id="name" name="tender" type="text" class="form-control input-md" required placeholder="Enter tender id" value="<?php echo $requestData[3]; ?>" readonly="">
+                                                <input id="name" name="tender" type="text" class="form-control input-md"
+                                                    required placeholder="Enter tender id"
+                                                    value="<?php echo $requestData[3]; ?>" readonly="">
                                             </div>
                                         </div>
 
@@ -381,7 +392,9 @@ $members = mysqli_query($db, $memberQuery);
                                             <div class="form-group">Department :
                                                 <label class="sr-only control-label" for="name">City<span class=" ">
                                                     </span></label>
-                                                <input id="name" name="tender" type="text" class="form-control input-md" required placeholder="Enter tender id" value="<?php echo $requestData[4]; ?>" readonly="">
+                                                <input id="name" name="tender" type="text" class="form-control input-md"
+                                                    required placeholder="Enter tender id"
+                                                    value="<?php echo $requestData[4]; ?>" readonly="">
                                             </div>
                                         </div>
 
@@ -389,7 +402,9 @@ $members = mysqli_query($db, $memberQuery);
                                             <div class="form-group">Section :
                                                 <label class="sr-only control-label" for="name">City<span class=" ">
                                                     </span></label>
-                                                <input id="name" name="tender" type="text" class="form-control input-md" required placeholder="Enter tender id" value="<?php echo $requestData[5]; ?>" readonly="">
+                                                <input id="name" name="tender" type="text" class="form-control input-md"
+                                                    required placeholder="Enter tender id"
+                                                    value="<?php echo $requestData[5]; ?>" readonly="">
                                             </div>
                                         </div>
                                         <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
@@ -398,42 +413,47 @@ $members = mysqli_query($db, $memberQuery);
                                         </div>
                                         <div class="col-xl-6 col-lg-6 col-md-4 col-sm-12 col-12">
                                             <div class="form-group">Edit User*
-                                                <label class="sr-only control-label" for="name">Departments*<span class=" ">
+                                                <label class="sr-only control-label" for="name">Departments*<span
+                                                        class=" ">
                                                     </span></label>
-                                                    
-                                                    <select class='form-control' name='user' required id='myDropdown'>
-                                                        <option value=''>Select User</option>
-                                                            <?php while ($row = mysqli_fetch_assoc($members)) {
-                                                                echo "<option value='" . $row['member_id'] . "'>" . $row['member_id'] ."--". $row['name'] . "--" . $row['firm_name'] . "--" . $row['mobile'] . "--" . $row['email_id'] . "</option>";
-                                                            }
-                                                            ?>
-                                                        <option value="other">Other</option>
-                                                    </select>
-                                                
+
+                                                <select class='form-control' name='user' required id='myDropdown'>
+                                                    <option value=''>Select User</option>
+                                                    <?php while ($row = mysqli_fetch_assoc($members)) {
+                                                        echo "<option value='" . $row['member_id'] . "'>" . $row['member_id'] . "--" . $row['name'] . "--" . $row['firm_name'] . "--" . $row['mobile'] . "--" . $row['email_id'] . "</option>";
+                                                    }
+                                                    ?>
+                                                    <option value="other">Other</option>
+                                                </select>
+
                                             </div>
                                         </div>
 
                                         <div class="col-xl-6 col-lg-6 col-md-4 col-sm-12 col-12">
                                             <div class="form-group">Set Reminder
-                                                <label class="sr-only control-label" for="name">Set Reminder<span class=" ">
+                                                <label class="sr-only control-label" for="name">Set Reminder<span
+                                                        class=" ">
                                                     </span></label>
                                                 <select name="day" id="day" class="form-control">
                                                     <?php
                                                     for ($day = 0; $day <= 365; $day++) {
-                                                        echo "<option value=\"$day Days\">$day Days</option>";
+                                                        echo "<option value=\"$day\">$day Days</option>";
                                                     }
                                                     ?>
                                                 </select>
+
                                             </div>
                                         </div>
 
 
 
-                                        <div class="col-xl-6 col-lg-6 col-md-4 col-sm-12 col-12" id="otherFields" style="display: none;">
+                                        <div class="col-xl-6 col-lg-6 col-md-4 col-sm-12 col-12" id="otherFields"
+                                            style="display: none;">
                                             <div class="form-group">Name
                                                 <label class="sr-only control-label" for="name">City<span class=" ">
                                                     </span></label>
-                                                <input id="name" name="name" type="text" class="form-control input-md" placeholder="Enter Name">
+                                                <input id="name" name="name" type="text" class="form-control input-md"
+                                                    placeholder="Enter Name">
                                             </div>
 
 
@@ -441,7 +461,8 @@ $members = mysqli_query($db, $memberQuery);
                                             <div class="form-group">Email
                                                 <label class="sr-only control-label" for="name">City<span class=" ">
                                                     </span></label>
-                                                <input id="email" name="email" type="text" class="form-control input-md" placeholder="Enter Email Id">
+                                                <input id="email" name="email" type="text" class="form-control input-md"
+                                                    placeholder="Enter Email Id">
                                             </div>
 
 
@@ -449,7 +470,8 @@ $members = mysqli_query($db, $memberQuery);
                                             <div class="form-group">Phone
                                                 <label class="sr-only control-label" for="name">City<span class=" ">
                                                     </span></label>
-                                                <input id="phone" name="phone" type="text" class="form-control input-md" placeholder="Enter Phone No">
+                                                <input id="phone" name="phone" type="text" class="form-control input-md"
+                                                    placeholder="Enter Phone No">
                                             </div>
 
 
@@ -458,7 +480,8 @@ $members = mysqli_query($db, $memberQuery);
                                             <div class="form-group">Company Name
                                                 <label class="sr-only control-label" for="name">City<span class=" ">
                                                     </span></label>
-                                                <input id="company" name="company" type="text" class="form-control input-md" placeholder="Enter Company Name">
+                                                <input id="company" name="company" type="text"
+                                                    class="form-control input-md" placeholder="Enter Company Name">
                                             </div>
                                         </div>
 
@@ -476,7 +499,7 @@ $members = mysqli_query($db, $memberQuery);
 
                                         </div>
 
-                                        
+
                                     </div>
                                 </div>
                             </form>

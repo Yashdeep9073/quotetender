@@ -90,8 +90,6 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
     <link rel="stylesheet" href="assets/css/style.css">
 
     <style>
-
-        
         .center-text {
             text-align: center;
 
@@ -241,6 +239,18 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
             }
             // if($allowedAction=='all' || $allowedAction=='update' || $allowedAction=='recycle bin'  ){
             echo '<div class="row">';
+            echo '
+                <div class="col-md-6 col-xl-3">
+                    <div class="card bg-c-blue order-card">
+                        <div class="card-body">
+                            <h6 class="text-white">Tender Request</h6>
+                            <h2 class="text-right text-white"><i
+                                    class="feather icon-message-square float-left"></i><span id="new"></span></h2>
+
+                        </div>
+                    </div>
+                </div>
+            ';
             echo '<div class="col-sm-12">';
             echo '<div class="card">';
             echo '<div class="card-body">';
@@ -268,7 +278,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
             //             </button>
             //         </div>
             //   </div>";
-
+            
             echo '</div><br />';
 
             echo '<div id="contentArea">';
@@ -287,51 +297,51 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
             <?php
             // $_count = 1;
             // foreach ($tenders as $tenderID => $tenderRequests) {
-                echo '<div class="row">';
-                echo '<div class="col-sm-12">';
-                echo '<div class="card">';
-                echo '<div class="card-header table-card-header">';
-                echo '</div>';
+            echo '<div class="row">';
+            echo '<div class="col-sm-12">';
+            echo '<div class="card">';
+            echo '<div class="card-header table-card-header">';
+            echo '</div>';
 
-                echo '<div class="card-body">';
-                echo '<div class="dt-responsive table-responsive">';
-                echo "<br />";
-                // echo "<div class='col-md row'>";
+            echo '<div class="card-body">';
+            echo '<div class="dt-responsive table-responsive">';
+            echo "<br />";
+            // echo "<div class='col-md row'>";
             
-                echo '<table  id="basic-btn" class="table table-striped table-bordered nowrap">';
+            echo '<table  id="basic-btn" class="table table-striped table-bordered nowrap">';
 
-                echo "<thead>";
-                echo "<tr class='table-success thead-light'>";
-                echo "<th colspan='12' class='text-center'><h4 style='color:#fff;' class=''>" . " Tender ID : <span class=''>" . $tenderID . "</span></h4></th>";
+            echo "<thead>";
+            echo "<tr class='table-success thead-light'>";
+            echo "<th colspan='12' class='text-center'><h4 style='color:#fff;' class=''>" . " Tender ID : <span class=''>" . $tenderID . "</span></h4></th>";
 
-                echo "</tr>";
+            echo "</tr>";
 
-                echo "<tr>";
-                echo "<th>SNO</th>";
-                echo "<th>User</th>";
-                echo "<th>Firm Name</th>";
-                echo "<th>Mobile</th>";
-                echo "<th>Email</th>";
+            echo "<tr>";
+            echo "<th>SNO</th>";
+            echo "<th>User</th>";
+            echo "<th>Firm Name</th>";
+            echo "<th>Mobile</th>";
+            echo "<th>Email</th>";
 
-                echo "<th>Department</th>";
-                echo "<th>Add Date</th>";
-                echo "<th>Add Time</th>";
+            echo "<th>Department</th>";
+            echo "<th>Add Date</th>";
+            echo "<th>Add Time</th>";
 
-                echo "<th>Due Date</th>";
-                echo "<th>File Names </th>";
-                if ((in_array('All', $permissions)) || (in_array('Tender Request', $permissions)) || (in_array('Update Tenders', $permissions)) || (in_array('Recycle Bin', $permissions)) || (in_array('View Tenders', $permissions))) {
-                    echo "<th>Edit</th>";
-                }
-                echo "</tr>";
-                echo "</thead>";
+            echo "<th>Due Date</th>";
+            echo "<th>File Names </th>";
+            if ((in_array('All', $permissions)) || (in_array('Tender Request', $permissions)) || (in_array('Update Tenders', $permissions)) || (in_array('Recycle Bin', $permissions)) || (in_array('View Tenders', $permissions))) {
+                echo "<th>Edit</th>";
+            }
+            echo "</tr>";
+            echo "</thead>";
 
-                $count = 1;
-                // foreach ($tenderRequests as $row) {
-                    echo "<tbody>";
-                    while ($row = mysqli_fetch_assoc($result) ) {
+            $count = 1;
+            // foreach ($tenderRequests as $row) {
+            echo "<tbody>";
+            while ($row = mysqli_fetch_assoc($result)) {
 
-                    echo "<tr class='record'>";
-                    echo "<td><div class='custom-control custom-checkbox'>
+                echo "<tr class='record'>";
+                echo "<td><div class='custom-control custom-checkbox'>
                                     <input type='checkbox' class='custom-control-input request_checkbox' id='customCheck" . $row['id'] . "' data-request-id='" . $row['id'] . "'>
                                     <label class='custom-control-label' for='customCheck" . $row['id'] . "'>" . $count . "</label>
                                     </div>
@@ -339,68 +349,68 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
 
 
 
-                    echo "<td>" . "<span style='color:red;'> " . $row['name'] . "</td>";
+                echo "<td>" . "<span style='color:red;'> " . $row['name'] . "</td>";
 
-                    echo "<td>" . $row['firm_name'] . "</td>";
+                echo "<td>" . $row['firm_name'] . "</td>";
 
-                    echo "<td>" . $row['mobile'] . "</td>";
-                    echo "<td>" . $row['email_id'] . "</td>";
+                echo "<td>" . $row['mobile'] . "</td>";
+                echo "<td>" . $row['email_id'] . "</td>";
 
-                    echo "<td>" . $row['department_name'] . "</td>";
+                echo "<td>" . $row['department_name'] . "</td>";
 
-                    // Convert and display the date in 'd-m-Y' format
-                    $originalDate = $row['created_at'];
-                    $timestamp = strtotime($originalDate);
-                    $istDate = date('d-m-Y', $timestamp);
-                    $istTime = date('h:i A', $timestamp + 5.5 * 3600);
-                    echo "<td>" . $istDate . "</td>";
-                    echo "<td>" . $istTime . "</td>";
+                // Convert and display the date in 'd-m-Y' format
+                $originalDate = $row['created_at'];
+                $timestamp = strtotime($originalDate);
+                $istDate = date('d-m-Y', $timestamp);
+                $istTime = date('h:i A', $timestamp + 5.5 * 3600);
+                echo "<td>" . $istDate . "</td>";
+                echo "<td>" . $istTime . "</td>";
 
 
 
-                    echo "<td>" . date_format(date_create($row['due_date']), "d-m-Y") . "</td>";
+                echo "<td>" . date_format(date_create($row['due_date']), "d-m-Y") . "</td>";
 
-                    if (!empty($row['file_name'])) {
-                        echo "<td>" . '<a href="../login/tender/' . $row['file_name'] . '" target="_blank" style="padding:6px 15.2px;" />View </a>' . "</br>";
-                    } else {
-                        echo "<td>" . '<a href="../login/tender/' . $row['file_name'] . '" class="btn disabled" target="_blank"/>No file </a>' . "</br>";
-                    }
-                    if (!empty($row['file_name2'])) {
-                        echo '<a href="../login/tender/' . $row['file_name2'] . '" target="_blank" style="padding:6px 15.2px;" />View </a>' . "</td>";
-                    } else {
-                        echo '<a href="../login/tender/' . $row['file_name2'] . '" class="btn disabled" target="_blank"/>No file </a>' . "</td>";
-                    }
-                    $res = $row['id'];
-                    $res = base64_encode($res);
+                if (!empty($row['file_name'])) {
+                    echo "<td>" . '<a href="../login/tender/' . $row['file_name'] . '" target="_blank" style="padding:6px 15.2px;" />View </a>' . "</br>";
+                } else {
+                    echo "<td>" . '<a href="../login/tender/' . $row['file_name'] . '" class="btn disabled" target="_blank"/>No file </a>' . "</br>";
+                }
+                if (!empty($row['file_name2'])) {
+                    echo '<a href="../login/tender/' . $row['file_name2'] . '" target="_blank" style="padding:6px 15.2px;" />View </a>' . "</td>";
+                } else {
+                    echo '<a href="../login/tender/' . $row['file_name2'] . '" class="btn disabled" target="_blank"/>No file </a>' . "</td>";
+                }
+                $res = $row['id'];
+                $res = base64_encode($res);
 
-                    echo "<td>";
-                    if ((in_array('All', $permissions)) || (in_array('Tender Request', $permissions)) || (in_array('Update Tenders', $permissions))) {
-                        echo "<a href='tender-edit.php?id=$res'>
-                                    <button type='button' class='btn btn-warning'>
+                echo "<td>";
+                if ((in_array('All', $permissions)) || (in_array('Tender Request', $permissions)) || (in_array('Update Tenders', $permissions))) {
+                    echo "<a href='tender-edit.php?id=$res'>
+                                    <button type='button' class='btn btn-warning rounded-sm'>
                                     <i class='feather icon-edit'></i> &nbsp;Update</button>
                                     </a>";
-                    }
+                }
 
-                    echo "<br/>";
-                    echo "<br/>";
-                    if ((in_array('All', $permissions)) || (in_array('Tender Request', $permissions)) || (in_array('Recycle Bin', $permissions))) {
-                        echo "<a href='#' id='" . $row['id'] . "' class='recyclebutton btn btn-danger' title='Click To Delete'> 
+                echo "<br/>";
+                echo "<br/>";
+                if ((in_array('All', $permissions)) || (in_array('Tender Request', $permissions)) || (in_array('Recycle Bin', $permissions))) {
+                    echo "<a href='#' id='" . $row['id'] . "' class='recyclebutton btn btn-danger rounded-sm' title='Click To Delete'> 
                                         <i class='feather icon-trash'></i>  &nbsp; Move to Bin
                                         </a>";
-                    }
-                    echo "</td>";
-
-                    echo "</tr>";
-                    $count++;
                 }
-                echo "</tfoot>";
-                echo "</table>";
+                echo "</td>";
 
-                echo '</div>';
-                echo '</div>';
-                echo '</div>';
-                echo '</div>';
-                echo '</div>';
+                echo "</tr>";
+                $count++;
+            }
+            echo "</tfoot>";
+            echo "</table>";
+
+            echo '</div>';
+            echo '</div>';
+            echo '</div>';
+            echo '</div>';
+            echo '</div>';
             //     $_count++;
             // }
             ?>
@@ -556,6 +566,16 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                 $('#searchInput').val('');
                 $('th').css('background-color', ''); // Reset all highlights
             });
+        });
+    </script>
+
+    
+<script>
+        $(document).ready(function () {
+            setInterval(function () {
+                $("#new").load("load.php");
+                refresh();
+            }, 100);
         });
     </script>
 
