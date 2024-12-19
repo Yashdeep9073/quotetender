@@ -95,6 +95,8 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
     <link rel="stylesheet" href="assets/css/plugins/dataTables.bootstrap4.min.css">
 
     <link rel="stylesheet" href="assets/css/style.css">
+
+    
 </head>
 
 <body class="">
@@ -238,7 +240,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                 echo "<th>Section</th>";
                                 echo "<th>Division</th>";
                                 echo "<th>Sub-division</th>";
-                                echo "<th>Work Name</th>";
+                                echo "<th class='work-name'>Work Name</th>";
                                 echo "<th>Tentative Cost</th>";
                                 echo "<th>Reminder</th>";
                                 echo "<th>Edit</th>";
@@ -476,7 +478,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
         $(document).ready(function () {
             setInterval(function () {
                 $("#category").load("loadmembers.php");
-                refresh();
+                // refresh();
 
             }, 100);
         });

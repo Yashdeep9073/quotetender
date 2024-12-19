@@ -369,7 +369,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
             //         });
             // });
 
-            $('#basic-btn2 thead tr').clone(true).appendTo('#basic-btn2 thead');
+            // $('#basic-btn2 thead tr').clone(true).appendTo('#basic-btn2 thead');
 
             var columnsWithSearch = [6, 8, 9, 10, 11, 13];
 
