@@ -23,7 +23,7 @@ $allowedAction = !in_array('All', $userPermissions2) && in_array('Update Tenders
     (!in_array('All', $userPermissions2) && in_array('View Tenders', $userPermissions2) ? 'view' : 'all');
 
 
-$tenderID = $_GET['tender_id'];
+$tenderID = base64_decode($_GET['tender_id']);
 
 $query = "SELECT 
     m.name, 
@@ -250,14 +250,14 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                     <div class="row align-items-center">
                         <div class="col-md-12">
                             <div class="page-header-title">
-                                <h5 class="m-b-10">Sent Tender
+                                <h5 class="m-b-10"><?php echo base64_decode($_GET['tender_id']);?>
                                 </h5>
                             </div>
                             <ul class="breadcrumb">
                                 <li class="breadcrumb-item"><a href="index.php"><i class="feather icon-home"></i></a>
                                 </li>
                                 <li class="breadcrumb-item"><a id="link" style="color:#33cc33" href="sent-tender2.php">Sent Tender</a></li>
-                                <li class="breadcrumb-item"><a style="color:#33cc33" href=""><?php echo $_GET['tender_id'];?></a></li>
+                                <li class="breadcrumb-item"><a style="color:#33cc33" href=""><?php echo base64_decode($_GET['tender_id']);?></a></li>
 
                             </ul>
 

@@ -13,7 +13,7 @@ $adminPermissionQuery = "SELECT nm.title FROM admin_permissions ap
 INNER JOIN navigation_menus nm ON ap.navigation_menu_id = nm.id WHERE ap.admin_id='" . $adminID . "'";
 $adminPermissionResult = mysqli_query($db, $adminPermissionQuery);
 
-$tenderID = $_GET['tender_id'];
+$tenderID = base64_decode($_GET['tender_id']);
 
 while ($row = mysqli_fetch_row($adminPermissionResult)) {
     $userPermissions[] = $row[0];
@@ -191,13 +191,13 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                     <div class="row align-items-center">
                         <div class="col-md-12">
                             <div class="page-header-title">
-                                <h5 class="m-b-10">Tender Request</h5>
+                                <h5 class="m-b-10"><?php echo base64_decode($_GET['tender_id']);?></h5>
                             </div>
                             <ul class="breadcrumb">
                                 <li class="breadcrumb-item"><a href="index.php"><i class="feather icon-home"></i></a>
                                 </li>
                                 <li class="breadcrumb-item"><a style="color:#33cc33" href="tender-request2.php">Tender Request</a></li>
-                                <li class="breadcrumb-item"><a style="color:#33cc33" href=""><?php echo $_GET['tender_id'];?></a></li>
+                                <li class="breadcrumb-item"><a style="color:#33cc33" href=""><?php echo base64_decode($_GET['tender_id']);?></a></li>
                             </ul>
                         </div>
                     </div>

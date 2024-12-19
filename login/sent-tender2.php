@@ -271,7 +271,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                     // echo "<td>  <span style='color:green;'>" . $row['email_id'] . " </span></td>";
                                     // echo "<td>" . $row['firm_name'] . "</td>";
                                     // echo "<td>" . $row['mobile'] . "</td>";
-                                    echo "<td><a class='tender_id' href='sent-tender3.php?tender_id=" . $row['tenderID'] . "'>" . $row['tenderID'] . "</a></td>";
+                                    echo "<td><a class='tender_id' href='sent-tender3.php?tender_id=" . base64_encode($row['tenderID']) . "'>" . $row['tenderID'] . "</a></td>";
                                     echo "<td>" . $row['department_name'] . "</td>";
                                     $dueDate = new DateTime($row['due_date']);
                                     $formattedDueDate = $dueDate->format('d-m-Y');

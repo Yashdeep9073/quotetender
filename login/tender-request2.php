@@ -246,7 +246,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                                     </div>
                                                 </td>
                                                 <td>
-                                                    <a class='tender_id' href='tender-request3.php?tender_id=<?php echo $row['tenderID'] ?>'><?php echo $row['tenderID'] ?></a>
+                                                    <a class='tender_id' href='tender-request3.php?tender_id=<?php echo base64_encode($row['tenderID']) ?>'><?php echo $row['tenderID'] ?></a>
                                                 </td>
                                                 <td>
                                                     <?php echo $row['department_name'] ?>
