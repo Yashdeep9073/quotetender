@@ -52,11 +52,11 @@ FROM
     user_tender_requests ur
 INNER JOIN 
     members m ON ur.member_id = m.member_id
-INNER JOIN 
+LEFT JOIN 
     department dept ON ur.department_id = dept.department_id
-INNER JOIN 
+LEFT JOIN 
     section s ON ur.section_id = s.section_id
-INNER JOIN 
+LEFT JOIN 
     division dv ON ur.division_id = dv.division_id
 LEFT JOIN
     sub_division sd ON ur.sub_division_id = sd.id
