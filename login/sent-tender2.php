@@ -226,17 +226,17 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                 ?>
                                 <br />
                                 <?php
-                                if ((in_array('All', $permissions)) || (in_array('Tender Request', $permissions)) || (in_array('Recycle Bin', $permissions))) {
-                                    echo "<a href='#' id='recycle_records' class='btn btn-danger me-3 rounded-sm'> 
-                                    <i class='feather icon-trash'></i> &nbsp; Move to Bin Selected Items
-                                    </a>&nbsp&nbsp&nbsp&nbsp";
-                                }
-                                if ((in_array('All', $permissions)) || (in_array('Update Tenders', $permissions)) || (in_array('Tender Request', $permissions))) {
-                                    echo "<a href='#' class='update_records'><button type='button' class='btn btn-warning me-3 rounded-sm'>
-                                    <i class='feather icon-edit'></i> &nbsp; Update Selected Items
-                                    </button></a>
-                                    ";
-                                }
+                                // if ((in_array('All', $permissions)) || (in_array('Tender Request', $permissions)) || (in_array('Recycle Bin', $permissions))) {
+                                //     echo "<a href='#' id='recycle_records' class='btn btn-danger me-3 rounded-sm'> 
+                                //     <i class='feather icon-trash'></i> &nbsp; Move to Bin Selected Items
+                                //     </a>&nbsp&nbsp&nbsp&nbsp";
+                                // }
+                                // if ((in_array('All', $permissions)) || (in_array('Update Tenders', $permissions)) || (in_array('Tender Request', $permissions))) {
+                                //     echo "<a href='#' class='update_records'><button type='button' class='btn btn-warning me-3 rounded-sm'>
+                                //     <i class='feather icon-edit'></i> &nbsp; Update Selected Items
+                                //     </button></a>
+                                //     ";
+                                // }
                                 echo '<table id="basic-btn2" class="table table-striped table-bordered">';
                                 echo "<thead>";
                                 echo "<tr>";

@@ -57,9 +57,9 @@ INNER JOIN
 INNER JOIN 
     section s ON ur.section_id = s.section_id
 INNER JOIN 
-    division dv ON ur.section_id = dv.section_id
-INNER JOIN
-    sub_division sd ON ur.division_id = sd.division_id
+    division dv ON ur.division_id = dv.division_id
+LEFT JOIN
+    sub_division sd ON ur.sub_division_id = sd.id
 WHERE 
     ur.status = 'Sent' AND ur.delete_tender = '0' ANd ur.tenderID = '$tenderID'
 GROUP BY 
