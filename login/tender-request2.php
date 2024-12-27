@@ -22,7 +22,7 @@ $allowDelete = mysqli_num_rows($adminPermissionResult) > 0 ? true : false;
 mysqli_query($db, "SET @row_number = 0;");
 
 $queryMain = "SELECT
-    (@row_number:=@row_number + 1) AS sno,  
+    ROW_NUMBER() OVER (ORDER BY ur.created_at) AS sno,  
     ur.id, 
     m.name, 
     m.member_id, 
@@ -49,9 +49,7 @@ INNER JOIN
         GROUP BY tenderID
     ) AS unique_tenders ON ur.id = unique_tenders.min_id
 ORDER BY 
-    NOW() >= CAST(ur.created_at AS DATE), 
-    CAST(ur.created_at AS DATE) ASC, 
-    ABS(DATEDIFF(NOW(), CAST(ur.created_at AS DATE)));
+    ur.created_at ASC;
 ";
 
 $resultMain = mysqli_query($db, $queryMain);
@@ -263,13 +261,13 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                                 $formattedDueDate = $dueDate->format('d-m-Y');
                                                 ?>
                                                 <td>
-                                                    <?php echo $formattedDueDate ?>
+                                                    <?php echo $row['due_date'] ?>
                                                 </td>
 
                                                 <?php
                                                 $createdDate = new DateTime($row['created_at']);
                                                 $formattedCreatedDate = $createdDate->format('d-m-Y H:i:s');
-                                                echo "<td>" . $formattedCreatedDate . "</td>";
+                                                echo "<td>" . $row['created_at'] . "</td>";
                                                 $res = $row['id'];
                                                 $res = base64_encode($res);
                                                 ?>
