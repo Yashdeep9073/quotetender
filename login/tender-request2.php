@@ -18,7 +18,11 @@ inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_i
 $adminPermissionResult = mysqli_query($db, $adminPermissionQuery);
 $allowDelete = mysqli_num_rows($adminPermissionResult) > 0 ? true : false;
 
-$queryMain = "SELECT 
+// Initialize the row number variable
+mysqli_query($db, "SET @row_number = 0;");
+
+$queryMain = "SELECT
+    (@row_number:=@row_number + 1) AS sno,  
     ur.id, 
     m.name, 
     m.member_id, 
@@ -235,18 +239,21 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <?php $count = 1; while ($row = mysqli_fetch_assoc($resultMain)) {?>
+                                        <?php $count = 1;
+                                        while ($row = mysqli_fetch_assoc($resultMain)) { ?>
                                             <tr class='record'>
                                                 <td>
                                                     <div class='custom-control custom-checkbox'>
                                                         <input type='checkbox' style='margin-bottom:100px;'
                                                             class='custom-control-input request_checkbox'
-                                                            id='customCheck<?php echo $count ?>' data-request-id = <?php echo $row['id'] ?>>
-                                                    <label class='custom-control-label' for='customCheck<?php echo $count ?>'><?php echo $count ?></label>
+                                                            id='customCheck<?php echo $row['sno'] ?>' data-request-id=<?php echo $row['id'] ?>>
+                                                        <label class='custom-control-label'
+                                                            for='customCheck<?php echo $row['sno'] ?>'><?php echo $row['sno'] ?></label>
                                                     </div>
                                                 </td>
                                                 <td>
-                                                    <a class='tender_id' href='tender-request3.php?tender_id=<?php echo base64_encode($row['tenderID']) ?>'><?php echo $row['tenderID'] ?></a>
+                                                    <a class='tender_id'
+                                                        href='tender-request3.php?tender_id=<?php echo base64_encode($row['tenderID']) ?>'><?php echo $row['tenderID'] ?></a>
                                                 </td>
                                                 <td>
                                                     <?php echo $row['department_name'] ?>
@@ -266,7 +273,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                                 $res = $row['id'];
                                                 $res = base64_encode($res);
                                                 ?>
-                                                
+
                                                 <td>
                                                     <?php if ((in_array('All', $permissions)) || (in_array('Tender Request', $permissions)) || (in_array('Update Tenders', $permissions))) {
                                                         echo " <a href='tender-edit.php?id=$res'>
@@ -290,7 +297,8 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                                 </td>
                                             </tr>
 
-                                        <?php $count++;} ?>
+                                            <?php $count++;
+                                        } ?>
 
                                     </tbody>
                                 </table>
@@ -303,169 +311,168 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
     </section>
 
     <script src=" assets/js/vendor-all.min.js"></script>
-                                                    <script src="assets/js/plugins/bootstrap.min.js"></script>
-                                                    <script src="assets/js/pcoded.min.js"></script>
-                                                    <!--<script src="assets/js/menu-setting.min.js"></script>-->
+    <script src="assets/js/plugins/bootstrap.min.js"></script>
+    <script src="assets/js/pcoded.min.js"></script>
+    <!--<script src="assets/js/menu-setting.min.js"></script>-->
 
-                                                    <script src="assets/js/plugins/jquery.dataTables.min.js"></script>
-                                                    <script
-                                                        src="assets/js/plugins/dataTables.bootstrap4.min.js"></script>
-                                                    <script src="assets/js/plugins/dataTables.buttons.min.js"></script>
-                                                    <script src="assets/js/plugins/buttons.colVis.min.js"></script>
-                                                    <script src="assets/js/plugins/buttons.print.min.js"></script>
-                                                    <script src="assets/js/plugins/pdfmake.min.js"></script>
-                                                    <script src="assets/js/plugins/jszip.min.js"></script>
-                                                    <script src="assets/js/plugins/buttons.html5.min.js"></script>
-                                                    <script src="assets/js/plugins/buttons.bootstrap4.min.js"></script>
-                                                    <!-- <script src="assets/js/pages/data-export-custom.js"></script> -->
-
+    <script src="assets/js/plugins/jquery.dataTables.min.js"></script>
+    <script src="assets/js/plugins/dataTables.bootstrap4.min.js"></script>
+    <script src="assets/js/plugins/dataTables.buttons.min.js"></script>
+    <script src="assets/js/plugins/buttons.colVis.min.js"></script>
+    <script src="assets/js/plugins/buttons.print.min.js"></script>
+    <script src="assets/js/plugins/pdfmake.min.js"></script>
+    <script src="assets/js/plugins/jszip.min.js"></script>
+    <script src="assets/js/plugins/buttons.html5.min.js"></script>
+    <script src="assets/js/plugins/buttons.bootstrap4.min.js"></script>
+    <!-- <script src="assets/js/pages/data-export-custom.js"></script> -->
 
 
-                                                    <script>
-                                                        $(document).ready(function () {
 
-                                                            //     if ($.fn.DataTable.isDataTable('#basic-btn2')) {
-                                                            //     $('#basic-btn2').DataTable().clear().destroy();
-                                                            //     }
-                                                            //     let myTable = $("#basic-btn2").DataTable();
-                                                            //     let columnsToFilter = [8,9,10];
+    <script>
+        $(document).ready(function () {
 
-
-                                                            //     columnsToFilter.forEach(function(colID) {
-
-                                                            //     let mySelectList = $("<br><select class='form-control' />")
-                                                            //         .appendTo(myTable.column(colID).header())
-                                                            //         .on("change", function () {
-                                                            //             myTable.column(colID).search($(this).val());
-                                                            //             // Update the changes using draw() method
-                                                            //             myTable.column(colID).draw();
-                                                            //         });
-
-                                                            //     myTable
-                                                            //         .column(colID)
-                                                            //         .cache("search")
-                                                            //         .sort()
-                                                            //         .each(function (param) {
-                                                            //             mySelectList.append(
-                                                            //                 $('<option value="' + param + '">'
-                                                            //                 + param + "</option>")
-                                                            //             );
-                                                            //         });
-                                                            // });
-
-                                                            // $('#basic-btn2 thead tr').clone(true).appendTo('#basic-btn2 thead');
-
-                                                            var columnsWithSearch = [6, 8, 9, 10, 11, 13];
-
-                                                            $('#basic-btn2 thead tr:eq(1) th').each(function (i) {
-
-                                                                if (columnsWithSearch.includes(i) && !$(this).hasClass("noFilter")) {
-                                                                    var title = $(this).text();
-                                                                    $(this).html('<input type="text" class="form-control" placeholder="Search ' + title + '" />');
-
-                                                                    $('input', this).on('keyup change', function () {
-                                                                        if (table.column(i).search() !== this.value) {
-                                                                            table
-                                                                                .column(i)
-                                                                                .search(this.value)
-                                                                                .draw();
-                                                                        }
-                                                                    });
-                                                                } else {
-                                                                    $(this).html('<span></span>');
-                                                                }
-                                                            });
-
-                                                            var table = $('#basic-btn2').DataTable({
-                                                                orderCellsTop: true,
-                                                                fixedHeader: true,
-                                                                columnDefs: [
-                                                                    {
-                                                                        targets: 0,
-                                                                        visible: true
-                                                                    },
-
-                                                                ]
-                                                            });
+            //     if ($.fn.DataTable.isDataTable('#basic-btn2')) {
+            //     $('#basic-btn2').DataTable().clear().destroy();
+            //     }
+            //     let myTable = $("#basic-btn2").DataTable();
+            //     let columnsToFilter = [8,9,10];
 
 
-                                                            $("#updateuser").delay(5000).slideUp(300);
+            //     columnsToFilter.forEach(function(colID) {
+
+            //     let mySelectList = $("<br><select class='form-control' />")
+            //         .appendTo(myTable.column(colID).header())
+            //         .on("change", function () {
+            //             myTable.column(colID).search($(this).val());
+            //             // Update the changes using draw() method
+            //             myTable.column(colID).draw();
+            //         });
+
+            //     myTable
+            //         .column(colID)
+            //         .cache("search")
+            //         .sort()
+            //         .each(function (param) {
+            //             mySelectList.append(
+            //                 $('<option value="' + param + '">'
+            //                 + param + "</option>")
+            //             );
+            //         });
+            // });
+
+            // $('#basic-btn2 thead tr').clone(true).appendTo('#basic-btn2 thead');
+
+            var columnsWithSearch = [6, 8, 9, 10, 11, 13];
+
+            $('#basic-btn2 thead tr:eq(1) th').each(function (i) {
+
+                if (columnsWithSearch.includes(i) && !$(this).hasClass("noFilter")) {
+                    var title = $(this).text();
+                    $(this).html('<input type="text" class="form-control" placeholder="Search ' + title + '" />');
+
+                    $('input', this).on('keyup change', function () {
+                        if (table.column(i).search() !== this.value) {
+                            table
+                                .column(i)
+                                .search(this.value)
+                                .draw();
+                        }
+                    });
+                } else {
+                    $(this).html('<span></span>');
+                }
+            });
+
+            var table = $('#basic-btn2').DataTable({
+                orderCellsTop: true,
+                fixedHeader: true,
+                columnDefs: [
+                    {
+                        targets: 0,
+                        visible: true
+                    },
+
+                ]
+            });
 
 
-                                                        });
-                                                    </script>
+            $("#updateuser").delay(5000).slideUp(300);
 
-                                                    <script type="text/javascript">
-                                                        $(function () {
-                                                            $(".recyclebutton").click(function () {
 
-                                                                var element = $(this);
+        });
+    </script>
 
-                                                                var del_id = element.attr("id");
+    <script type="text/javascript">
+        $(function () {
+            $(".recyclebutton").click(function () {
 
-                                                                var info = 'id=' + del_id;
-                                                                if (confirm("Are you sure you want to delete this Record?")) {
-                                                                    $.ajax({
-                                                                        type: "GET",
-                                                                        url: "deleteuser.php",
-                                                                        data: info,
-                                                                        success: function () { }
-                                                                    });
-                                                                    $(this).parents(".record").animate({
-                                                                        backgroundColor: "#FF3"
-                                                                    }, "fast")
-                                                                        .animate({
-                                                                            opacity: "hide"
-                                                                        }, "slow");
+                var element = $(this);
 
-                                                                    setTimeout(function () {
-                                                                        window.location.reload()
-                                                                    }, 2000);
-                                                                }
-                                                                return false;
-                                                            });
+                var del_id = element.attr("id");
 
-                                                            $('#recycle_records').on('click', function (e) {
-                                                                var requestIDs = [];
-                                                                $(".request_checkbox:checked").each(function () {
-                                                                    requestIDs.push($(this).data('request-id'));
-                                                                });
-                                                                if (requestIDs.length <= 0) {
-                                                                    alert("Please select records.");
-                                                                } else {
-                                                                    WRN_PROFILE_DELETE = "Are you sure you want to delete " + (requestIDs.length > 1 ? "these" : "this") + " Record?";
-                                                                    var checked = confirm(WRN_PROFILE_DELETE);
-                                                                    if (checked == true) {
-                                                                        var selected_values = requestIDs.join(",");
-                                                                        $.ajax({
-                                                                            type: "POST",
-                                                                            url: "recycleuser.php",
-                                                                            cache: false,
-                                                                            data: 'alot_request_ids=' + selected_values,
-                                                                            success: function () {
-                                                                                $(".request_checkbox:checked").each(function () {
-                                                                                    $(this).closest(".record").animate({
-                                                                                        backgroundColor: "#FF3"
-                                                                                    }, "fast").animate({
-                                                                                        opacity: "hide"
-                                                                                    }, "slow", function () {
-                                                                                        $(this).remove();
-                                                                                    });
-                                                                                });
-                                                                                setTimeout(function () {
-                                                                                    window.location.reload();
-                                                                                },
-                                                                                    2000);
-                                                                            }
-                                                                        });
-                                                                    }
-                                                                }
-                                                            });
-                                                        });
+                var info = 'id=' + del_id;
+                if (confirm("Are you sure you want to delete this Record?")) {
+                    $.ajax({
+                        type: "GET",
+                        url: "deleteuser.php",
+                        data: info,
+                        success: function () { }
+                    });
+                    $(this).parents(".record").animate({
+                        backgroundColor: "#FF3"
+                    }, "fast")
+                        .animate({
+                            opacity: "hide"
+                        }, "slow");
 
-                                                    </script>
+                    setTimeout(function () {
+                        window.location.reload()
+                    }, 2000);
+                }
+                return false;
+            });
 
-                                                    <!-- <script>
+            $('#recycle_records').on('click', function (e) {
+                var requestIDs = [];
+                $(".request_checkbox:checked").each(function () {
+                    requestIDs.push($(this).data('request-id'));
+                });
+                if (requestIDs.length <= 0) {
+                    alert("Please select records.");
+                } else {
+                    WRN_PROFILE_DELETE = "Are you sure you want to delete " + (requestIDs.length > 1 ? "these" : "this") + " Record?";
+                    var checked = confirm(WRN_PROFILE_DELETE);
+                    if (checked == true) {
+                        var selected_values = requestIDs.join(",");
+                        $.ajax({
+                            type: "POST",
+                            url: "recycleuser.php",
+                            cache: false,
+                            data: 'alot_request_ids=' + selected_values,
+                            success: function () {
+                                $(".request_checkbox:checked").each(function () {
+                                    $(this).closest(".record").animate({
+                                        backgroundColor: "#FF3"
+                                    }, "fast").animate({
+                                        opacity: "hide"
+                                    }, "slow", function () {
+                                        $(this).remove();
+                                    });
+                                });
+                                setTimeout(function () {
+                                    window.location.reload();
+                                },
+                                    2000);
+                            }
+                        });
+                    }
+                }
+            });
+        });
+
+    </script>
+
+    <!-- <script>
     $(document).on('click', '.tender_id', function (e) {
         e.preventDefault();
         const tender_id = $(this).text();
@@ -492,14 +499,14 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
 
 
 
-                                                    <script>
-                                                        $(document).ready(function () {
-                                                            setInterval(function () {
-                                                                $("#new").load("load.php");
-                                                                // refresh();
-                                                            }, 100);
-                                                        });
-                                                    </script>
+    <script>
+        $(document).ready(function () {
+            setInterval(function () {
+                $("#new").load("load.php");
+                // refresh();
+            }, 100);
+        });
+    </script>
 
 
 

@@ -30,41 +30,45 @@ $allowedAction = !in_array('All', $userPermissions2) && in_array('Update Tenders
     (!in_array('All', $userPermissions2) && in_array('View Tenders', $userPermissions2) ? 'view' : 'all');
 
 
-    $queryMain = "SELECT 
-    ur.id, 
-    m.name, 
-    m.member_id, 
-    m.firm_name, 
-    m.mobile, 
-    m.email_id, 
-    department.department_name, 
-    ur.due_date, 
-    ur.file_name, 
-    ur.tenderID, 
-    ur.created_at, 
-    ur.file_name2 
-FROM 
-    user_tender_requests ur
-INNER JOIN 
-    members m ON ur.member_id = m.member_id
-INNER JOIN 
-    department ON ur.department_id = department.department_id
-INNER JOIN 
-    (
-        SELECT MIN(id) AS min_id, tenderID
-        FROM user_tender_requests
-        WHERE status = 'Sent' AND delete_tender = '0'
-        GROUP BY tenderID
-    ) AS unique_tenders ON ur.id = unique_tenders.min_id
-ORDER BY 
-    NOW() >= CAST(ur.created_at AS DATE), 
-    CAST(ur.created_at AS DATE) ASC, 
-    ABS(DATEDIFF(NOW(), CAST(ur.created_at AS DATE)));
-";
+// Initialize the row number variable
+mysqli_query($db, "SET @row_number = 0;");
 
-
+$queryMain = "
+    SELECT 
+        (@row_number:=@row_number + 1) AS sno, 
+        ur.id, 
+        m.name, 
+        m.member_id, 
+        m.firm_name, 
+        m.mobile, 
+        m.email_id, 
+        department.department_name, 
+        ur.due_date, 
+        ur.file_name, 
+        ur.tenderID, 
+        ur.created_at, 
+        ur.file_name2 
+    FROM 
+        user_tender_requests ur
+    INNER JOIN 
+        members m ON ur.member_id = m.member_id
+    INNER JOIN 
+        department ON ur.department_id = department.department_id
+    INNER JOIN 
+        (
+            SELECT MIN(id) AS min_id, tenderID
+            FROM user_tender_requests
+            WHERE status = 'Sent' AND delete_tender = '0'
+            GROUP BY tenderID
+        ) AS unique_tenders ON ur.id = unique_tenders.min_id
+    ORDER BY 
+        NOW() >= CAST(ur.created_at AS DATE), 
+        CAST(ur.created_at AS DATE) ASC, 
+        ABS(DATEDIFF(NOW(), CAST(ur.created_at AS DATE)));
+    ";
 
 $resultMain = mysqli_query($db, $queryMain);
+
 
 
 $adminID = $_SESSION['login_user_id'];
@@ -262,8 +266,8 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
 
                                     echo "<tr class='record'>";
                                     echo "<td><div class='custom-control custom-checkbox'>
-                                    <input type='checkbox' class='custom-control-input request_checkbox' id='customCheck" . $count . "' data-request-id='" . $row['id'] . "'>
-                                    <label class='custom-control-label' for='customCheck" . $count . "'>" . $count . "</label>
+                                    <input type='checkbox' class='custom-control-input request_checkbox' id='customCheck" . $row['sno'] . "' data-request-id='" . $row['id'] . "'>
+                                    <label class='custom-control-label' for='customCheck" . $row['sno'] . "'>" . $row['sno'] . "</label>
                                     </div>
                                     </td>";
 
@@ -275,7 +279,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                     echo "<td>" . $row['department_name'] . "</td>";
                                     $dueDate = new DateTime($row['due_date']);
                                     $formattedDueDate = $dueDate->format('d-m-Y');
-                                    echo "<td>" .  $formattedDueDate . "</td>";
+                                    echo "<td>" . $formattedDueDate . "</td>";
                                     $createdDate = new DateTime($row['created_at']);
                                     $formattedCreatedDate = $createdDate->format('d-m-Y H:i:s');
                                     echo "<td>" . $formattedCreatedDate . "</td>";
