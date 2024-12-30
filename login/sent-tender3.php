@@ -172,7 +172,6 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                 transform: rotate(360deg);
             }
         }
-        
     </style>
 </head>
 
@@ -250,14 +249,16 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                     <div class="row align-items-center">
                         <div class="col-md-12">
                             <div class="page-header-title">
-                                <h5 class="m-b-10"><?php echo base64_decode($_GET['tender_id']);?>
+                                <h5 class="m-b-10"><?php echo base64_decode($_GET['tender_id']); ?>
                                 </h5>
                             </div>
                             <ul class="breadcrumb">
                                 <li class="breadcrumb-item"><a href="index.php"><i class="feather icon-home"></i></a>
                                 </li>
-                                <li class="breadcrumb-item"><a id="link" style="color:#33cc33" href="sent-tender2.php">Sent Tender</a></li>
-                                <li class="breadcrumb-item"><a style="color:#33cc33" href=""><?php echo base64_decode($_GET['tender_id']);?></a></li>
+                                <li class="breadcrumb-item"><a id="link" style="color:#ff5370; font-size:15px;font-weight:bold"
+                                        href="sent-tender2.php">Back To Sent Tender</a></li>
+                                <li class="breadcrumb-item"><a style="color:#33cc33"
+                                        href=""><?php echo base64_decode($_GET['tender_id']); ?></a></li>
 
                             </ul>
 

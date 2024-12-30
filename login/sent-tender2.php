@@ -47,13 +47,20 @@ $queryMain = "
     ur.file_name, 
     ur.tenderID, 
     ur.created_at, 
-    ur.file_name2 
+    ur.file_name2,
+    ur.reference_code,
+    s.*,
+    dv.* 
 FROM 
     user_tender_requests ur
 INNER JOIN 
     members m ON ur.member_id = m.member_id
-INNER JOIN 
+LEFT JOIN  
     department ON ur.department_id = department.department_id
+LEFT JOIN 
+    section s ON ur.section_id = s.section_id
+LEFT JOIN 
+    division dv ON ur.division_id = dv.division_id
 INNER JOIN 
     (
         SELECT MIN(id) AS min_id, tenderID
@@ -250,6 +257,9 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                 // echo "<th>Mobile</th>";
                                 echo "<th>Tender ID</th>";
                                 echo "<th>Department</th>";
+                                echo "<th>Division</th>";
+                                echo "<th>Section</th>";
+                                echo "<th>REF.Code</th>";
                                 echo "<th>Due Date</th>";
                                 echo "<th>Add Date </th>";
                                 // echo "<th>Due Date</th>";
@@ -276,6 +286,9 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                     // echo "<td>" . $row['mobile'] . "</td>";
                                     echo "<td><a class='tender_id' href='sent-tender3.php?tender_id=" . base64_encode($row['tenderID']) . "'>" . $row['tenderID'] . "</a></td>";
                                     echo "<td>" . $row['department_name'] . "</td>";
+                                    echo "<td>" . $row['division_name'] . "</td>";
+                                    echo "<td>" . $row['section_name'] . "</td>";
+                                    echo "<td>" . $row['reference_code'] . "</td>";
                                     $dueDate = new DateTime($row['due_date']);
                                     $formattedDueDate = $dueDate->format('d-m-Y');
                                     echo "<td>" . $row['due_date'] . "</td>";
