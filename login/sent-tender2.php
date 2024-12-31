@@ -49,8 +49,10 @@ $queryMain = "
     ur.created_at, 
     ur.file_name2,
     ur.reference_code,
+    ur.tentative_cost,
     s.*,
-    dv.* 
+    dv.*,
+    sd.* 
 FROM 
     user_tender_requests ur
 INNER JOIN 
@@ -61,6 +63,8 @@ LEFT JOIN
     section s ON ur.section_id = s.section_id
 LEFT JOIN 
     division dv ON ur.division_id = dv.division_id
+LEFT JOIN
+    sub_division sd ON ur.sub_division_id = sd.id
 INNER JOIN 
     (
         SELECT MIN(id) AS min_id, tenderID
@@ -258,7 +262,9 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                 echo "<th>Tender ID</th>";
                                 echo "<th>Department</th>";
                                 echo "<th>Division</th>";
+                                echo "<th>Sub-Division</th>";
                                 echo "<th>Section</th>";
+                                echo "<th>Tentative Cost</th>";
                                 echo "<th>REF.Code</th>";
                                 echo "<th>Due Date</th>";
                                 echo "<th>Add Date </th>";
@@ -287,7 +293,9 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                     echo "<td><a class='tender_id' href='sent-tender3.php?tender_id=" . base64_encode($row['tenderID']) . "'>" . $row['tenderID'] . "</a></td>";
                                     echo "<td>" . $row['department_name'] . "</td>";
                                     echo "<td>" . $row['division_name'] . "</td>";
+                                    echo "<td>" . $row['subdivision'] . "</td>";
                                     echo "<td>" . $row['section_name'] . "</td>";
+                                    echo "<td>" . $row['tentative_cost'] . "</td>";
                                     echo "<td>" . $row['reference_code'] . "</td>";
                                     $dueDate = new DateTime($row['due_date']);
                                     $formattedDueDate = $dueDate->format('d-m-Y');

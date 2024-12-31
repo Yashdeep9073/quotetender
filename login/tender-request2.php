@@ -39,8 +39,12 @@ FROM
     user_tender_requests ur
 INNER JOIN 
     members m ON ur.member_id = m.member_id
-INNER JOIN 
+LEFT JOIN 
     department ON ur.department_id = department.department_id
+LEFT JOIN 
+    section s ON ur.section_id = s.section_id
+LEFT JOIN 
+    division dv ON ur.division_id = dv.division_id
 INNER JOIN 
     (
         SELECT MIN(id) AS min_id, tenderID
@@ -230,6 +234,8 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                         <tr>
                                             <th>SNO</th>
                                             <th>Tender ID</th>
+                                            <th>Department</th>
+                                            <th>Section</th>
                                             <th>Department</th>
                                             <th>Due Date</th>
                                             <th>Add Date </th>
