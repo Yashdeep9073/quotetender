@@ -236,8 +236,6 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                             <th>Tender ID</th>
                                             <th>Department</th>
                                             <th>Section</th>
-                                            <th>Department</th>
-                                            <th>Due Date</th>
                                             <th>Add Date </th>
                                             <th>Edit</th>
                                         </tr>
