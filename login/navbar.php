@@ -189,7 +189,11 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                             }
                             if ((in_array('Award Tender', $permissions)) || (in_array('All', $permissions))) {
                                 echo "<li><a href='award-tender.php'> Award Tender</a></li>";
-                            } ?>
+                            } 
+                            if ((in_array('Award Tender', $permissions)) || (in_array('All', $permissions))) {
+                                echo "<li><a href='all-tender-request.php'> All Tender Request</a></li>";
+                            } 
+                            ?>
 
                         </ul>
                     </li>

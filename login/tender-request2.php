@@ -235,7 +235,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                             <th>SNO</th>
                                             <th>Tender ID</th>
                                             <th>Department</th>
-                                            <th>Section</th>
+                                            <th>Due Date</th>
                                             <th>Add Date </th>
                                             <th>Edit</th>
                                         </tr>
@@ -504,11 +504,28 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
     <script>
         $(document).ready(function () {
             setInterval(function () {
-                $("#new").load("load.php");
+                //$("#new").load("load.php");
                 // refresh();
             }, 100);
         });
     </script>
+
+    <script type="text/javascript">
+        $(document).ready(function () {
+            var table = $('#basic-btn2').DataTable();
+
+            // Fetch the number of entries
+            var info = table.page.info();
+            var totalEntries = info.recordsTotal;
+
+            // Display the number of entries
+            // console.log('Total number of entries:', totalEntries);
+
+            // Optionally, you can display the number of entries in an HTML element
+            $('#new').text(totalEntries);
+        });
+    </script>
+
 
 
 

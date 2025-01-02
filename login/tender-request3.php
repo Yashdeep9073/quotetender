@@ -74,7 +74,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
 <meta http-equiv="content-type" content="text/html;charset=UTF-8" />
 
 <head>
-    <title>Tender Request 3</title>
+    <title><?php echo base64_decode($_GET['tender_id']); ?></title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimal-ui">
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
@@ -191,13 +191,15 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                     <div class="row align-items-center">
                         <div class="col-md-12">
                             <div class="page-header-title">
-                                <h5 class="m-b-10"><?php echo base64_decode($_GET['tender_id']);?></h5>
+                                <h5 class="m-b-10"><?php echo base64_decode($_GET['tender_id']); ?></h5>
                             </div>
                             <ul class="breadcrumb">
                                 <li class="breadcrumb-item"><a href="index.php"><i class="feather icon-home"></i></a>
                                 </li>
-                                <li class="breadcrumb-item"><a style="color:#ff5370; font-size:15px;font-weight:bold" href="tender-request2.php">Back To Tender Request</a></li>
-                                <li class="breadcrumb-item"><a style="color:#33cc33" href=""><?php echo base64_decode($_GET['tender_id']);?></a></li>
+                                <li class="breadcrumb-item"><a style="color:#ff5370; font-size:15px;font-weight:bold"
+                                        href="tender-request2.php">Back To Tender Request</a></li>
+                                <li class="breadcrumb-item"><a style="color:#33cc33"
+                                        href=""><?php echo base64_decode($_GET['tender_id']); ?></a></li>
                             </ul>
                         </div>
                     </div>
@@ -240,18 +242,18 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
             }
             // if($allowedAction=='all' || $allowedAction=='update' || $allowedAction=='recycle bin'  ){
             echo '<div class="row">';
-            echo '
-                <div class="col-md-6 col-xl-3">
-                    <div class="card bg-c-blue order-card">
-                        <div class="card-body">
-                            <h6 class="text-white">Tender Request</h6>
-                            <h2 class="text-right text-white"><i
-                                    class="feather icon-message-square float-left"></i><span id="new"></span></h2>
+            // echo '
+            //     <div class="col-md-6 col-xl-3">
+            //         <div class="card bg-c-blue order-card">
+            //             <div class="card-body">
+            //                 <h6 class="text-white">Tender Request</h6>
+            //                 <h2 class="text-right text-white"><i
+            //                         class="feather icon-message-square float-left"></i><span id="new"></span></h2>
 
-                        </div>
-                    </div>
-                </div>
-            ';
+            //             </div>
+            //         </div>
+            //     </div>
+            // ';
             echo '<div class="col-sm-12">';
             echo '<div class="card">';
             echo '<div class="card-body">';
@@ -570,15 +572,16 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
         });
     </script>
 
-    
-<script>
+
+    <!-- <script>
         $(document).ready(function () {
             setInterval(function () {
                 $("#new").load("load.php");
                 refresh();
             }, 100);
         });
-    </script>
+    </script> -->
+    
 
 
 

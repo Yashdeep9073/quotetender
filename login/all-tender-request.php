@@ -36,27 +36,15 @@ mysqli_query($db, "SET @row_number = 0;");
 $queryMain = "
    SELECT 
     ROW_NUMBER() OVER (ORDER BY ur.created_at) AS sno,
-    ur.id, 
-    m.name, 
-    m.member_id, 
-    m.firm_name, 
-    m.mobile, 
-    m.email_id, 
-    department.department_name, 
-    ur.due_date, 
-    ur.file_name, 
-    ur.tenderID, 
-    ur.created_at, 
-    ur.file_name2,
-    ur.reference_code,
-    ur.tentative_cost,
-    ur.tender_no, 
+    ur.*,
+    ur.status AS tenderStatus,
+    department.*, 
     s.*,
     dv.*,
     sd.* 
 FROM 
     user_tender_requests ur
-INNER JOIN 
+LEFT JOIN 
     members m ON ur.member_id = m.member_id
 LEFT JOIN  
     department ON ur.department_id = department.department_id
@@ -66,11 +54,10 @@ LEFT JOIN
     division dv ON ur.division_id = dv.division_id
 LEFT JOIN
     sub_division sd ON ur.sub_division_id = sd.id
-INNER JOIN 
+LEFT JOIN 
     (
         SELECT MIN(id) AS min_id, tenderID
         FROM user_tender_requests
-        WHERE status = 'Sent' AND delete_tender = '0'
         GROUP BY tenderID
     ) AS unique_tenders ON ur.id = unique_tenders.min_id
 ORDER BY 
@@ -188,7 +175,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                     <div class="row align-items-center">
                         <div class="col-md-12">
                             <div class="page-header-title">
-                                <h5 class="m-b-10">Sent Tender
+                                <h5 class="m-b-10">All Tender Request
                                 </h5>
                             </div>
                             <ul class="breadcrumb">
@@ -205,7 +192,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                 <div class="col-md-6 col-xl-3">
                     <div class="card bg-c-green order-card">
                         <div class="card-body">
-                            <h6 class="text-white">Sent Tenders</h6>
+                            <h6 class="text-white">All Tender Request</h6>
                             <h2 class="text-right text-white"><i
                                     class="feather icon-message-square float-left"></i><span id="total"></span></h2>
 
@@ -256,6 +243,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                 echo "<thead>";
                                 echo "<tr>";
                                 echo "<th>SNO</th>";
+                                echo "<th>Status</th>";
                                 echo "<th>Tender ID</th>";
                                 echo "<th>Tender No</th>";
                                 echo "<th>Department</th>";
@@ -286,7 +274,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                     // echo "<td><span style='color:red;'> " . $row['name'] . " </span></td>";
                                     // echo "<td>  <span style='color:green;'>" . $row['email_id'] . " </span></td>";
                                     // echo "<td>" . $row['firm_name'] . "</td>";
-                                    // echo "<td>" . $row['mobile'] . "</td>";
+                                    echo "<td>" . $row['tenderStatus'] . "</td>";
                                     echo "<td><a class='tender_id' href='sent-tender3.php?tender_id=" . base64_encode($row['tenderID']) . "'>" . $row['tenderID'] . "</a></td>";
                                     echo "<td>" . $row['tender_no'] . "</td>";
                                     echo "<td>" . $row['department_name'] . "</td>";

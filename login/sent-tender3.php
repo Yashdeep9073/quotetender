@@ -95,7 +95,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
 <meta http-equiv="content-type" content="text/html;charset=UTF-8" />
 
 <head>
-    <title>Manage Tender</title>
+    <title><?php echo base64_decode($_GET['tender_id']); ?></title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimal-ui">
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
@@ -255,7 +255,8 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                             <ul class="breadcrumb">
                                 <li class="breadcrumb-item"><a href="index.php"><i class="feather icon-home"></i></a>
                                 </li>
-                                <li class="breadcrumb-item"><a id="link" style="color:#ff5370; font-size:15px;font-weight:bold"
+                                <li class="breadcrumb-item"><a id="link"
+                                        style="color:#ff5370; font-size:15px;font-weight:bold"
                                         href="sent-tender2.php">Back To Sent Tender</a></li>
                                 <li class="breadcrumb-item"><a style="color:#33cc33"
                                         href=""><?php echo base64_decode($_GET['tender_id']); ?></a></li>
@@ -291,18 +292,18 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
             // if($allowedAction=='all'){
             
             echo '<div class="row">';
-            echo '
-            <div class="col-md-6 col-xl-3">
-                    <div class="card bg-c-green order-card">
-                        <div class="card-body">
-                            <h6 class="text-white">Sent Tenders</h6>
-                            <h2 class="text-right text-white"><i
-                                    class="feather icon-message-square float-left"></i><span id="total"></span></h2>
-
-                        </div>
-                    </div>
-                </div>
-            ';
+            // echo '
+            // <div class="col-md-6 col-xl-3">
+            //         <div class="card bg-c-green order-card">
+            //             <div class="card-body">
+            //                 <h6 class="text-white">Sent Tenders</h6>
+            //                 <h2 class="text-right text-white"><i
+            //                         class="feather icon-message-square float-left"></i><span id="total"></span></h2>
+            
+            //             </div>
+            //         </div>
+            //     </div>
+            // ';
             echo '<div class="col-sm-12">';
             echo '<div class="card">';
             echo '<div class="card-body">';
@@ -357,10 +358,10 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
 
                                 echo '<table id="basic-btn" class="table table-striped table-bordered nowrap">';
                                 echo "<thead>";
-                                echo "<tr class='table-success thead-light'>";
-                                echo "<th colspan='20' class='text-center'><h4 class='text-light'>S.NO : " . "   Tender ID : <span class='text-light'>" . $tenderID . "</span></h4></th>";
-                                echo "</tr>";
-                                echo "<tr>";
+                                // echo "<tr class='table-success thead-light'>";
+                                // echo "<th colspan='20' class='text-center'><h4 class='text-light'>S.NO : " . "   Tender ID : <span class='text-light'>" . $tenderID . "</span></h4></th>";
+                                // echo "</tr>";
+                                // echo "<tr>";
                                 echo "<th>SNO</th>";
                                 echo "<th>User</th>";
                                 echo "<th>Firm Name</th>";
@@ -554,7 +555,11 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
             //     ]
             // });
 
+
+
+            // Optional: Hide update message after 5 seconds
             $("#updateuser").delay(5000).slideUp(300);
+
         });
     </script>
 
