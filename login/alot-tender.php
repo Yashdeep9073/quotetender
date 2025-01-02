@@ -36,7 +36,8 @@ $queryMain = "SELECT DISTINCT
     MAX(dv.division_name) AS division_name,
     MAX(se.section_name) AS section_name,
     MAX(sd.subdivision) AS subdivision,
-    ur.tentative_cost
+    ur.tentative_cost,
+    sm.city_state
 FROM
     user_tender_requests ur
 INNER JOIN
@@ -232,6 +233,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                 echo "<th>User</th>";
                                 echo "<th>Email</th>";
                                 echo "<th>Firm</th>";
+                                echo "<th>City</th>";
                                 echo "<th>Mobile</th>";
                                 echo "<th>Tender ID</th>";
                                 echo "<th>Ref. Code </th>";
@@ -262,6 +264,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                     echo "<td><span style='color:red;'> " . $row['0'] . " </span></td>";
                                     echo "<td>  <span style='color:green;'>" . $row['1'] . " </span></td>";
                                     echo "<td>" . $row['2'] . "</td>";
+                                    echo "<td>" . $row['18'] . "</td>";
                                     echo "<td>" . $row['3'] . "</td>";
                                     echo "<td>" . $row['12'] . "</td>";
                                     echo "<td>" . $row['11'] . "</td>";

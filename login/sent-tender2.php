@@ -432,7 +432,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
 
             // Clone the header row for filtering
             $('#basic-btn2 thead tr').clone(true).appendTo('#basic-btn2 thead');
-            var columnsWithSearch = [3, 4, 5, 6, 8, 9, 10, 11, 13
+            var columnsWithSearch = [2,3, 4, 5, 6, 8, 9, 10, 11, 13
             ]; // Columns for filtering
 
             // Add filters to the cloned header
