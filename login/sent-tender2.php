@@ -36,7 +36,7 @@ mysqli_query($db, "SET @row_number = 0;");
 $queryMain = "
    SELECT 
     ROW_NUMBER() OVER (ORDER BY ur.created_at) AS sno,
-    ur.id, 
+    ur.id as t_id, 
     m.name, 
     m.member_id, 
     m.firm_name, 
@@ -312,7 +312,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                     // } else {
                                     //     echo '<a href="../login/tender/' . $row['file_name2'] . '" class="btn disabled" target="_blank"/>No file </a>' . "</td>";
                                     // }
-                                    $res = $row['id'];
+                                    $res = $row['t_id'];
                                     $res = base64_encode($res);
 
                                     if ($allowedAction == 'all' || $allowedAction == 'update') {
@@ -324,8 +324,9 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                     echo "<br/>";
 
                                     if ((in_array('All', $permissions)) || in_array('Recycle Bin', $permissions)) {
-                                        echo "<a href='#' id='" . $row['id'] . "'class='recyclebutton btn btn-danger rounded-sm' title='Click To Delete'> 
-                                    <i class='feather icon-trash'></i>  &nbsp; Move to Bin</a></td>";
+                                        echo "<a href='javascript:void(0);' id='" . $row['t_id'] . "' data-tender-id='" . $row['t_id'] . "' class='recyclebutton  btn btn-danger rounded-sm' title='Click To Delete'> 
+                                    <i class='feather icon-trash'></i>  &nbsp; Move to Bin</a>
+                                    </td>";
                                     }
                                     echo "</tr>";
                                     $count++;
@@ -361,6 +362,35 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
 
     <script>
         $(document).ready(function () {
+
+            $(".recyclebutton").on('click', function (e) {
+                // e.preventDefault(); //
+
+                let element = $(this);
+                let del_id = element.attr("id");
+                let info = 'id=' + del_id;
+                // let del_id = $(this).data('tender-id');
+                // console.log(del_id);
+
+                if (confirm("Are you sure you want to delete this Record?")) {
+                    $.ajax({
+                        type: "GET",
+                        url: "recycleuser.php",
+                        data: info,
+                        success: function (response) {
+                            $(this).parents(".record").animate({
+                                backgroundColor: "#FF3"
+                            }, "fast")
+                                .animate({
+                                    opacity: "hide"
+                                }, "slow");
+                            setTimeout(function () { window.location.reload(); }, 2000);
+                        }
+                    });
+
+                }
+                return false;
+            });
 
             //     if ($.fn.DataTable.isDataTable('#basic-btn2')) {
             //     $('#basic-btn2').DataTable().clear().destroy();
@@ -432,7 +462,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
 
             // Clone the header row for filtering
             $('#basic-btn2 thead tr').clone(true).appendTo('#basic-btn2 thead');
-            var columnsWithSearch = [2,3, 4, 5, 6, 8, 9, 10, 11, 13
+            var columnsWithSearch = [2, 3, 4, 5, 6, 8, 9, 10, 11
             ]; // Columns for filtering
 
             // Add filters to the cloned header
@@ -470,33 +500,6 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
 
     <script type="text/javascript">
         $(function () {
-            $(".recyclebutton").click(function () {
-
-                var element = $(this);
-
-                var del_id = element.attr("id");
-
-                var info = 'id=' + del_id;
-                if (confirm("Are you sure you want to delete this Record?")) {
-                    $.ajax({
-                        type: "GET",
-                        url: "deleteuser.php",
-                        data: info,
-                        success: function () { }
-                    });
-                    $(this).parents(".record").animate({
-                        backgroundColor: "#FF3"
-                    }, "fast")
-                        .animate({
-                            opacity: "hide"
-                        }, "slow");
-
-                    setTimeout(function () {
-                        window.location.reload()
-                    }, 2000);
-                }
-                return false;
-            });
 
             $('#recycle_records').on('click', function (e) {
                 var requestIDs = [];

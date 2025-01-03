@@ -18,6 +18,20 @@ if (isset($_GET['id'])) {
     $result8 = mysqli_query($db, $sql8);
 }
 
+// if (isset($_GET['del_id'])){
+
+//     $id = $_GET['del_id'];
+//     $sql8 = "UPDATE user_tender_requests set delete_tender = '1' where id= '$id'";
+//     $result8 = mysqli_query($db, $sql8);
+
+//     if($result8 ){
+//         echo json_encode([
+//             "status" => true,
+//             "message" => "Tender request deleted successfully."
+//         ]);
+//     }
+// }
+
 // tender request
 if(isset($_POST['tender_request_ids'])) {
     $tender_request_ids = trim($_POST['tender_request_ids']);	
