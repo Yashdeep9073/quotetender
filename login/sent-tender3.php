@@ -566,7 +566,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
     <script type="text/javascript">
         $(function () {
 
-            $(".recyclebutton").click(function () {
+            $(".t").click(function () {
 
                 let element = $(this);
 

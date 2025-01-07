@@ -241,17 +241,17 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                 ?>
                                 <br />
                                 <?php
-                                // if ((in_array('All', $permissions)) || (in_array('Tender Request', $permissions)) || (in_array('Recycle Bin', $permissions))) {
-                                //     echo "<a href='#' id='recycle_records' class='btn btn-danger me-3 rounded-sm'> 
-                                //     <i class='feather icon-trash'></i> &nbsp; Move to Bin Selected Items
-                                //     </a>&nbsp&nbsp&nbsp&nbsp";
-                                // }
-                                // if ((in_array('All', $permissions)) || (in_array('Update Tenders', $permissions)) || (in_array('Tender Request', $permissions))) {
-                                //     echo "<a href='#' class='update_records'><button type='button' class='btn btn-warning me-3 rounded-sm'>
-                                //     <i class='feather icon-edit'></i> &nbsp; Update Selected Items
-                                //     </button></a>
-                                //     ";
-                                // }
+                                if ((in_array('All', $permissions)) || (in_array('Tender Request', $permissions)) || (in_array('Recycle Bin', $permissions))) {
+                                    echo "<a href='javascript:void(0);' id='recycle_records' class='btn btn-danger me-3 rounded-sm'> 
+                                    <i class='feather icon-trash'></i> &nbsp; Move to Bin Selected Items
+                                    </a>&nbsp&nbsp&nbsp&nbsp";
+                                }
+                                if ((in_array('All', $permissions)) || (in_array('Update Tenders', $permissions)) || (in_array('Tender Request', $permissions))) {
+                                    echo "<a href='javascript:void(0);' class='update_records'><button type='button' class='btn btn-warning me-3 rounded-sm'>
+                                    <i class='feather icon-edit'></i> &nbsp; Update Selected Items
+                                    </button></a>
+                                    ";
+                                }
                                 echo '<table id="basic-btn2" class="table table-striped table-bordered">';
                                 echo "<thead>";
                                 echo "<tr>";
@@ -278,7 +278,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
 
                                     echo "<tr class='record'>";
                                     echo "<td><div class='custom-control custom-checkbox'>
-                                    <input type='checkbox' class='custom-control-input request_checkbox' id='customCheck" . $row['sno'] . "' data-request-id='" . $row['id'] . "'>
+                                    <input type='checkbox' class='custom-control-input request_checkbox' id='customCheck" . $row['sno'] . "' data-request-id='" . $row['t_id'] . "'>
                                     <label class='custom-control-label' for='customCheck" . $row['sno'] . "'>" . $row['sno'] . "</label>
                                     </div>
                                     </td>";
@@ -499,44 +499,43 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
     </script>
 
     <script type="text/javascript">
-        $(function () {
 
-            $('#recycle_records').on('click', function (e) {
-                var requestIDs = [];
-                $(".request_checkbox:checked").each(function () {
-                    requestIDs.push($(this).data('request-id'));
-                });
-                if (requestIDs.length <= 0) {
-                    alert("Please select records.");
-                } else {
-                    WRN_PROFILE_DELETE = "Are you sure you want to delete " + (requestIDs.length > 1 ? "these" : "this") + " Record?";
-                    var checked = confirm(WRN_PROFILE_DELETE);
-                    if (checked == true) {
-                        var selected_values = requestIDs.join(",");
-                        $.ajax({
-                            type: "POST",
-                            url: "recycleuser.php",
-                            cache: false,
-                            data: 'alot_request_ids=' + selected_values,
-                            success: function () {
-                                $(".request_checkbox:checked").each(function () {
-                                    $(this).closest(".record").animate({
-                                        backgroundColor: "#FF3"
-                                    }, "fast").animate({
-                                        opacity: "hide"
-                                    }, "slow", function () {
-                                        $(this).remove();
-                                    });
-                                });
-                                setTimeout(function () {
-                                    window.location.reload();
-                                },
-                                    2000);
-                            }
-                        });
-                    }
-                }
+        $('#recycle_records').on('click', function (e) {
+            var requestIDs = [];
+            
+            $(".request_checkbox:checked").each(function () {
+                requestIDs.push($(this).data('request-id'));
             });
+            if (requestIDs.length <= 0) {
+                alert("Please select records.");
+            } else {
+                WRN_PROFILE_DELETE = "Are you sure you want to delete " + (requestIDs.length > 1 ? "these" : "this") + " Record?";
+                var checked = confirm(WRN_PROFILE_DELETE);
+                if (checked == true) {
+                    var selected_values = requestIDs.join(",");
+                    $.ajax({
+                        type: "POST",
+                        url: "recycleuser.php",
+                        cache: false,
+                        data: 'alot_request_ids=' + selected_values,
+                        success: function () {
+                            $(".request_checkbox:checked").each(function () {
+                                $(this).closest(".record").animate({
+                                    backgroundColor: "#FF3"
+                                }, "fast").animate({
+                                    opacity: "hide"
+                                }, "slow", function () {
+                                    $(this).remove();
+                                });
+                            });
+                            setTimeout(function () {
+                                window.location.reload();
+                            },
+                                2000);
+                        }
+                    });
+                }
+            }
         });
 
     </script>

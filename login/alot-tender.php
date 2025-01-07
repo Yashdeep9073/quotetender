@@ -18,7 +18,7 @@ inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_i
 $adminPermissionResult = mysqli_query($db, $adminPermissionQuery);
 $allowDelete = mysqli_num_rows($adminPermissionResult) > 0 ? true : false;
 
-$queryMain = "SELECT DISTINCT
+$queryMain = "SELECT 
     MAX(sm.name) AS name,
     MAX(sm.email_id) AS email_id,
     MAX(sm.firm_name) AS firm_name,
@@ -29,7 +29,7 @@ $queryMain = "SELECT DISTINCT
     ur.reminder_days,
     ur.allotted_at,
     ur.file_name,
-    ur.id,
+    ur.id as t_id,
     ur.reference_code,
     ur.tenderID,
     ur.file_name2,
@@ -97,7 +97,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
 
     <link rel="stylesheet" href="assets/css/style.css">
 
-    
+
 </head>
 
 <body class="">
@@ -252,40 +252,40 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                 <?php
                                 $count = 1;
                                 echo "<tbody>";
-                                while ($row = mysqli_fetch_row($resultMain)) {
+                                while ($row = mysqli_fetch_assoc($resultMain)) {
 
                                     echo "<tr class='record'>";
                                     echo "<td><div class='custom-control custom-checkbox'>
-                                    <input type='checkbox' class='custom-control-input request_checkbox' id='customCheck" . $count . "' data-request-id='" . $row[10] . "'>
+                                    <input type='checkbox' class='custom-control-input request_checkbox' id='customCheck" . $count . "' data-request-id='" . $row['t_id'] . "'>
                                     <label class='custom-control-label' for='customCheck" . $count . "'>" . $count . "</label>
                                     </div>
                                     </td>";
 
-                                    echo "<td><span style='color:red;'> " . $row['0'] . " </span></td>";
-                                    echo "<td>  <span style='color:green;'>" . $row['1'] . " </span></td>";
-                                    echo "<td>" . $row['2'] . "</td>";
-                                    echo "<td>" . $row['18'] . "</td>";
-                                    echo "<td>" . $row['3'] . "</td>";
-                                    echo "<td>" . $row['12'] . "</td>";
-                                    echo "<td>" . $row['11'] . "</td>";
-                                    echo "<td>" . $row['4'] . "</td>";
-                                    echo "<td>" . $row['5'] . "</td>";
-                                    echo "<td>" . $row['15'] . "</td>";
-                                    echo "<td>" . $row['14'] . "</td>";
-                                    echo "<td>" . $row['16'] . "</td>";
-                                    echo "<td style='white-space:pre-wrap; word-wrap:break-word; max-width:20rem;'>" . $row['6'] . "</td>";
-                                    echo "<td style='white-space:pre-wrap; word-wrap:break-word; max-width:20rem;'>" . $row['17'] . " rupees /-</td>";
+                                    echo "<td><span style='color:red;'> " . $row['name'] . " </span></td>";
+                                    echo "<td>  <span style='color:green;'>" . $row['email_id'] . " </span></td>";
+                                    echo "<td>" . $row['firm_name'] . "</td>";
+                                    echo "<td>" . $row['city_state'] . "</td>";
+                                    echo "<td>" . $row['mobile'] . "</td>";
+                                    echo "<td>" . $row['tenderID'] . "</td>";
+                                    echo "<td>" . $row['reference_code'] . "</td>";
+                                    echo "<td>" . $row['tender_no'] . "</td>";
+                                    echo "<td>" . $row['department_name'] . "</td>";
+                                    echo "<td>" . $row['section_name'] . "</td>";
+                                    echo "<td>" . $row['division_name'] . "</td>";
+                                    echo "<td>" . $row['subdivision'] . "</td>";
+                                    echo "<td style='white-space:pre-wrap; word-wrap:break-word; max-width:20rem;'>" . $row['name_of_work'] . "</td>";
+                                    echo "<td style='white-space:pre-wrap; word-wrap:break-word; max-width:20rem;'>" . $row['tentative_cost'] . " rupees /-</td>";
 
-                                    echo "<td>" . "<span class='btn btn-success'>" . $row[7] . " days</span>" . "<br/><br/>" .
-                                        "Aloted Date :" . "<br/>" . date_format(date_create($row['8']), "d-m-Y ") . "<br/>" . '<a href="../login/tender/' . $row['9'] .
+                                    echo "<td>" . "<span class='btn btn-success'>" . $row['reminder_days'] . " days</span>" . "<br/><br/>" .
+                                        "Aloted Date :" . "<br/>" . date_format(date_create($row['allotted_at']), "d-m-Y ") . "<br/>" . '<a href="../login/tender/' . $row['file_name'] .
                                         '"  target="_blank"/>View file 1</a> </br>';
-                                    if (!empty($row['13'])) {
-                                        echo '<a href="../login/tender/' . $row['13'] . '" target="_blank"/>View File 2 </a>' . "</td>";
+                                    if (!empty($row['file_name2'])) {
+                                        echo '<a href="../login/tender/' . $row['file_name2'] . '" target="_blank"/>View File 2 </a>' . "</td>";
                                     } else {
                                         echo "</td>";
                                     }
 
-                                    $res = $row[10];
+                                    $res = $row['t_id'];
                                     $res = base64_encode($res);
 
                                     echo "<td>  <a href='alot-tender-update.php?id=$res'><button type='button' class='btn btn-warning'>
@@ -293,7 +293,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                     echo "<br/>";
                                     echo "<br/>";
                                     if ($allowDelete == true || (in_array('All', $permissions)) || (in_array('Recycle Bin', $permissions))) {
-                                        echo "<a href='#' id='" . $row['10'] . "'class='recyclebutton btn btn-danger' title='Click To Delete'> 
+                                        echo "<a href='javascript:void(0);' id='" . $row['t_id'] . "'class='recyclebutton btn btn-danger' title='Click To Delete'> 
                                     <i class='feather icon-trash'></i>  &nbsp; Move Bin</a></td>";
                                     }
                                     echo "</tr>";
@@ -408,97 +408,81 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
     </script>
 
     <script type="text/javascript">
-        $(function () {
-            $(".recyclebutton").click(function () {
+        $(".recyclebutton").on('click', function () {
 
-                var element = $(this);
+            var element = $(this);
 
-                var del_id = element.attr("id");
+            var del_id = element.attr("id");
 
-                var info = 'id=' + del_id;
-                if (confirm("Are you sure you want to delete this Record?")) {
-                    $.ajax({
-                        type: "GET",
-                        url: "deleteuser.php",
-                        data: info,
-                        success: function () { }
-                    });
-                    $(this).parents(".record").animate({
-                        backgroundColor: "#FF3"
-                    }, "fast")
-                        .animate({
-                            opacity: "hide"
-                        }, "slow");
+            var info = 'id=' + del_id;
+            console.log(`Data : ${info}`);
 
-                    setTimeout(function () {
-                        window.location.reload()
-                    }, 2000);
-                }
-                return false;
-            });
-
-            $('#recycle_records').on('click', function (e) {
-                var requestIDs = [];
-                $(".request_checkbox:checked").each(function () {
-                    requestIDs.push($(this).data('request-id'));
+            if (confirm("Are you sure you want to delete this Record?")) {
+                $.ajax({
+                    type: "GET",
+                    url: "recycleuser.php",
+                    data: info,
+                    success: function () { }
                 });
-                if (requestIDs.length <= 0) {
-                    alert("Please select records.");
-                } else {
-                    WRN_PROFILE_DELETE = "Are you sure you want to delete " + (requestIDs.length > 1 ? "these" : "this") + " Record?";
-                    var checked = confirm(WRN_PROFILE_DELETE);
-                    if (checked == true) {
-                        var selected_values = requestIDs.join(",");
-                        $.ajax({
-                            type: "POST",
-                            url: "recycleuser.php",
-                            cache: false,
-                            data: 'alot_request_ids=' + selected_values,
-                            success: function () {
-                                $(".request_checkbox:checked").each(function () {
-                                    $(this).closest(".record").animate({
-                                        backgroundColor: "#FF3"
-                                    }, "fast").animate({
-                                        opacity: "hide"
-                                    }, "slow", function () {
-                                        $(this).remove();
-                                    });
-                                });
-                                setTimeout(function () {
-                                    window.location.reload();
-                                },
-                                    2000);
-                            }
-                        });
-                    }
-                }
+                $(this).parents(".record").animate({
+                    backgroundColor: "#FF3"
+                }, "fast")
+                    .animate({
+                        opacity: "hide"
+                    }, "slow");
+
+                setTimeout(function () {
+                    window.location.reload()
+                }, 2000);
+            }
+        });
+
+        $('#recycle_records').on('click', function (e) {
+            var requestIDs = [];
+            $(".request_checkbox:checked").each(function () {
+                requestIDs.push($(this).data('request-id'));
             });
+            if (requestIDs.length <= 0) {
+                alert("Please select records.");
+            } else {
+                WRN_PROFILE_DELETE = "Are you sure you want to delete " + (requestIDs.length > 1 ? "these" : "this") + " Record?";
+                var checked = confirm(WRN_PROFILE_DELETE);
+                if (checked == true) {
+                    var selected_values = requestIDs.join(",");
+                    $.ajax({
+                        type: "POST",
+                        url: "recycleuser.php",
+                        cache: false,
+                        data: 'alot_request_ids=' + selected_values,
+                        success: function () {
+                            $(".request_checkbox:checked").each(function () {
+                                $(this).closest(".record").animate({
+                                    backgroundColor: "#FF3"
+                                }, "fast").animate({
+                                    opacity: "hide"
+                                }, "slow", function () {
+                                    $(this).remove();
+                                });
+                            });
+                            setTimeout(function () {
+                                window.location.reload();
+                            },
+                                2000);
+                        }
+                    });
+                }
+            }
         });
 
     </script>
-
-    <!-- <script>
-        $(document).ready(function () {
-            setInterval(function () {
-                $("#category").load("loadmembers.php");
-                // refresh();
-
-            }, 100);
-        });
-    </script> -->
 
     <script type="text/javascript">
         $(document).ready(function () {
             var table = $('#basic-btn2').DataTable();
 
-            // Fetch the number of entries
             var info = table.page.info();
             var totalEntries = info.recordsTotal;
 
-            // Display the number of entries
-            // console.log('Total number of entries:', totalEntries);
-
-            // Optionally, you can display the number of entries in an HTML element
             $('#category').text(totalEntries);
         });
     </script>
