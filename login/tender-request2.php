@@ -95,6 +95,75 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
         #basic-btn2_length {
             padding: 10px !important;
         }
+
+        .dt-buttons {
+            margin-top: 5px !important;
+        }
+
+        .btn-group {
+            display: inline-block;
+            /* margin: 0 5px; */
+            padding: 8px 16px;
+            border-radius: 10px;
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+            text-transform: uppercase;
+            cursor: pointer;
+
+        }
+
+        .dt-buttons .dt-button:hover {
+            background-color: #0056b3;
+            /* Darker blue on hover */
+            transform: scale(1.05);
+            /* Slight zoom effect */
+        }
+
+        .dt-buttons .buttons-copy {
+            background-color: #ff9f43;
+            /* Grey for Copy */
+        }
+
+        .dt-buttons .buttons-copy:hover {
+            background-color: #ff9f43;
+        }
+
+        .dt-buttons .buttons-excel {
+            background-color: #28c76f;
+            /* Green for Excel */
+        }
+
+        .dt-buttons .buttons-excel:hover {
+            background-color: #218838;
+        }
+
+        .dt-buttons .buttons-csv {
+            background-color: #00cfe8;
+            /* Teal for CSV */
+        }
+
+        .dt-buttons .buttons-csv:hover {
+            background-color: #138496;
+        }
+
+        .dt-buttons .buttons-pdf {
+            background-color: #ff4560;
+            /* Red for PDF */
+        }
+
+        .dt-buttons .buttons-pdf:hover {
+            background-color: #c82333;
+        }
+
+        .dt-buttons .buttons-print {
+            background-color: #ffc107;
+            /* Yellow for Print */
+        }
+
+        .dt-buttons .buttons-print:hover {
+            background-color: #e0a800;
+        }
     </style>
 </head>
 
@@ -315,7 +384,6 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
     <script src=" assets/js/vendor-all.min.js"></script>
     <script src="assets/js/plugins/bootstrap.min.js"></script>
     <script src="assets/js/pcoded.min.js"></script>
-    <!--<script src="assets/js/menu-setting.min.js"></script>-->
 
     <script src="assets/js/plugins/jquery.dataTables.min.js"></script>
     <script src="assets/js/plugins/dataTables.bootstrap4.min.js"></script>
@@ -364,41 +432,41 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
 
             // $('#basic-btn2 thead tr').clone(true).appendTo('#basic-btn2 thead');
 
-            var columnsWithSearch = [6, 8, 9, 10, 11, 13];
+            // var columnsWithSearch = [6, 8, 9, 10, 11, 13];
 
-            $('#basic-btn2 thead tr:eq(1) th').each(function (i) {
+            // $('#basic-btn2 thead tr:eq(1) th').each(function (i) {
 
-                if (columnsWithSearch.includes(i) && !$(this).hasClass("noFilter")) {
-                    var title = $(this).text();
-                    $(this).html('<input type="text" class="form-control" placeholder="Search ' + title + '" />');
+            //     if (columnsWithSearch.includes(i) && !$(this).hasClass("noFilter")) {
+            //         var title = $(this).text();
+            //         $(this).html('<input type="text" class="form-control" placeholder="Search ' + title + '" />');
 
-                    $('input', this).on('keyup change', function () {
-                        if (table.column(i).search() !== this.value) {
-                            table
-                                .column(i)
-                                .search(this.value)
-                                .draw();
-                        }
-                    });
-                } else {
-                    $(this).html('<span></span>');
-                }
-            });
+            //         $('input', this).on('keyup change', function () {
+            //             if (table.column(i).search() !== this.value) {
+            //                 table
+            //                     .column(i)
+            //                     .search(this.value)
+            //                     .draw();
+            //             }
+            //         });
+            //     } else {
+            //         $(this).html('<span></span>');
+            //     }
+            // });
 
-            var table = $('#basic-btn2').DataTable({
-                orderCellsTop: true,
-                fixedHeader: true,
-                columnDefs: [
-                    {
-                        targets: 0,
-                        visible: true
-                    },
+            // var table = $('#basic-btn2').DataTable({
+            //     orderCellsTop: true,
+            //     fixedHeader: true,
+            //     columnDefs: [
+            //         {
+            //             targets: 0,
+            //             visible: true
+            //         },
 
-                ]
-            });
+            //     ]
+            // });
 
 
-            $("#updateuser").delay(5000).slideUp(300);
+            // $("#updateuser").delay(5000).slideUp(300);
 
 
         });
@@ -512,16 +580,43 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
 
     <script type="text/javascript">
         $(document).ready(function () {
-            var table = $('#basic-btn2').DataTable();
+            // Initialize the DataTable with buttons
+            var table = $('#basic-btn2').DataTable({
+                dom: 'Bfrtip', // Enable the buttons layout
+                buttons: [
+                    {
+                        extend: 'excelHtml5',
+                        text: '<i class="fas fa-file-excel"></i> Excel',
+                        className: 'btn btn-primary rounded-sm',
+                        titleAttr: 'Export to Excel'
+                    },
+                    {
+                        extend: 'print',
+                        text: '<i class="fas fa-print"></i> Print',
+                        className: 'btn btn-primary rounded-sm',
+                        titleAttr: 'Print'
+                    },
+                    {
+                        extend: 'copy',
+                        text: '<i class="fas fa-copy"></i> Copy',
+                        className: 'btn btn-primary rounded-sm',
+                        titleAttr: 'Copy to clipboard'
+                    },
+                    {
+                        extend: 'pdfHtml5',
+                        text: '<i class="fas fa-file-pdf"></i> PDF',
+                        className: 'btn btn-primary rounded-sm',
+                        titleAttr: 'Export to PDF'
+                    }
+                ]
+
+
+            });
 
             // Fetch the number of entries
             var info = table.page.info();
             var totalEntries = info.recordsTotal;
 
-            // Display the number of entries
-            // console.log('Total number of entries:', totalEntries);
-
-            // Optionally, you can display the number of entries in an HTML element
             $('#new').text(totalEntries);
         });
     </script>

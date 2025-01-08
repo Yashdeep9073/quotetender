@@ -118,6 +118,75 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
         #basic-btn2_length {
             padding: 10px !important;
         }
+
+        .dt-buttons {
+            margin-top: 5px !important;
+        }
+
+        .btn-group {
+            display: inline-block;
+            /* margin: 0 5px; */
+            padding: 8px 16px;
+            border-radius: 10px;
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+            text-transform: uppercase;
+            cursor: pointer;
+
+        }
+
+        .dt-buttons .dt-button:hover {
+            background-color: #0056b3;
+            /* Darker blue on hover */
+            transform: scale(1.05);
+            /* Slight zoom effect */
+        }
+
+        .dt-buttons .buttons-copy {
+            background-color: #ff9f43;
+            /* Grey for Copy */
+        }
+
+        .dt-buttons .buttons-copy:hover {
+            background-color: #ff9f43;
+        }
+
+        .dt-buttons .buttons-excel {
+            background-color: #28c76f;
+            /* Green for Excel */
+        }
+
+        .dt-buttons .buttons-excel:hover {
+            background-color: #218838;
+        }
+
+        .dt-buttons .buttons-csv {
+            background-color: #00cfe8;
+            /* Teal for CSV */
+        }
+
+        .dt-buttons .buttons-csv:hover {
+            background-color: #138496;
+        }
+
+        .dt-buttons .buttons-pdf {
+            background-color: #ff4560;
+            /* Red for PDF */
+        }
+
+        .dt-buttons .buttons-pdf:hover {
+            background-color: #c82333;
+        }
+
+        .dt-buttons .buttons-print {
+            background-color: #ffc107;
+            /* Yellow for Print */
+        }
+
+        .dt-buttons .buttons-print:hover {
+            background-color: #e0a800;
+        }
     </style>
 </head>
 
@@ -196,10 +265,13 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                 </li>
                                 <li class="breadcrumb-item"><a href="#!"></a></li>
                             </ul>
+
                         </div>
                     </div>
                 </div>
             </div>
+
+
 
             <div class="row">
                 <div class="col-md-6 col-xl-3">
@@ -364,13 +436,10 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
         $(document).ready(function () {
 
             $(".recyclebutton").on('click', function (e) {
-                // e.preventDefault(); //
 
                 let element = $(this);
                 let del_id = element.attr("id");
                 let info = 'id=' + del_id;
-                // let del_id = $(this).data('tender-id');
-                // console.log(del_id);
 
                 if (confirm("Are you sure you want to delete this Record?")) {
                     $.ajax({
@@ -387,113 +456,9 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                             setTimeout(function () { window.location.reload(); }, 2000);
                         }
                     });
-
                 }
                 return false;
             });
-
-            //     if ($.fn.DataTable.isDataTable('#basic-btn2')) {
-            //     $('#basic-btn2').DataTable().clear().destroy();
-            //     }
-            //     let myTable = $("#basic-btn2").DataTable();
-            //     let columnsToFilter = [8,9,10];
-
-
-            //     columnsToFilter.forEach(function(colID) {
-
-            //     let mySelectList = $("<br><select class='form-control' />")
-            //         .appendTo(myTable.column(colID).header())
-            //         .on("change", function () {
-            //             myTable.column(colID).search($(this).val());
-            //             // Update the changes using draw() method
-            //             myTable.column(colID).draw();
-            //         });
-
-            //     myTable
-            //         .column(colID)
-            //         .cache("search")
-            //         .sort()
-            //         .each(function (param) {
-            //             mySelectList.append(
-            //                 $('<option value="' + param + '">'
-            //                 + param + "</option>")
-            //             );
-            //         });
-            // });
-
-            // $('#basic-btn2 thead tr').clone(true).appendTo('#basic-btn2 thead');
-
-            // var columnsWithSearch = [6, 8, 9, 10, 11, 13];
-
-            // $('#basic-btn2 thead tr:eq(1) th').each(function (i) {
-
-            //     if (columnsWithSearch.includes(i) && !$(this).hasClass("noFilter")) {
-            //         var title = $(this).text();
-            //         $(this).html('<input type="text" class="form-control" placeholder="Search ' + title + '" />');
-
-            //         $('input', this).on('keyup change', function () {
-            //             if (table.column(i).search() !== this.value) {
-            //                 table
-            //                     .column(i)
-            //                     .search(this.value)
-            //                     .draw();
-            //             }
-            //         });
-            //     } else {
-            //         $(this).html('<span></span>');
-            //     }
-            // });
-
-            // var table = $('#basic-btn2').DataTable({
-            //     orderCellsTop: true,
-            //     fixedHeader: true,
-            //     columnDefs: [
-            //         { targets: 0, visible: true }
-            //     ]
-            // });
-
-            var table = $('#basic-btn2').DataTable({
-                orderCellsTop: true,
-                fixedHeader: true,
-                columnDefs: [
-                    { targets: 0, visible: true }
-                ]
-            });
-
-            // Clone the header row for filtering
-            $('#basic-btn2 thead tr').clone(true).appendTo('#basic-btn2 thead');
-            var columnsWithSearch = [2, 3, 4, 5, 6, 8, 9, 10, 11
-            ]; // Columns for filtering
-
-            // Add filters to the cloned header
-            $('#basic-btn2 thead tr:eq(1) th').each(function (i) {
-                if (columnsWithSearch.includes(i) && !$(this).hasClass("noFilter")) {
-                    var title = $(this).text();
-                    var column = table.column(i); // Use the existing DataTable instance
-                    var select = $('<select class="form-control"><option value="">' + title + '</option></select>')
-                        .appendTo($(this).empty())
-                        .on('change', function () {
-                            var val = $.fn.dataTable.util.escapeRegex($(this).val());
-                            column
-                                .search(val ? '^' + val + '$' : '', true, false)
-                                .draw();
-                        });
-
-                    // Populate the select dropdown with unique values from the column
-                    column.data().unique().sort().each(function (d, j) {
-                        if (d) {
-                            select.append('<option value="' + d + '">' + d + '</option>');
-                        }
-                    });
-                } else {
-                    $(this).html('<span></span>');
-                }
-            });
-
-            // Optional: Hide update message after 5 seconds
-
-            $("#updateuser").delay(5000).slideUp(300);
-
 
         });
     </script>
@@ -502,7 +467,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
 
         $('#recycle_records').on('click', function (e) {
             var requestIDs = [];
-            
+
             $(".request_checkbox:checked").each(function () {
                 requestIDs.push($(this).data('request-id'));
             });
@@ -540,48 +505,51 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
 
     </script>
 
-    <!-- <script>
-    $(document).on('click', '.tender_id', function (e) {
-        e.preventDefault();
-        const tender_id = $(this).text();
-
-        if (tender_id.trim() !== '') {
-            // console.log("Selected Tender ID:", tender_id);
-            $.ajax({
-                url: 'tender-request3.php', // The PHP file that will handle the deletion
-                type: 'POST',
-                data: { tender_id: tender_id },
-                success: function(response) {
-                    // Redirect to tender-request3.php after successful AJAX request
-                    window.location.href = 'tender-request3.php';
-                },
-                error: function(xhr, status, error) {
-                    console.error("AJAX request failed:", status, error);
-                }
-            });
-        } else {
-            console.log("Tender ID is empty or invalid.");
-        }
-    }); 
-</script>-->
-
-
 
     <script type="text/javascript">
         $(document).ready(function () {
-            var table = $('#basic-btn2').DataTable();
+            // Initialize the DataTable with buttons
+            var table = $('#basic-btn2').DataTable({
+                dom: 'Bfrtip', // Enable the buttons layout
+                buttons: [
+                    {
+                        extend: 'excelHtml5',
+                        text: '<i class="fas fa-file-excel"></i> Excel',
+                        className: 'btn btn-primary rounded-sm',
+                        titleAttr: 'Export to Excel'
+                    },
+                    {
+                        extend: 'print',
+                        text: '<i class="fas fa-print"></i> Print',
+                        className: 'btn btn-primary rounded-sm',
+                        titleAttr: 'Print'
+                    },
+                    {
+                        extend: 'copy',
+                        text: '<i class="fas fa-copy"></i> Copy',
+                        className: 'btn btn-primary rounded-sm',
+                        titleAttr: 'Copy to clipboard'
+                    },
+                    {
+                        extend: 'pdfHtml5',
+                        text: '<i class="fas fa-file-pdf"></i> PDF',
+                        className: 'btn btn-primary rounded-sm',
+                        titleAttr: 'Export to PDF'
+                    }
+                ]
+
+
+            });
 
             // Fetch the number of entries
             var info = table.page.info();
             var totalEntries = info.recordsTotal;
 
             // Display the number of entries
-            // console.log('Total number of entries:', totalEntries);
-
-            // Optionally, you can display the number of entries in an HTML element
             $('#total').text(totalEntries);
         });
     </script>
+
 
 
 

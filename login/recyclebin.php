@@ -267,7 +267,6 @@ $result = mysqli_query($db, $query);
     <script src="assets/js/vendor-all.min.js"></script>
     <script src="assets/js/plugins/bootstrap.min.js"></script>
     <script src="assets/js/pcoded.min.js"></script>
-    <!--<script src="assets/js/menu-setting.min.js"></script>-->
 
     <script src="assets/js/plugins/jquery.dataTables.min.js"></script>
     <script src="assets/js/plugins/dataTables.bootstrap4.min.js"></script>
