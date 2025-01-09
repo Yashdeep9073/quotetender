@@ -12,6 +12,8 @@ $name = $_SESSION['login_user'];
 
 include("db/config.php");
 
+
+
 $adminID = $_SESSION['login_user_id'];
 $adminPermissionQuery = "SELECT nm.title FROM admin_permissions ap 
 inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_id='" . $adminID . "' and ap.navigation_menu_id=1 ";
@@ -30,10 +32,89 @@ $allowedAction = !in_array('All', $userPermissions2) && in_array('Update Tenders
     (!in_array('All', $userPermissions2) && in_array('View Tenders', $userPermissions2) ? 'view' : 'all');
 
 
-// Initialize the row number variable
-mysqli_query($db, "SET @row_number = 0;");
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    // Initialize $conditions as an empty array
+    $conditions = [];
 
-$queryMain = "
+    // Sanitize inputs
+    $departmentId = filter_input(INPUT_POST, 'department-search', FILTER_SANITIZE_SPECIAL_CHARS);
+    $sectionId = filter_input(INPUT_POST, 'section-search', FILTER_SANITIZE_SPECIAL_CHARS);
+    $divisionId = filter_input(INPUT_POST, 'division-search', FILTER_SANITIZE_SPECIAL_CHARS);
+    $subDivisionId = filter_input(INPUT_POST, 'sub-division-search', FILTER_SANITIZE_SPECIAL_CHARS);
+
+    // Add conditions only if a valid filter is selected
+    if ($departmentId && $departmentId !== '0') {
+        $conditions[] = "ur.department_id = '$departmentId'";
+    }
+    if ($sectionId && $sectionId !== '0') {
+        $conditions[] = "ur.section_id = '$sectionId'";
+    }
+    if ($divisionId && $divisionId !== '0') {
+        $conditions[] = "ur.division_id = '$divisionId'";
+    }
+    if ($subDivisionId && $subDivisionId !== '0') {
+        $conditions[] = "ur.sub_division_id = '$subDivisionId'";
+    }
+
+    // Construct the WHERE clause
+    $whereClause = empty($conditions) ? "" : "WHERE " . implode(' AND ', $conditions);
+
+    // SQL Query
+    $queryMain = "
+        SELECT 
+         ROW_NUMBER() OVER (ORDER BY ur.created_at) AS sno,
+         ur.id as t_id, 
+         m.name, 
+         m.member_id, 
+         m.firm_name, 
+         m.mobile, 
+         m.email_id, 
+         department.department_name, 
+         ur.due_date, 
+         ur.file_name, 
+         ur.tenderID, 
+         ur.created_at, 
+         ur.file_name2,
+         ur.reference_code,
+         ur.tentative_cost,
+         ur.tender_no, 
+         s.*,
+         dv.*,
+         sd.* 
+     FROM 
+         user_tender_requests ur
+     INNER JOIN 
+         members m ON ur.member_id = m.member_id
+     LEFT JOIN  
+         department ON ur.department_id = department.department_id
+     LEFT JOIN 
+         section s ON ur.section_id = s.section_id
+     LEFT JOIN 
+         division dv ON ur.division_id = dv.division_id
+     LEFT JOIN
+         sub_division sd ON ur.sub_division_id = sd.id
+     INNER JOIN 
+         (
+             SELECT MIN(id) AS min_id, tenderID
+             FROM user_tender_requests
+             WHERE status = 'Sent' AND delete_tender = '0'
+             GROUP BY tenderID
+         ) AS unique_tenders ON ur.id = unique_tenders.min_id
+        $whereClause
+     ORDER BY 
+         ur.created_at ASC;
+         ";
+
+    // Execute the query
+    $resultMain = mysqli_query($db, $queryMain);
+    if (!$resultMain) {
+        die("Query Error: " . mysqli_error($db));
+    }
+} else {
+    // Initialize the row number variable
+    mysqli_query($db, "SET @row_number = 0;");
+
+    $queryMain = "
    SELECT 
     ROW_NUMBER() OVER (ORDER BY ur.created_at) AS sno,
     ur.id as t_id, 
@@ -75,10 +156,12 @@ INNER JOIN
     ) AS unique_tenders ON ur.id = unique_tenders.min_id
 ORDER BY 
     ur.created_at ASC;
-
     ";
 
-$resultMain = mysqli_query($db, $queryMain);
+    $resultMain = mysqli_query($db, $queryMain);
+}
+
+
 
 
 
@@ -91,6 +174,39 @@ $permissions = [];
 while ($item = mysqli_fetch_row($adminPermissionResult)) {
     array_push($permissions, $item[0]);
 }
+
+//fecth Department
+$queryDepartment = "SELECT * FROM department WHERE status = 1";
+$resultDepartment = mysqli_query($db, $queryDepartment);
+$departments = [];
+
+if ($resultDepartment) {
+    while ($row = mysqli_fetch_assoc($resultDepartment)) {
+        $departments[] = $row;
+    }
+}
+
+//fecth Sections
+
+$querySection = "SELECT * FROM section WHERE status = 1";
+$resultSection = mysqli_query($db, $querySection);
+$sections = [];
+
+if ($resultSection) {
+    while ($row = mysqli_fetch_assoc($resultSection)) {
+        $sections[] = $row;
+    }
+}
+
+$query = "SELECT sc.section_name, dv.division_name, sdv.subdivision 
+          FROM section sc 
+          INNER JOIN division dv ON sc.section_id = dv.section_id 
+          INNER JOIN sub_division sdv ON dv.division_id = sdv.division_id 
+          WHERE sc.status = 1 
+          ORDER BY sc.section_name, dv.division_name";
+
+$result = mysqli_query($db, $query);
+
 ?>
 
 <!DOCTYPE html>
@@ -257,22 +373,18 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                     <div class="row align-items-center">
                         <div class="col-md-12">
                             <div class="page-header-title">
-                                <h5 class="m-b-10">Sent Tender
-                                </h5>
+                                <h5 class="m-b-10">Sent Tender</h5>
                             </div>
                             <ul class="breadcrumb">
-                                <li class="breadcrumb-item"><a href="index.php"><i class="feather icon-home"></i></a>
+                                <li class="breadcrumb-item">
+                                    <a href="index.php"><i class="feather icon-home"></i> Home</a>
                                 </li>
-                                <li class="breadcrumb-item"><a href="#!"></a></li>
+                                <li class="breadcrumb-item active">Sent Tender</li>
                             </ul>
-
                         </div>
                     </div>
                 </div>
             </div>
-
-
-
             <div class="row">
                 <div class="col-md-6 col-xl-3">
                     <div class="card bg-c-green order-card">
@@ -284,6 +396,87 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                         </div>
                     </div>
                 </div>
+            </div>
+            <div class="page-header">
+                <div class="page-block">
+                    <div class="row align-items-center">
+                        <div class="col-md-12">
+                            <!-- Filters Section -->
+                            <form method="post" id="filterForm">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="faculty">Department <span class="text-danger">*</span></label>
+                                            <select class="form-control" name="department-search"
+                                                id="department-search">
+                                                <option value="0">All</option>
+                                                <?php foreach ($departments as $department) { ?>
+                                                    <option value="<?php echo $department['department_id'] ?>">
+                                                        <?php echo $department['department_name'] ?>
+                                                    </option>
+                                                <?php } ?>
+                                            </select>
+                                            <div class="invalid-feedback">Please select a faculty.</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="program">Section <span class="text-danger">*</span></label>
+                                            <select class="form-control" name="section-search" id="section-search">
+                                                <option value="0">All</option>
+                                                <?php foreach ($sections as $section) { ?>
+                                                    <option value="<?php echo $section['section_id'] ?>">
+                                                        <?php echo $section['section_name'] ?>
+                                                    </option>
+                                                <?php } ?>
+                                                <!-- Add dynamic options here -->
+                                            </select>
+                                            <div class="invalid-feedback">Please select a program.</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="session">Division <span class="text-danger">*</span></label>
+                                            <select class="form-control" name="division-search" id="division-search">
+                                                <option value="0">All</option>
+                                            </select>
+                                            <div class="invalid-feedback">Please select a session.</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="semester">Sub Division <span
+                                                    class="text-danger">*</span></label>
+                                            <select class="form-control" name="sub-division-search"
+                                                id="sub-division-search" required>
+                                                <option value="0">All</option>
+                                                <!-- Add dynamic options here -->
+                                            </select>
+                                            <div class="invalid-feedback">Please select a semester.</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label>&nbsp;</label> <!-- Empty label for spacing -->
+                                            <button type="submit"
+                                                class="btn btn-primary btn-md d-flex align-items-center">
+                                                <i class="fas fa-search" style="margin-right: 8px;"></i> Search
+                                            </button>
+                                        </div>
+                                    </div>
+
+
+                                </div>
+
+
+                            </form>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
                 <div class="col-sm-12">
                     <div class="card">
                         <div class="card-header table-card-header">
@@ -331,9 +524,9 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                 echo "<th>Tender ID</th>";
                                 echo "<th>Tender No</th>";
                                 echo "<th>Department</th>";
+                                echo "<th>Section</th>";
                                 echo "<th>Division</th>";
                                 echo "<th>Sub-Division</th>";
-                                echo "<th>Section</th>";
                                 echo "<th>Tentative Cost</th>";
                                 echo "<th>REF.Code</th>";
                                 echo "<th>Due Date</th>";
@@ -355,16 +548,12 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                     </div>
                                     </td>";
 
-                                    // echo "<td><span style='color:red;'> " . $row['name'] . " </span></td>";
-                                    // echo "<td>  <span style='color:green;'>" . $row['email_id'] . " </span></td>";
-                                    // echo "<td>" . $row['firm_name'] . "</td>";
-                                    // echo "<td>" . $row['mobile'] . "</td>";
                                     echo "<td><a class='tender_id' href='sent-tender3.php?tender_id=" . base64_encode($row['tenderID']) . "'>" . $row['tenderID'] . "</a></td>";
                                     echo "<td>" . $row['tender_no'] . "</td>";
                                     echo "<td>" . $row['department_name'] . "</td>";
+                                    echo "<td>" . $row['section_name'] . "</td>";
                                     echo "<td>" . $row['division_name'] . "</td>";
                                     echo "<td>" . $row['subdivision'] . "</td>";
-                                    echo "<td>" . $row['section_name'] . "</td>";
                                     echo "<td>" . $row['tentative_cost'] . "</td>";
                                     echo "<td>" . $row['reference_code'] . "</td>";
                                     $dueDate = new DateTime($row['due_date']);
@@ -373,17 +562,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                     $createdDate = new DateTime($row['created_at']);
                                     $formattedCreatedDate = $createdDate->format('d-m-Y H:i:s');
                                     echo "<td>" . $row['created_at'] . "</td>";
-                                    // echo "<td>" . $row['due_date'] . "</td>";
-                                    // if (!empty($row['file_name'])) {
-                                    //     echo "<td>" . '<a href="../login/tender/' . $row['file_name'] . '" target="_blank" style="padding:6px 15.2px;" />View </a>' . "</br>";
-                                    // } else {
-                                    //     echo "<td>" . '<a href="../login/tender/' . $row['file_name'] . '" class="btn disabled" target="_blank"/>No file </a>' . "</br>";
-                                    // }
-                                    // if (!empty($row['file_name2'])) {
-                                    //     echo '<a href="../login/tender/' . $row['file_name2'] . '" target="_blank" style="padding:6px 15.2px;" />View </a>' . "</td>";
-                                    // } else {
-                                    //     echo '<a href="../login/tender/' . $row['file_name2'] . '" class="btn disabled" target="_blank"/>No file </a>' . "</td>";
-                                    // }
+
                                     $res = $row['t_id'];
                                     $res = base64_encode($res);
 
@@ -537,22 +716,80 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                         titleAttr: 'Export to PDF'
                     }
                 ]
-
-
             });
-
             // Fetch the number of entries
             var info = table.page.info();
             var totalEntries = info.recordsTotal;
-
             // Display the number of entries
             $('#total').text(totalEntries);
         });
     </script>
 
+    <script>
+        $(document).ready(function () {
+            $('#section-search').on('change', function () {
+                let sectionId = $('#section-search').val();
 
+                $.ajax({
+                    url: 'fetch-section-data.php',
+                    type: 'POST',
+                    data: { sectionId: sectionId },
+                    success: function (response) {
+                        if (response.success) {
+                            // console.log(response.divisionName);
 
+                            // Clear existing options except the default "All" option
+                            $('#division-search').find('option').not(':first').remove();
 
+                            // Add new options based on the response.divisionId and response.divisionName arrays
+                            response.divisionId.forEach((id, index) => {
+                                let divisionName = response.divisionName[index];
+                                $('#division-search').append(new Option(divisionName, id));
+                            });
+
+                        } else {
+                            console.error(response.error);
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('AJAX Error:', status, error);
+                    }
+                });
+            });
+
+            $('#division-search').on('change', function () {
+                let divisionId = $('#division-search').val();
+                console.log(`divisionId: ${divisionId}`);
+
+                $.ajax({
+                    url: 'fetch-division-data.php',
+                    type: 'POST',
+                    data: { divisionId: divisionId },
+                    success: function (response) {
+                        if (response.success) {
+                            console.log(response.subDivisionName);
+
+                            // Clear existing options except the default "All" option
+                            $('#sub-division-search').find('option').not(':first').remove();
+
+                            // Add new options based on the response.divisionId and response.divisionName arrays
+                            response.subDivisionId.forEach((id, index) => {
+                                let subDivisionName = response.subDivisionName[index];
+                                $('#sub-division-search').append(new Option(subDivisionName, id));
+                            });
+
+                        } else {
+                            console.error(response.error);
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('AJAX Error:', status, error);
+                    }
+                });
+            });
+
+        });
+    </script>
 
 </body>
 

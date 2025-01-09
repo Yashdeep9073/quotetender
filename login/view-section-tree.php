@@ -62,71 +62,81 @@ $current_division = '';
 
     <link rel="stylesheet" href="assets/css/style.css">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.1/dist/umd/popper.min.js"></script>
-<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-<style>
-    * {margin: 0; padding: 0;}
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.1/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
 
 
-    .page-header-title h5 {
-        font-family: 'Arial', sans-serif;
-        font-size: 1.25rem;
-        color: #333; /* Dark gray color for the header */
-        margin-bottom: 1rem;
-    }
+        .page-header-title h5 {
+            font-family: 'Arial', sans-serif;
+            font-size: 1.25rem;
+            color: #333;
+            /* Dark gray color for the header */
+            margin-bottom: 1rem;
+        }
 
-    .section-title {
-        font-family: 'Verdana', sans-serif;
-        font-size: 1.75rem;
-        font-weight: bold;
-        color:#33cc33; /* Dark blue color for section titles */
-        margin-bottom: 1.5rem;
-        border-bottom: 2px solid #33cc33; /* Add a border for emphasis */
-        padding-bottom: 0.5rem;
-    }
+        .section-title {
+            font-family: 'Verdana', sans-serif;
+            font-size: 1.75rem;
+            font-weight: bold;
+            color: #33cc33;
+            /* Dark blue color for section titles */
+            margin-bottom: 1.5rem;
+            border-bottom: 2px solid #33cc33;
+            /* Add a border for emphasis */
+            padding-bottom: 0.5rem;
+        }
 
-    .division-list,
-    .subdivision-list {
-        list-style-type: none;
-        padding-left: 0;
-    }
+        .division-list,
+        .subdivision-list {
+            list-style-type: none;
+            padding-left: 0;
+        }
 
-    .division-item {
-        font-family: 'Arial', sans-serif;
-        font-size: 1.25rem;
-        font-weight: bold;
-        margin-top: 1.5rem;
-        color: #007bff; /* Blue color for division names */
-    }
+        .division-item {
+            font-family: 'Arial', sans-serif;
+            font-size: 1.25rem;
+            font-weight: bold;
+            margin-top: 1.5rem;
+            color: #007bff;
+            /* Blue color for division names */
+        }
 
-    .subdivision-item {
-        font-family: 'Arial', sans-serif;
-        font-size: 1rem;
-        margin-left: 1rem;
-        color: #6c757d; /* Gray color for subdivisions */
-    }
+        .subdivision-item {
+            font-family: 'Arial', sans-serif;
+            font-size: 1rem;
+            margin-left: 1rem;
+            color: #6c757d;
+            /* Gray color for subdivisions */
+        }
 
-    .breadcrumb-item a {
-        color: #007bff; /* Blue color for breadcrumb links */
-        font-weight: bold;
-    }
+        .breadcrumb-item a {
+            color: #007bff;
+            /* Blue color for breadcrumb links */
+            font-weight: bold;
+        }
 
-    .breadcrumb-item a:hover {
-        text-decoration: underline;
-    }
+        .breadcrumb-item a:hover {
+            text-decoration: underline;
+        }
 
-    .card-body {
-        padding: 2rem;
-        font-family: 'Arial', sans-serif;
-        font-size: 1rem;
-        color: #333; /* Dark gray color for text */
-    }
+        .card-body {
+            padding: 2rem;
+            font-family: 'Arial', sans-serif;
+            font-size: 1rem;
+            color: #333;
+            /* Dark gray color for text */
+        }
 
-    .dt-responsive {
-        margin-top: 1rem;
-    }
-</style>
+        .dt-responsive {
+            margin-top: 1rem;
+        }
+    </style>
 </head>
 
 <body class="">
@@ -195,31 +205,31 @@ $current_division = '';
     </header>
 
     <section class="pcoded-main-container">
-    <div class="pcoded-content">
-        <div class="page-header">
-            <div class="page-block">
-                <div class="row align-items-center">
-                    <div class="col-md-12">
-                        <div class="page-header-title">
-                            <h5 class="m-b-10">Manage Sub-Division</h5>
+        <div class="pcoded-content">
+            <div class="page-header">
+                <div class="page-block">
+                    <div class="row align-items-center">
+                        <div class="col-md-12">
+                            <div class="page-header-title">
+                                <h5 class="m-b-10">Manage Sub-Division</h5>
+                            </div>
+                            <ul class="breadcrumb">
+                                <li class="breadcrumb-item">
+                                    <a href="index.php"><i class="feather icon-home"></i> Home</a>
+                                </li>
+                                <li class="breadcrumb-item"><a href="#!">Section-Tree</a></li>
+                            </ul>
                         </div>
-                        <ul class="breadcrumb">
-                            <li class="breadcrumb-item">
-                                <a href="index.php"><i class="feather icon-home"></i> Home</a>
-                            </li>
-                            <li class="breadcrumb-item"><a href="#!">Section-Tree</a></li>
-                        </ul>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <div class="row">
-            <div class="col-sm-12">
-                <div class="card">
-                    <div class="card-body">
-                        <div class="dt-responsive table-responsive">
-                            <?php 
+            <div class="row">
+                <div class="col-sm-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="dt-responsive table-responsive">
+                                <?php
                                 // Initialize variables
                                 $current_section = '';
                                 $current_division = '';
@@ -235,7 +245,7 @@ $current_division = '';
                                         $current_division = ''; // Reset division when the section changes
                                         echo '<ul class="division-list">'; // Start a new section's list
                                     }
-                                
+
                                     if ($current_division != $row['division_name']) {
                                         // Display the division name only if it's different from the last one
                                         if ($current_division !== '') {
@@ -245,7 +255,7 @@ $current_division = '';
                                         $current_division = $row['division_name'];
                                         echo '<ul class="subdivision-list">'; // Start a new division's list
                                     }
-                                
+
                                     // Display the subdivision for every row
                                     echo '<li class="subdivision-item">' . $row['subdivision'] . '</li>';
                                 }
@@ -255,14 +265,14 @@ $current_division = '';
                                 if ($current_section !== '') {
                                     echo '</ul>'; // Close last section's list
                                 }
-                            ?>
+                                ?>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
-</section>
+    </section>
 
 
 
@@ -285,39 +295,39 @@ $current_division = '';
     <script src="assets/js/pages/data-export-custom.js"></script>
 
     <script>
-    $(document).ready(function() {
-        $("#gold").delay(5000).slideUp(300);
-    });
+        $(document).ready(function () {
+            $("#gold").delay(5000).slideUp(300);
+        });
     </script>
 
 
     <script type="text/javascript">
-    $(function() {
-        $(".delbutton").click(function() {
+        $(function () {
+            $(".delbutton").click(function () {
 
-            var element = $(this);
+                var element = $(this);
 
-            var del_id = element.attr("id");
+                var del_id = element.attr("id");
 
-            var info = 'id=' + del_id;
-            if (confirm("Are you sure you want to delete this Record?")) {
-                $.ajax({
-                    type: "GET",
-                    url: "deletegold.php",
-                    data: info,
-                    success: function() {}
-                });
-                $(this).parents(".record").animate({
+                var info = 'id=' + del_id;
+                if (confirm("Are you sure you want to delete this Record?")) {
+                    $.ajax({
+                        type: "GET",
+                        url: "deletegold.php",
+                        data: info,
+                        success: function () { }
+                    });
+                    $(this).parents(".record").animate({
                         backgroundColor: "#FF3"
                     }, "fast")
-                    .animate({
-                        opacity: "hide"
-                    }, "slow");
-            }
-            return false;
+                        .animate({
+                            opacity: "hide"
+                        }, "slow");
+                }
+                return false;
+            });
         });
-    });
     </script>
 </body>
 
-</html> 
+</html>
