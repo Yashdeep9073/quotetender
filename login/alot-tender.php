@@ -18,7 +18,90 @@ inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_i
 $adminPermissionResult = mysqli_query($db, $adminPermissionQuery);
 $allowDelete = mysqli_num_rows($adminPermissionResult) > 0 ? true : false;
 
-$queryMain = "SELECT 
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    // Initialize $conditions as an empty array
+    $conditions = [];
+
+    // Sanitize inputs
+    $departmentId = filter_input(INPUT_POST, 'department-search', FILTER_SANITIZE_SPECIAL_CHARS);
+    $sectionId = filter_input(INPUT_POST, 'section-search', FILTER_SANITIZE_SPECIAL_CHARS);
+    $divisionId = filter_input(INPUT_POST, 'division-search', FILTER_SANITIZE_SPECIAL_CHARS);
+    $subDivisionId = filter_input(INPUT_POST, 'sub-division-search', FILTER_SANITIZE_SPECIAL_CHARS);
+
+    // Add conditions only if a valid filter is selected
+    if ($departmentId && $departmentId !== '0') {
+        $conditions[] = "ur.department_id = '$departmentId'";
+    }
+    if ($sectionId && $sectionId !== '0') {
+        $conditions[] = "ur.section_id = '$sectionId'";
+    }
+    if ($divisionId && $divisionId !== '0') {
+        $conditions[] = "ur.division_id = '$divisionId'";
+    }
+    if ($subDivisionId && $subDivisionId !== '0') {
+        $conditions[] = "ur.sub_division_id = '$subDivisionId'";
+    }
+
+    // Ensure static conditions are always present
+    $conditions[] = "ur.status = 'Allotted'";
+    $conditions[] = "ur.delete_tender = '0'";
+
+    // Construct the WHERE clause dynamically
+    $whereClause = "WHERE " . implode(' AND ', $conditions);
+
+    // SQL Query with dynamic WHERE clause
+    $queryMain = "
+        SELECT 
+            MAX(sm.name) AS name,
+            MAX(sm.email_id) AS email_id,
+            MAX(sm.firm_name) AS firm_name,
+            MAX(sm.mobile) AS mobile,
+            ur.tender_no,
+            MAX(department.department_name) AS department_name,
+            ur.name_of_work,
+            ur.reminder_days,
+            ur.allotted_at,
+            ur.file_name,
+            ur.id AS t_id,
+            ur.reference_code,
+            ur.tenderID,
+            ur.file_name2,
+            MAX(dv.division_name) AS division_name,
+            MAX(se.section_name) AS section_name,
+            MAX(sd.subdivision) AS subdivision,
+            ur.tentative_cost,
+            sm.city_state
+        FROM
+            user_tender_requests ur
+        INNER JOIN
+            members m ON ur.member_id = m.member_id
+        INNER JOIN
+            department ON ur.department_id = department.department_id
+        INNER JOIN
+            section se ON ur.section_id = se.section_id
+        INNER JOIN
+            members sm ON ur.selected_user_id = sm.member_id
+        INNER JOIN
+            division dv ON dv.section_id = ur.section_id
+        INNER JOIN
+            sub_division sd ON ur.division_id = sd.division_id
+        $whereClause
+        GROUP BY
+            ur.id
+        ORDER BY
+            NOW() >= CAST(ur.due_date AS DATE),
+            CAST(ur.allotted_at AS DATE) ASC,
+            ABS(DATEDIFF(NOW(), CAST(ur.due_date AS DATE)));
+    ";
+
+    // Execute the query
+    $resultMain = mysqli_query($db, $queryMain);
+    if (!$resultMain) {
+        die("Query Error: " . mysqli_error($db));
+    }
+}
+ else {
+    $queryMain = "SELECT 
     MAX(sm.name) AS name,
     MAX(sm.email_id) AS email_id,
     MAX(sm.firm_name) AS firm_name,
@@ -61,8 +144,32 @@ ORDER BY
     CAST(ur.allotted_at AS DATE) ASC,
     ABS(DATEDIFF(NOW(), CAST(ur.due_date AS DATE)))";
 
-$resultMain = mysqli_query($db, $queryMain);
+    $resultMain = mysqli_query($db, $queryMain);
 
+}
+
+//fecth Department
+$queryDepartment = "SELECT * FROM department WHERE status = 1";
+$resultDepartment = mysqli_query($db, $queryDepartment);
+$departments = [];
+
+if ($resultDepartment) {
+    while ($row = mysqli_fetch_assoc($resultDepartment)) {
+        $departments[] = $row;
+    }
+}
+
+//fecth Sections
+
+$querySection = "SELECT * FROM section WHERE status = 1";
+$resultSection = mysqli_query($db, $querySection);
+$sections = [];
+
+if ($resultSection) {
+    while ($row = mysqli_fetch_assoc($resultSection)) {
+        $sections[] = $row;
+    }
+}
 
 $adminID = $_SESSION['login_user_id'];
 $adminPermissionQuery = "SELECT nm.title FROM admin_permissions ap 
@@ -98,7 +205,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
     <link rel="stylesheet" href="assets/css/style.css">
 
     <style>
-           .dt-buttons {
+        .dt-buttons {
             margin-top: 5px !important;
         }
 
@@ -250,7 +357,6 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                     </div>
                 </div>
             </div>
-
             <div class="row">
                 <div class="col-md-6 col-xl-3">
                     <div class="card bg-c-red order-card">
@@ -261,6 +367,89 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                         </div>
                     </div>
                 </div>
+            </div>
+            <div class="page-header">
+                <div class="page-block">
+                    <div class="row align-items-center">
+                        <div class="col-md-12">
+                            <!-- Filters Section -->
+                            <form method="post" id="filterForm">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="faculty">Department <span class="text-danger">*</span></label>
+                                            <select class="form-control" name="department-search"
+                                                id="department-search">
+                                                <option value="0">All</option>
+                                                <?php foreach ($departments as $department) { ?>
+                                                    <option value="<?php echo $department['department_id'] ?>">
+                                                        <?php echo $department['department_name'] ?>
+                                                    </option>
+                                                <?php } ?>
+                                            </select>
+                                            <div class="invalid-feedback">Please select a faculty.</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="program">Section <span class="text-danger">*</span></label>
+                                            <select class="form-control" name="section-search" id="section-search">
+                                                <option value="0">All</option>
+                                                <?php foreach ($sections as $section) { ?>
+                                                    <option value="<?php echo $section['section_id'] ?>">
+                                                        <?php echo $section['section_name'] ?>
+                                                    </option>
+                                                <?php } ?>
+                                                <!-- Add dynamic options here -->
+                                            </select>
+                                            <div class="invalid-feedback">Please select a program.</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="session">Division <span class="text-danger">*</span></label>
+                                            <select class="form-control" name="division-search" id="division-search">
+                                                <option value="0">All</option>
+                                            </select>
+                                            <div class="invalid-feedback">Please select a session.</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="semester">Sub Division <span
+                                                    class="text-danger">*</span></label>
+                                            <select class="form-control" name="sub-division-search"
+                                                id="sub-division-search" required>
+                                                <option value="0">All</option>
+                                                <!-- Add dynamic options here -->
+                                            </select>
+                                            <div class="invalid-feedback">Please select a semester.</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label>&nbsp;</label> <!-- Empty label for spacing -->
+                                            <button type="submit"
+                                                class="btn btn-primary btn-md d-flex align-items-center">
+                                                <i class="fas fa-search" style="margin-right: 8px;"></i> Search
+                                            </button>
+                                        </div>
+                                    </div>
+
+
+                                </div>
+
+
+                            </form>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+
                 <div class="col-sm-12">
                     <div class="card">
                         <div class="card-header table-card-header">
@@ -478,7 +667,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
         });
     </script> -->
 
-<script type="text/javascript">
+    <script type="text/javascript">
         $(document).ready(function () {
             // Initialize the DataTable with buttons
             var table = $('#basic-btn2').DataTable({
@@ -521,7 +710,71 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
             $('#category').text(totalEntries);
         });
     </script>
+    <script>
+        $(document).ready(function () {
+            $('#section-search').on('change', function () {
+                let sectionId = $('#section-search').val();
 
+                $.ajax({
+                    url: 'fetch-section-data.php',
+                    type: 'POST',
+                    data: { sectionId: sectionId },
+                    success: function (response) {
+                        if (response.success) {
+                            // console.log(response.divisionName);
+
+                            // Clear existing options except the default "All" option
+                            $('#division-search').find('option').not(':first').remove();
+
+                            // Add new options based on the response.divisionId and response.divisionName arrays
+                            response.divisionId.forEach((id, index) => {
+                                let divisionName = response.divisionName[index];
+                                $('#division-search').append(new Option(divisionName, id));
+                            });
+
+                        } else {
+                            console.error(response.error);
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('AJAX Error:', status, error);
+                    }
+                });
+            });
+
+            $('#division-search').on('change', function () {
+                let divisionId = $('#division-search').val();
+                console.log(`divisionId: ${divisionId}`);
+
+                $.ajax({
+                    url: 'fetch-division-data.php',
+                    type: 'POST',
+                    data: { divisionId: divisionId },
+                    success: function (response) {
+                        if (response.success) {
+                            console.log(response.subDivisionName);
+
+                            // Clear existing options except the default "All" option
+                            $('#sub-division-search').find('option').not(':first').remove();
+
+                            // Add new options based on the response.divisionId and response.divisionName arrays
+                            response.subDivisionId.forEach((id, index) => {
+                                let subDivisionName = response.subDivisionName[index];
+                                $('#sub-division-search').append(new Option(subDivisionName, id));
+                            });
+
+                        } else {
+                            console.error(response.error);
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('AJAX Error:', status, error);
+                    }
+                });
+            });
+
+        });
+    </script>
 </body>
 
 </html>
