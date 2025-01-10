@@ -31,7 +31,7 @@ m.mobile,
 utr.status,
 utr.id
 FROM user_tender_requests utr
-INNER JOIN members m
+LEFT JOIN members m
 ON utr.member_id = m.member_id
 WHERE utr.delete_tender = '1'
 ";
