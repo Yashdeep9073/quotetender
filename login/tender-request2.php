@@ -147,22 +147,12 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
             background-color: #138496;
         }
 
-        .dt-buttons .buttons-pdf {
-            background-color: #ff4560;
-            /* Red for PDF */
-        }
-
-        .dt-buttons .buttons-pdf:hover {
-            background-color: #c82333;
-        }
-
         .dt-buttons .buttons-print {
-            background-color: #ffc107;
-            /* Yellow for Print */
+            background-color: #ff4560;
         }
 
         .dt-buttons .buttons-print:hover {
-            background-color: #e0a800;
+            background-color: #c82333;
         }
     </style>
 </head>
@@ -591,10 +581,10 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                         titleAttr: 'Export to Excel'
                     },
                     {
-                        extend: 'print',
-                        text: '<i class="fas fa-print"></i> Print',
+                        extend: 'csvHtml5',
+                        text: '<i class="fas fa-file-csv"></i> CSV',
                         className: 'btn btn-primary rounded-sm',
-                        titleAttr: 'Print'
+                        titleAttr: 'Export to CSV'
                     },
                     {
                         extend: 'copy',
@@ -603,10 +593,10 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                         titleAttr: 'Copy to clipboard'
                     },
                     {
-                        extend: 'pdfHtml5',
-                        text: '<i class="fas fa-file-pdf"></i> PDF',
+                        extend: 'print',
+                        text: '<i class="fas fa-print"></i> Print',
                         className: 'btn btn-primary rounded-sm',
-                        titleAttr: 'Export to PDF'
+                        titleAttr: 'Print'
                     }
                 ]
 

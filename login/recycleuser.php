@@ -54,3 +54,8 @@ if(isset($_POST['alot_request_ids'])) {
 	$sql = "UPDATE user_tender_requests set delete_tender = '1' WHERE id in ($alot_request_ids)";
 	$resultset = mysqli_query($db, $sql);
 }
+if(isset($_POST['award_request_ids'])) {
+	$award_request_ids = trim($_POST['award_request_ids']);	
+	$sql = "UPDATE user_tender_requests set delete_tender = '1' WHERE id in ($award_request_ids)";
+	$resultset = mysqli_query($db, $sql);
+}

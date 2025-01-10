@@ -73,18 +73,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             sm.city_state
         FROM
             user_tender_requests ur
-        INNER JOIN
+        LEFT JOIN
             members m ON ur.member_id = m.member_id
-        INNER JOIN
+        LEFT JOIN
             department ON ur.department_id = department.department_id
-        INNER JOIN
+        LEFT JOIN
             section se ON ur.section_id = se.section_id
-        INNER JOIN
+        LEFT JOIN
             members sm ON ur.selected_user_id = sm.member_id
-        INNER JOIN
-            division dv ON dv.section_id = ur.section_id
-        INNER JOIN
-            sub_division sd ON ur.division_id = sd.division_id
+        LEFT JOIN
+                division dv ON ur.division_id = dv.division_id
+        LEFT JOIN
+                sub_division sd ON ur.sub_division_id = sd.id
         $whereClause
         GROUP BY
             ur.id
@@ -99,8 +99,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     if (!$resultMain) {
         die("Query Error: " . mysqli_error($db));
     }
-}
- else {
+} else {
     $queryMain = "SELECT 
     MAX(sm.name) AS name,
     MAX(sm.email_id) AS email_id,
@@ -123,18 +122,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     sm.city_state
 FROM
     user_tender_requests ur
-INNER JOIN
+LEFT JOIN
     members m ON ur.member_id = m.member_id
-INNER JOIN
+LEFT JOIN
     department ON ur.department_id = department.department_id
-INNER JOIN
+LEFT JOIN
     section se ON ur.section_id = se.section_id
-INNER JOIN
+LEFT JOIN
     members sm ON ur.selected_user_id = sm.member_id
-INNER JOIN
-    division dv ON dv.section_id = ur.section_id
-INNER JOIN
-    sub_division sd ON ur.division_id = sd.division_id
+LEFT JOIN
+         division dv ON ur.division_id = dv.division_id
+LEFT JOIN
+         sub_division sd ON ur.sub_division_id = sd.id
 WHERE
     ur.status = 'Allotted' AND ur.delete_tender = '0'
 GROUP BY
@@ -256,22 +255,12 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
             background-color: #138496;
         }
 
-        .dt-buttons .buttons-pdf {
-            background-color: #ff4560;
-            /* Red for PDF */
-        }
-
-        .dt-buttons .buttons-pdf:hover {
-            background-color: #c82333;
-        }
-
         .dt-buttons .buttons-print {
-            background-color: #ffc107;
-            /* Yellow for Print */
+            background-color: #ff4560;
         }
 
         .dt-buttons .buttons-print:hover {
-            background-color: #e0a800;
+            background-color: #c82333;
         }
     </style>
 
@@ -426,7 +415,6 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                             <div class="invalid-feedback">Please select a semester.</div>
                                         </div>
                                     </div>
-
                                     <div class="col-md-4">
                                         <div class="form-group">
                                             <label>&nbsp;</label> <!-- Empty label for spacing -->
@@ -436,20 +424,14 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                             </button>
                                         </div>
                                     </div>
-
-
                                 </div>
-
-
                             </form>
-
                         </div>
                     </div>
                 </div>
             </div>
 
             <div class="row">
-
                 <div class="col-sm-12">
                     <div class="card">
                         <div class="card-header table-card-header">
@@ -656,16 +638,6 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
 
     </script>
 
-    <!-- <script type="text/javascript">
-        $(document).ready(function () {
-            var table = $('#basic-btn2').DataTable();
-
-            var info = table.page.info();
-            var totalEntries = info.recordsTotal;
-
-            $('#category').text(totalEntries);
-        });
-    </script> -->
 
     <script type="text/javascript">
         $(document).ready(function () {
@@ -680,10 +652,10 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                         titleAttr: 'Export to Excel'
                     },
                     {
-                        extend: 'print',
-                        text: '<i class="fas fa-print"></i> Print',
+                        extend: 'csvHtml5',
+                        text: '<i class="fas fa-file-csv"></i> CSV',
                         className: 'btn btn-primary rounded-sm',
-                        titleAttr: 'Print'
+                        titleAttr: 'Export to CSV'
                     },
                     {
                         extend: 'copy',
@@ -692,10 +664,10 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                         titleAttr: 'Copy to clipboard'
                     },
                     {
-                        extend: 'pdfHtml5',
-                        text: '<i class="fas fa-file-pdf"></i> PDF',
+                        extend: 'print',
+                        text: '<i class="fas fa-print"></i> Print',
                         className: 'btn btn-primary rounded-sm',
-                        titleAttr: 'Export to PDF'
+                        titleAttr: 'Print'
                     }
                 ]
 

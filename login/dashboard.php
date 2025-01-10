@@ -287,7 +287,7 @@ $type = $row11[5];
     $(document).ready(function () {
         setInterval(function () {
             $("#new").load("load.php");
-            refresh();
+            // refresh();
         }, 100);
     });
 </script>
@@ -296,7 +296,7 @@ $type = $row11[5];
     $(document).ready(function () {
         setInterval(function () {
             $("#total").load("load-total.php");
-            refresh();
+            // refresh();
         }, 100);
     });
 </script>
@@ -307,7 +307,7 @@ $type = $row11[5];
 
 
             $("#user").load("loadgold.php");
-            refresh();
+            // refresh();
 
         }, 100);
     });
@@ -317,7 +317,7 @@ $type = $row11[5];
     $(document).ready(function () {
         setInterval(function () {
             $("#category").load("loadmembers.php");
-            refresh();
+            // refresh();
 
         }, 100);
     });

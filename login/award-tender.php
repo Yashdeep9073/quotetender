@@ -7,10 +7,46 @@ if (!isset($_SESSION["login_user"])) {
     header("location: index.php");
 }
 $name = $_SESSION['login_user'];
-
 include("db/config.php");
+$adminID = $_SESSION['login_user_id'];
+$adminPermissionQuery = "SELECT nm.title FROM admin_permissions ap 
+inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_id='" . $adminID . "' and ap.navigation_menu_id=1 ";
+$adminPermissionResult = mysqli_query($db, $adminPermissionQuery);
+$allowDelete = mysqli_num_rows($adminPermissionResult) > 0 ? true : false;
 
-$query = "SELECT DISTINCT
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+
+    // Initialize $conditions as an empty array
+    $conditions = [];
+
+    // Sanitize inputs
+    $departmentId = filter_input(INPUT_POST, 'department-search', FILTER_SANITIZE_SPECIAL_CHARS);
+    $sectionId = filter_input(INPUT_POST, 'section-search', FILTER_SANITIZE_SPECIAL_CHARS);
+    $divisionId = filter_input(INPUT_POST, 'division-search', FILTER_SANITIZE_SPECIAL_CHARS);
+    $subDivisionId = filter_input(INPUT_POST, 'sub-division-search', FILTER_SANITIZE_SPECIAL_CHARS);
+
+    // Add conditions only if a valid filter is selected
+    if ($departmentId && $departmentId !== '0') {
+        $conditions[] = "ur.department_id = '$departmentId'";
+    }
+    if ($sectionId && $sectionId !== '0') {
+        $conditions[] = "ur.section_id = '$sectionId'";
+    }
+    if ($divisionId && $divisionId !== '0') {
+        $conditions[] = "ur.division_id = '$divisionId'";
+    }
+    if ($subDivisionId && $subDivisionId !== '0') {
+        $conditions[] = "ur.sub_division_id = '$subDivisionId'";
+    }
+
+    // Ensure static conditions are always present
+    $conditions[] = "ur.remark = 'accepted'";
+    $conditions[] = "ur.delete_tender = '0'";
+
+    // Construct the WHERE clause dynamically
+    $whereClause = "WHERE " . implode(' AND ', $conditions);
+
+    $query = "SELECT DISTINCT
     sm.name, 
     m.email_id, 
     m.mobile, 
@@ -20,25 +56,84 @@ $query = "SELECT DISTINCT
     ur.name_of_work,
     ur.remarked_at, 
     ur.file_name, 
-    ur.id,
+    ur.id as t_id, 
     se.section_name,
     dv.division_name,
     sd.subdivision,
     ur.tenderID
 FROM 
     user_tender_requests ur 
-INNER JOIN 
+LEFT JOIN
     members m ON ur.member_id = m.member_id
-INNER JOIN 
-    members sm ON ur.selected_user_id = sm.member_id
-INNER JOIN 
-    department ON ur.department_id = department.department_id 
-INNER JOIN 
+LEFT JOIN
+    department ON ur.department_id = department.department_id
+LEFT JOIN
     section se ON ur.section_id = se.section_id
-INNER JOIN
-    division dv ON dv.section_id = ur.section_id
-INNER JOIN
-    sub_division sd ON ur.division_id = sd.division_id
+LEFT JOIN
+    members sm ON ur.selected_user_id = sm.member_id
+LEFT JOIN
+         division dv ON ur.division_id = dv.division_id
+LEFT JOIN
+         sub_division sd ON ur.sub_division_id = sd.id
+$whereClause
+GROUP BY 
+    ur.id, 
+    sm.name, 
+    m.email_id, 
+    m.mobile, 
+    m.firm_name, 
+    ur.tender_no, 
+    department.department_name,
+    ur.name_of_work,
+    ur.remarked_at, 
+    ur.file_name, 
+    se.section_name,
+    dv.division_name,
+    sd.subdivision,
+    ur.tenderID
+ORDER BY 
+    NOW() >= CAST(ur.due_date AS DATE), 
+    CAST(ur.remarked_at AS DATE) ASC, 
+    ABS(DATEDIFF(NOW(), CAST(ur.due_date AS DATE)));
+
+ ";
+
+    $result = mysqli_query($db, $query);
+    if (!$result) {
+        die("Query Error: " . mysqli_error($db));
+    }
+
+} else {
+    $query = "SELECT DISTINCT
+    sm.name, 
+    m.email_id, 
+    m.mobile, 
+    m.firm_name, 
+    ur.tender_no, 
+    department.department_name,
+    ur.name_of_work,
+    ur.remarked_at, 
+    ur.file_name, 
+    ur.id as t_id,
+    se.section_name,
+    dv.division_name,
+    sd.subdivision,
+    ur.tenderID,
+    ur.remark
+FROM 
+    user_tender_requests ur 
+LEFT JOIN
+    members m ON ur.member_id = m.member_id
+LEFT JOIN
+    department ON ur.department_id = department.department_id
+LEFT JOIN
+    section se ON ur.section_id = se.section_id
+LEFT JOIN
+    members sm ON ur.selected_user_id = sm.member_id
+LEFT JOIN
+         division dv ON ur.division_id = dv.division_id
+LEFT JOIN
+         sub_division sd ON ur.sub_division_id = sd.id
 WHERE 
     ur.remark = 'accepted' AND ur.delete_tender = '0'
 GROUP BY 
@@ -63,7 +158,31 @@ ORDER BY
 
  ";
 
-$result = mysqli_query($db, $query);
+    $result = mysqli_query($db, $query);
+}
+
+//fecth Department
+$queryDepartment = "SELECT * FROM department WHERE status = 1";
+$resultDepartment = mysqli_query($db, $queryDepartment);
+$departments = [];
+
+if ($resultDepartment) {
+    while ($row = mysqli_fetch_assoc($resultDepartment)) {
+        $departments[] = $row;
+    }
+}
+
+//fecth Sections
+
+$querySection = "SELECT * FROM section WHERE status = 1";
+$resultSection = mysqli_query($db, $querySection);
+$sections = [];
+
+if ($resultSection) {
+    while ($row = mysqli_fetch_assoc($resultSection)) {
+        $sections[] = $row;
+    }
+}
 
 ?>
 
@@ -74,9 +193,6 @@ $result = mysqli_query($db, $query);
 
 <head>
     <title>Award </title>
-
-
-
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimal-ui">
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
@@ -89,31 +205,81 @@ $result = mysqli_query($db, $query);
     <link rel="stylesheet" href="assets/css/plugins/dataTables.bootstrap4.min.css">
 
     <link rel="stylesheet" href="assets/css/style.css">
+    <style>
+        .dt-buttons {
+            margin-top: 5px !important;
+        }
+
+        .btn-group {
+            display: inline-block;
+            /* margin: 0 5px; */
+            padding: 8px 16px;
+            border-radius: 10px;
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+            text-transform: uppercase;
+            cursor: pointer;
+
+        }
+
+        .dt-buttons .dt-button:hover {
+            background-color: #0056b3;
+            /* Darker blue on hover */
+            transform: scale(1.05);
+            /* Slight zoom effect */
+        }
+
+        .dt-buttons .buttons-copy {
+            background-color: #ff9f43;
+            /* Grey for Copy */
+        }
+
+        .dt-buttons .buttons-copy:hover {
+            background-color: #ff9f43;
+        }
+
+        .dt-buttons .buttons-excel {
+            background-color: #28c76f;
+            /* Green for Excel */
+        }
+
+        .dt-buttons .buttons-excel:hover {
+            background-color: #218838;
+        }
+
+        .dt-buttons .buttons-csv {
+            background-color: #00cfe8;
+            /* Teal for CSV */
+        }
+
+        .dt-buttons .buttons-csv:hover {
+            background-color: #138496;
+        }
+
+        .dt-buttons .buttons-print {
+            background-color: #ff4560;
+        }
+
+        .dt-buttons .buttons-print:hover {
+            background-color: #c82333;
+        }
+    </style>
 </head>
 
 <body class="">
-
     <div class="loader-bg">
         <div class="loader-track">
             <div class="loader-fill"></div>
         </div>
     </div>
-
-
-
-
     <?php include 'navbar.php'; ?>
-
-
-
-
 
     <header class="navbar pcoded-header navbar-expand-lg navbar-light headerpos-fixed header-blue">
         <div class="m-header">
             <a class="mobile-menu" id="mobile-collapse" href="#!"><span></span></a>
             <a href="#!" class="b-brand" style="font-size:24px;">
                 ADMIN PANEL
-
             </a>
             <a href="#!" class="mob-toggler">
                 <i class="feather icon-more-vertical"></i>
@@ -166,7 +332,6 @@ $result = mysqli_query($db, $query);
 
     <section class="pcoded-main-container">
         <div class="pcoded-content">
-
             <div class="page-header">
                 <div class="page-block">
                     <div class="row align-items-center">
@@ -185,18 +350,102 @@ $result = mysqli_query($db, $query);
                     </div>
                 </div>
             </div>
+            <div class="row">
+                <div class="col-md-6 col-xl-3">
+                    <div class="card bg-c-yellow order-card">
+                        <div class="card-body">
+                            <h6 class="text-white">Award Tender</h6>
+                            <h2 class="text-right text-white"><i class="feather icon-award float-left"></i><span
+                                    id="category"></span></h2>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="page-header">
+                <div class="page-block">
+                    <div class="row align-items-center">
+                        <div class="col-md-12">
+                            <!-- Filters Section -->
+                            <form method="post" id="filterForm">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="faculty">Department <span class="text-danger">*</span></label>
+                                            <select class="form-control" name="department-search"
+                                                id="department-search">
+                                                <option value="0">All</option>
+                                                <?php foreach ($departments as $department) { ?>
+                                                    <option value="<?php echo $department['department_id'] ?>">
+                                                        <?php echo $department['department_name'] ?>
+                                                    </option>
+                                                <?php } ?>
+                                            </select>
+                                            <div class="invalid-feedback">Please select a faculty.</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="program">Section <span class="text-danger">*</span></label>
+                                            <select class="form-control" name="section-search" id="section-search">
+                                                <option value="0">All</option>
+                                                <?php foreach ($sections as $section) { ?>
+                                                    <option value="<?php echo $section['section_id'] ?>">
+                                                        <?php echo $section['section_name'] ?>
+                                                    </option>
+                                                <?php } ?>
+                                                <!-- Add dynamic options here -->
+                                            </select>
+                                            <div class="invalid-feedback">Please select a program.</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="session">Division <span class="text-danger">*</span></label>
+                                            <select class="form-control" name="division-search" id="division-search">
+                                                <option value="0">All</option>
+                                            </select>
+                                            <div class="invalid-feedback">Please select a session.</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="semester">Sub Division <span
+                                                    class="text-danger">*</span></label>
+                                            <select class="form-control" name="sub-division-search"
+                                                id="sub-division-search" required>
+                                                <option value="0">All</option>
+                                                <!-- Add dynamic options here -->
+                                            </select>
+                                            <div class="invalid-feedback">Please select a semester.</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label>&nbsp;</label> <!-- Empty label for spacing -->
+                                            <button type="submit"
+                                                class="btn btn-primary btn-md d-flex align-items-center">
+                                                <i class="fas fa-search" style="margin-right: 8px;"></i> Search
+                                            </button>
+                                        </div>
+                                    </div>
+
+
+                                </div>
+
+
+                            </form>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
 
 
             <div class="row">
-
                 <div class="col-sm-12">
                     <div class="card">
-
-
                         <div class="card-header table-card-header">
-
-
-
                         </div>
                         <div class="card-body">
                             <div class="dt-responsive table-responsive">
@@ -230,6 +479,12 @@ $result = mysqli_query($db, $query);
 
 
                                 <?php
+                                if ($allowDelete == true || (in_array('All', $permissions)) || (in_array('Recycle Bin', $permissions))) {
+                                    echo "<div class='col-md row'>
+                                <a href='#' id='recycle_records' class='btn btn-danger rounded-sm'> <i class='feather icon-trash'></i>  &nbsp;
+                                Move to Bin Selected Items</a>
+                                </div> <br />";
+                                }
 
                                 echo '<table id="basic-btn3" class="table table-striped table-bordered nowrap">';
                                 echo "<thead>";
@@ -247,6 +502,7 @@ $result = mysqli_query($db, $query);
                                 echo "<th>Awarded At</th>";
 
 
+                                echo "<th>Status</th>";
                                 echo "<th>Status</th>";
 
 
@@ -266,7 +522,11 @@ $result = mysqli_query($db, $query);
                                 while ($row = mysqli_fetch_row($result)) {
 
                                     echo "<tr class='record'>";
-                                    echo "<td> $count</td>";
+                                    echo "<td><div class='custom-control custom-checkbox'>
+                                    <input type='checkbox' class='custom-control-input request_checkbox' id='customCheck" . $count . "' data-request-id='" . $row['9'] . "'>
+                                    <label class='custom-control-label' for='customCheck" . $count . "'>" . $count . "</label>
+                                    </div>
+                                    </td>";
 
                                     echo "<td>" . $row['0'] . "<br/> " . "<span style='color:red;'> " . $row['1'] . "</span>" . "<br/>"
                                         . "<span style='color:green;'> " . $row['2'] . "</span>" . "<br/>" . "<span style='color:orange;'> "
@@ -289,7 +549,8 @@ $result = mysqli_query($db, $query);
                                     echo "<td>  <a href='award-edit.php?award=$res'><button type='button' class='btn btn-warning'>
                                     <i class='feather icon-edit'></i> &nbsp;Edit Status</button></a><br/></br/> <a href='#'>
                                     <button type='button' class='btn btn-success'><i class='feather icon-edit'></i> &nbsp;Awarded
-                                    </button></a> ";
+                                    </button></a> </td>";
+                                    echo "<td>" . $row['14'] . "</td>";
 
 
 
@@ -339,133 +600,119 @@ $result = mysqli_query($db, $query);
     <script src="assets/js/plugins/buttons.bootstrap4.min.js"></script>
     <script src="assets/js/pages/data-export-custom.js"></script>
 
+    <script type="text/javascript">
+        $(".recyclebutton").on('click', function () {
 
+            var element = $(this);
 
-    <script>
-        $(document).ready(function () {
-            //     if ($.fn.DataTable.isDataTable('#basic-btn3')) {
-            //     $('#basic-btn3').DataTable().clear().destroy();
-            // }
-            //     let myTable = $("#basic-btn3").DataTable();
-            //     let columnsToFilter = [4,5,6];
+            var del_id = element.attr("id");
 
-            //     columnsToFilter.forEach(function(colID){
-            //         let mySelectList = $("<br><select class='form-control'/>")
-            //         .appendTo(myTable.column(colID).header())
-            //         .on("change",function(){
-            //             myTable.column(colID).search($(this).val());
+            var info = 'id=' + del_id;
+            console.log(`Data : ${info}`);
 
-            //             myTable.column(colID).draw();
-            //         })
-
-            //         myTable
-            //         .column(colID)
-            //         .cache("search")
-            //         .sort()
-            //         .each(function(param){
-            //             mySelectList.append(
-            //                 $('<option value="' + param + '">'
-            //                 + param + "</option>")
-            //             );
-            //         });
-            //     });
-
-                $('#basic-btn3 thead tr').clone(true).appendTo('#basic-btn3 thead');
-                var columnsWithSearch = [4, 5, 6];
-
-                $('#basic-btn3 thead tr:eq(1) th').each(function (i) {
-                    if (columnsWithSearch.includes(i) && !$(this).hasClass("noFilter")) {
-                        var title = $(this).text();
-                        $(this).html('<input type="text" class="form-control" placeholder="Search ' + title + '" />');
-
-                        $('input', this).on('keyup change', function () {
-                            if (table.column(i).search() !== this.value) {
-                                table
-                                    .column(i)
-                                    .search(this.value)
-                                    .draw();
-                            }
-                        });
-
-                    } else {
-                        $(this).html('<span></span>');
-                    }
+            if (confirm("Are you sure you want to delete this Record?")) {
+                $.ajax({
+                    type: "GET",
+                    url: "recycleuser.php",
+                    data: info,
+                    success: function () { }
                 });
+                $(this).parents(".record").animate({
+                    backgroundColor: "#FF3"
+                }, "fast")
+                    .animate({
+                        opacity: "hide"
+                    }, "slow");
 
-                var table = $('#basic-btn3').DataTable({
-                    orderCellsTop: true,
-                    fixedHeader: true,
-                    columnDefs: [
-                        { targets: 0, visible: true }
-                    ]
-                });
-
-
-                $("#updateuser").delay(5000).slideUp(300);
-            // });
-
-            // Clone the header row for filtering
-            // $('#basic-btn3 thead tr').clone(true).appendTo('#basic-btn3 thead');
-            // var columnsWithSearch = [5, 8, 9, 10, 11, 13]; // Columns for filtering
-
-            // // Add filters to the cloned header
-            // $('#basic-btn3 thead tr:eq(1) th').each(function (i) {
-            //     if (columnsWithSearch.includes(i) && !$(this).hasClass("noFilter")) {
-            //         var column = table.column(i); // Use the existing DataTable instance
-            //         var select = $('<select class="form-control"><option value="">Select</option></select>')
-            //             .appendTo($(this).empty())
-            //             .on('change', function () {
-            //                 var val = $.fn.dataTable.util.escapeRegex($(this).val());
-            //                 column
-            //                     .search(val ? '^' + val + '$' : '', true, false)
-            //                     .draw();
-            //             });
-
-            //         // Populate the select dropdown with unique values from the column
-            //         column.data().unique().sort().each(function (d, j) {
-            //             if (d) {
-            //                 select.append('<option value="' + d + '">' + d + '</option>');
-            //             }
-            //         });
-            //     } else {
-            //         $(this).html('<span></span>');
-            //     }
-            // });
-            
-            // // Optional: Hide update message after 5 seconds
-            // $("#updateuser").delay(5000).slideUp(300);
+                setTimeout(function () {
+                    window.location.reload()
+                }, 2000);
+            }
         });
+
+        $('#recycle_records').on('click', function (e) {
+            let requestIDs = [];
+            $(".request_checkbox:checked").each(function () {
+                requestIDs.push($(this).data('request-id'));
+            });
+                // console.log(`TenderId - ${requestIDs}`);
+            if (requestIDs.length <= 0) {
+                alert("Please select records.");
+            } else {
+                WRN_PROFILE_DELETE = "Are you sure you want to delete " + (requestIDs.length > 1 ? "these" : "this") + " Record?";
+                var checked = confirm(WRN_PROFILE_DELETE);
+                if (checked == true) {
+                    var selected_values = requestIDs.join(",");
+                    $.ajax({
+                        type: "POST",
+                        url: "recycleuser.php",
+                        cache: false,
+                        data: 'award_request_ids=' + selected_values,
+                        success: function () {
+                            $(".request_checkbox:checked").each(function () {
+                                $(this).closest(".record").animate({
+                                    backgroundColor: "#FF3"
+                                }, "fast").animate({
+                                    opacity: "hide"
+                                }, "slow", function () {
+                                    $(this).remove();
+                                });
+                            });
+                            setTimeout(function () {
+                                window.location.reload();
+                            },
+                                2000);
+                        }
+                    });
+                }
+            }
+        });
+
     </script>
 
     <script type="text/javascript">
-            $(function () {
-                $(".delbutton").click(function () {
-
-                    var element = $(this);
-
-                    var del_id = element.attr("id");
-
-                    var info = 'id=' + del_id;
-                    if (confirm("Are you sure you want to delete this Record?")) {
-                        $.ajax({
-                            type: "GET",
-                            url: "deleteuser.php",
-                            data: info,
-                            success: function () { }
-                        });
-                        $(this).parents(".record").animate({
-                            backgroundColor: "#FF3"
-                        }, "fast")
-                            .animate({
-                                opacity: "hide"
-                            }, "slow");
+        $(document).ready(function () {
+            // Initialize the DataTable with buttons
+            var table = $('#basic-btn3').DataTable({
+                dom: 'Bfrtip', // Enable the buttons layout
+                buttons: [
+                    {
+                        extend: 'excelHtml5',
+                        text: '<i class="fas fa-file-excel"></i> Excel',
+                        className: 'btn btn-primary rounded-sm',
+                        titleAttr: 'Export to Excel'
+                    },
+                    {
+                        extend: 'csvHtml5',
+                        text: '<i class="fas fa-file-csv"></i> CSV',
+                        className: 'btn btn-primary rounded-sm',
+                        titleAttr: 'Export to CSV'
+                    },
+                    {
+                        extend: 'copy',
+                        text: '<i class="fas fa-copy"></i> Copy',
+                        className: 'btn btn-primary rounded-sm',
+                        titleAttr: 'Copy to clipboard'
+                    },
+                    {
+                        extend: 'print',
+                        text: '<i class="fas fa-print"></i> Print',
+                        className: 'btn btn-primary rounded-sm',
+                        titleAttr: 'Print'
                     }
-                    return false;
-                });
+                ]
+
+
             });
+
+            // Fetch the number of entries
+            var info = table.page.info();
+            var totalEntries = info.recordsTotal;
+
+            // Display the number of entries
+            $('#category').text(totalEntries);
+        });
     </script>
-
-
 </body>
 
 </html>
