@@ -27,10 +27,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['department-search']) |
 
     
     // Set the sanitized data in the session
-    $_SESSION['departmentId'] = $departmentId;
-    $_SESSION['sectionId'] = $sectionId;
-    $_SESSION['divisionId'] = $divisionId;
-    $_SESSION['subDivisionId'] = $subDivisionId;
+    $_SESSION['departmentIdAwardTender'] = $departmentId;
+    $_SESSION['sectionIdAwardTender'] = $sectionId;
+    $_SESSION['divisionIdAwardTender'] = $divisionId;
+    $_SESSION['subDivisionIdAwardTender'] = $subDivisionId;
 
     // Add conditions only if a valid filter is selected
     if ($departmentId && $departmentId !== '0') {
@@ -168,6 +168,15 @@ ORDER BY
  ";
 
     $result = mysqli_query($db, $query);
+}
+
+if ($_SERVER['REQUEST_METHOD'] == 'GET') {
+    // Remove specific session variables
+    unset($_SESSION['departmentIdAwardTender']);
+    unset($_SESSION['sectionIdAwardTender']);
+    unset($_SESSION['divisionIdAwardTender']);
+    unset($_SESSION['subDivisionIdAwardTender']);
+    
 }
 
 //fecth Department
@@ -821,10 +830,10 @@ if ($resultSection) {
     <script>
         // PHP exposes session values to JavaScript
         var sessionData = <?php echo json_encode([
-            'departmentId' => $_SESSION['departmentId'] ?? null,
-            'sectionId' => $_SESSION['sectionId'] ?? null,
-            'divisionId' => $_SESSION['divisionId'] ?? null,
-            'subDivisionId' => $_SESSION['subDivisionId'] ?? null
+            'departmentId' => $_SESSION['departmentIdAwardTender'] ?? null,
+            'sectionId' => $_SESSION['sectionIdAwardTender'] ?? null,
+            'divisionId' => $_SESSION['divisionIdAwardTender'] ?? null,
+            'subDivisionId' => $_SESSION['subDivisionIdAwardTender'] ?? null
         ]); ?>;
     </script>
     <script>

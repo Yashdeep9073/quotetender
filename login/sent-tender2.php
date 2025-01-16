@@ -43,10 +43,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['department-search']) |
     $subDivisionId = filter_input(INPUT_POST, 'sub-division-search', FILTER_SANITIZE_SPECIAL_CHARS);
 
     // Set the sanitized data in the session
-    $_SESSION['departmentId'] = $departmentId;
-    $_SESSION['sectionId'] = $sectionId;
-    $_SESSION['divisionId'] = $divisionId;
-    $_SESSION['subDivisionId'] = $subDivisionId;
+    $_SESSION['departmentIdSentTender'] = $departmentId;
+    $_SESSION['sectionIdSentTender'] = $sectionId;
+    $_SESSION['divisionIdSentTender'] = $divisionId;
+    $_SESSION['subDivisionIdSentTender'] = $subDivisionId;
 
     // Add conditions only if a valid filter is selected
     if ($departmentId && $departmentId !== '0') {
@@ -165,6 +165,16 @@ ORDER BY
     ";
 
     $resultMain = mysqli_query($db, $queryMain);
+}
+
+// Check if the page reload condition is met
+if ($_SERVER['REQUEST_METHOD'] == 'GET') {
+    // Remove specific session variables
+    unset($_SESSION['departmentIdSentTender']);
+    unset($_SESSION['sectionIdSentTender']);
+    unset($_SESSION['divisionIdSentTender']);
+    unset($_SESSION['subDivisionIdSentTender']);
+    
 }
 
 
@@ -796,19 +806,23 @@ $result = mysqli_query($db, $query);
 
             // Check if the values are available and handle them as needed
             if (departmentId) {
+                console.log("Department ID:", departmentId);
                 // Example: Set the value of a dropdown or input
                 $('#department-search').val(departmentId);
             }
 
             if (sectionId) {
+                console.log("Section ID:", sectionId);
                 $('#section-search').val(sectionId);
             }
 
             if (divisionId) {
+                console.log("Division ID:", divisionId);
                 $('#division-search').val(divisionId);
             }
 
             if (subDivisionId) {
+                console.log("Sub-Division ID:", subDivisionId);
                 $('#sub-division-search').val(subDivisionId);
             }
 
@@ -818,10 +832,10 @@ $result = mysqli_query($db, $query);
     <script>
         // PHP exposes session values to JavaScript
         var sessionData = <?php echo json_encode([
-            'departmentId' => $_SESSION['departmentId'] ?? null,
-            'sectionId' => $_SESSION['sectionId'] ?? null,
-            'divisionId' => $_SESSION['divisionId'] ?? null,
-            'subDivisionId' => $_SESSION['subDivisionId'] ?? null
+            'departmentId' => $_SESSION['departmentIdSentTender'] ?? null,
+            'sectionId' => $_SESSION['sectionIdSentTender'] ?? null,
+            'divisionId' => $_SESSION['divisionIdSentTender'] ?? null,
+            'subDivisionId' => $_SESSION['subDivisionIdSentTender'] ?? null
         ]); ?>;
     </script>
 

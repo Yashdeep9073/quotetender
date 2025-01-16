@@ -29,10 +29,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['department-search']) |
     $subDivisionId = filter_input(INPUT_POST, 'sub-division-search', FILTER_SANITIZE_SPECIAL_CHARS);
 
     // Set the sanitized data in the session
-    $_SESSION['departmentId'] = $departmentId;
-    $_SESSION['sectionId'] = $sectionId;
-    $_SESSION['divisionId'] = $divisionId;
-    $_SESSION['subDivisionId'] = $subDivisionId;
+    $_SESSION['departmentIdAlotTender'] = $departmentId;
+    $_SESSION['sectionIdAlotTender'] = $sectionId;
+    $_SESSION['divisionIdAlotTender'] = $divisionId;
+    $_SESSION['subDivisionIdAlotTender'] = $subDivisionId;
 
     // Add conditions only if a valid filter is selected
     if ($departmentId && $departmentId !== '0') {
@@ -151,6 +151,16 @@ ORDER BY
 
     $resultMain = mysqli_query($db, $queryMain);
 
+}
+
+// Check if the page reload condition is met
+if ($_SERVER['REQUEST_METHOD'] == 'GET') {
+    // Remove specific session variables
+    unset($_SESSION['departmentIdAlotTender']);
+    unset($_SESSION['sectionIdAlotTender']);
+    unset($_SESSION['divisionIdAlotTender']);
+    unset($_SESSION['subDivisionIdAlotTender']);
+    
 }
 
 //fecth Department
@@ -789,10 +799,10 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
         <script>
                 // PHP exposes session values to JavaScript
                 var sessionData = <?php echo json_encode([
-                    'departmentId' => $_SESSION['departmentId'] ?? null,
-                    'sectionId' => $_SESSION['sectionId'] ?? null,
-                    'divisionId' => $_SESSION['divisionId'] ?? null,
-                    'subDivisionId' => $_SESSION['subDivisionId'] ?? null
+                    'departmentId' => $_SESSION['departmentIdAlotTender'] ?? null,
+                    'sectionId' => $_SESSION['sectionIdAlotTender'] ?? null,
+                    'divisionId' => $_SESSION['divisionIdAlotTender'] ?? null,
+                    'subDivisionId' => $_SESSION['subDivisionIdAlotTender'] ?? null
                 ]); ?>;
             </script>
         <script>
