@@ -18,7 +18,7 @@ inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_i
 $adminPermissionResult = mysqli_query($db, $adminPermissionQuery);
 $allowDelete = mysqli_num_rows($adminPermissionResult) > 0 ? true : false;
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['department-search']) || isset($_POST['section-search']) || isset($_POST['division-search']) || isset($_POST['sub-division-search  '])) {
     // Initialize $conditions as an empty array
     $conditions = [];
 
@@ -27,6 +27,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $sectionId = filter_input(INPUT_POST, 'section-search', FILTER_SANITIZE_SPECIAL_CHARS);
     $divisionId = filter_input(INPUT_POST, 'division-search', FILTER_SANITIZE_SPECIAL_CHARS);
     $subDivisionId = filter_input(INPUT_POST, 'sub-division-search', FILTER_SANITIZE_SPECIAL_CHARS);
+
+    // Set the sanitized data in the session
+    $_SESSION['departmentId'] = $departmentId;
+    $_SESSION['sectionId'] = $sectionId;
+    $_SESSION['divisionId'] = $divisionId;
+    $_SESSION['subDivisionId'] = $subDivisionId;
 
     // Add conditions only if a valid filter is selected
     if ($departmentId && $departmentId !== '0') {
@@ -367,12 +373,12 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                     <div class="col-md-4">
                                         <div class="form-group">
                                             <label for="faculty">Department <span class="text-danger">*</span></label>
-                                            <select class="form-control" name="department-search"
-                                                id="department-search">
+                                            <select class="form-control" name="department-search" id="department-search">
                                                 <option value="0">All</option>
                                                 <?php foreach ($departments as $department) { ?>
-                                                    <option value="<?php echo $department['department_id'] ?>">
-                                                        <?php echo $department['department_name'] ?>
+                                                    <option value="<?php echo $department['department_id']; ?>" 
+                                                        <?php echo isset($_SESSION['departmentId']) && $_SESSION['departmentId'] == $department['department_id'] ? 'selected' : ''; ?>>
+                                                        <?php echo $department['department_name']; ?>
                                                     </option>
                                                 <?php } ?>
                                             </select>
@@ -385,11 +391,11 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                             <select class="form-control" name="section-search" id="section-search">
                                                 <option value="0">All</option>
                                                 <?php foreach ($sections as $section) { ?>
-                                                    <option value="<?php echo $section['section_id'] ?>">
-                                                        <?php echo $section['section_name'] ?>
+                                                    <option value="<?php echo $section['section_id']; ?>" 
+                                                        <?php echo isset($_SESSION['sectionId']) && $_SESSION['sectionId'] == $section['section_id'] ? 'selected' : ''; ?>>
+                                                        <?php echo $section['section_name']; ?>
                                                     </option>
                                                 <?php } ?>
-                                                <!-- Add dynamic options here -->
                                             </select>
                                             <div class="invalid-feedback">Please select a program.</div>
                                         </div>
@@ -399,18 +405,27 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                             <label for="session">Division <span class="text-danger">*</span></label>
                                             <select class="form-control" name="division-search" id="division-search">
                                                 <option value="0">All</option>
+                                                <?php foreach ($divisions as $division) { ?>
+                                                    <option value="<?php echo $division['division_id']; ?>" 
+                                                        <?php echo isset($_SESSION['divisionId']) && $_SESSION['divisionId'] == $division['division_id'] ? 'selected' : ''; ?>>
+                                                        <?php echo $division['division_name']; ?>
+                                                    </option>
+                                                <?php } ?>
                                             </select>
                                             <div class="invalid-feedback">Please select a session.</div>
                                         </div>
                                     </div>
                                     <div class="col-md-4">
                                         <div class="form-group">
-                                            <label for="semester">Sub Division <span
-                                                    class="text-danger">*</span></label>
-                                            <select class="form-control" name="sub-division-search"
-                                                id="sub-division-search" required>
+                                            <label for="semester">Sub Division <span class="text-danger">*</span></label>
+                                            <select class="form-control" name="sub-division-search" id="sub-division-search" required>
                                                 <option value="0">All</option>
-                                                <!-- Add dynamic options here -->
+                                                <?php foreach ($subDivisions as $subDivision) { ?>
+                                                    <option value="<?php echo $subDivision['id']; ?>" 
+                                                        <?php echo isset($_SESSION['subDivisionId']) && $_SESSION['subDivisionId'] == $subDivision['id'] ? 'selected' : ''; ?>>
+                                                        <?php echo $subDivision['name']; ?>
+                                                    </option>
+                                                <?php } ?>
                                             </select>
                                             <div class="invalid-feedback">Please select a semester.</div>
                                         </div>
@@ -418,8 +433,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                     <div class="col-md-4">
                                         <div class="form-group">
                                             <label>&nbsp;</label> <!-- Empty label for spacing -->
-                                            <button type="submit"
-                                                class="btn btn-primary btn-md d-flex align-items-center">
+                                            <button type="submit" class="btn btn-primary btn-md d-flex align-items-center">
                                                 <i class="fas fa-search" style="margin-right: 8px;"></i> Search
                                             </button>
                                         </div>
@@ -745,8 +759,48 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                 });
             });
 
+             // Fetch session values from the `sessionData` variable
+             var departmentId = sessionData.departmentId;
+            var sectionId = sessionData.sectionId;
+            var divisionId = sessionData.divisionId;
+            var subDivisionId = sessionData.subDivisionId;
+
+            // Check if the values are available and handle them as needed
+            if (departmentId) {
+                // Example: Set the value of a dropdown or input
+                $('#department-search').val(departmentId);
+            }
+
+            if (sectionId) {
+                $('#section-search').val(sectionId);
+            }
+
+            if (divisionId) {
+                $('#division-search').val(divisionId);
+            }
+
+            if (subDivisionId) {
+                $('#sub-division-search').val(subDivisionId);
+            }
+
         });
     </script>
+
+        <script>
+                // PHP exposes session values to JavaScript
+                var sessionData = <?php echo json_encode([
+                    'departmentId' => $_SESSION['departmentId'] ?? null,
+                    'sectionId' => $_SESSION['sectionId'] ?? null,
+                    'divisionId' => $_SESSION['divisionId'] ?? null,
+                    'subDivisionId' => $_SESSION['subDivisionId'] ?? null
+                ]); ?>;
+            </script>
+        <script>
+        if (window.history.replaceState) {
+            window.history.replaceState(null, null, window.location.href);
+        }
+    </script>
+
 </body>
 
 </html>
