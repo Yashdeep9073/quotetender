@@ -440,13 +440,17 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                             <div class="invalid-feedback">Please select a semester.</div>
                                         </div>
                                     </div>
-                                    <div class="col-md-4">
-                                        <div class="form-group">
-                                            <label>&nbsp;</label> <!-- Empty label for spacing -->
-                                            <button type="submit" class="btn btn-primary btn-md d-flex align-items-center">
-                                                <i class="fas fa-search" style="margin-right: 8px;"></i> Search
-                                            </button>
-                                        </div>
+                                     <!-- Buttons -->
+                                     <div class="col-md-6 col-sm-12 d-flex align-items-center mt-3">
+                                        <!-- Submit Button -->
+                                        <button type="submit" class="btn btn-primary btn-md d-flex align-items-center">
+                                            <i class="fas fa-search" style="margin-right: 8px;"></i> Search
+                                        </button>
+                                        &nbsp;
+                                        <!-- Reset Button -->
+                                        <button type="reset" class="btn btn-primary btn-md d-flex align-items-center" id="filterResetButton">
+                                            <i class="fas fa-undo" style="margin-right: 8px;"></i> Reset
+                                        </button>
                                     </div>
                                 </div>
                             </form>
@@ -769,29 +773,96 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                 });
             });
 
-             // Fetch session values from the `sessionData` variable
-             var departmentId = sessionData.departmentId;
+              // Fetch session values from the `sessionData` variable
+            var departmentId = sessionData.departmentId;
             var sectionId = sessionData.sectionId;
             var divisionId = sessionData.divisionId;
             var subDivisionId = sessionData.subDivisionId;
 
             // Check if the values are available and handle them as needed
             if (departmentId) {
+                console.log("Department ID:", departmentId);
                 // Example: Set the value of a dropdown or input
                 $('#department-search').val(departmentId);
             }
 
             if (sectionId) {
+                console.log("Section ID:", sectionId);
                 $('#section-search').val(sectionId);
             }
 
             if (divisionId) {
-                $('#division-search').val(divisionId);
+                
+                console.log("Division ID:", divisionId);
+                $.ajax({
+                    url: 'fetch-division-data-sent-tender.php',
+                    type: 'POST',
+                    data: { divisionIdSentTender: divisionId },
+                    success: function (response) {
+                        if (response.success) {
+                            // console.log(response.success);
+
+                            // Clear existing options except the default "All" option
+                            $('#division-search').empty();
+
+                            // Add new options based on the response.divisionId and response.divisionName arrays
+                            response.divisionId.forEach((id, index) => {
+                                let divisionName = response.divisionName[index];
+                                $('#division-search').append(new Option(divisionName, id));
+                            });
+                             // Select the fetched division
+                            $('#division-search').val(divisionId);
+
+                        } else {
+                            console.error(response.error);
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('AJAX Error:', status, error);
+                    }
+                });
+                // $('#division-search').val(divisionId);
+
             }
 
             if (subDivisionId) {
-                $('#sub-division-search').val(subDivisionId);
+                console.log("Sub-Division ID:", subDivisionId);
+                $.ajax({
+                    url: 'fetch-sub-division-data-sent-tender.php',
+                    type: 'POST',
+                    data: { subDivisionIdSentTender: subDivisionId },
+                    success: function (response) {
+                        if (response.success) {
+                            console.log(response.subDivisionName);
+
+                            // Clear existing options except the default "All" option
+                            $('#sub-division-search').empty();
+
+                            // Add new options based on the response.divisionId and response.divisionName arrays
+                            response.subDivisionId.forEach((id, index) => {
+                                let subDivisionName = response.subDivisionName[index];
+                                $('#sub-division-search').append(new Option(subDivisionName, id));
+                            });
+                             // Select the fetched division
+                            $('#sub-division-search').val(subDivisionId);
+
+                        } else {
+                            console.error(response.error);
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('AJAX Error:', status, error);
+                    }
+                });
+                // $('#sub-division-search').val(subDivisionId);
             }
+
+             // Reset Filter
+             $('#filterResetButton').click(function () {
+                sessionStorage.clear();
+                location.reload();
+            });
+
 
         });
     </script>

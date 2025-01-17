@@ -16,7 +16,6 @@ include("db/config.php");
 
 try {
 
-
     //fetch sub-division
     if (isset($_POST['divisionId']) && $_SERVER['REQUEST_METHOD'] == 'POST') {
         $divisionId = intval($_POST['divisionId']); // Sanitize the input
@@ -75,6 +74,7 @@ try {
             'error' => 'Invalid request'
         ]);
     }
+
 } catch (Exception $e) {
     // Return error response for any exception
     echo json_encode([

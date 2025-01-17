@@ -417,7 +417,7 @@ $result = mysqli_query($db, $query);
                                                 <option value="0">All</option>
                                                 <?php foreach ($departments as $department) { ?>
                                                     <option value="<?php echo $department['department_id']; ?>" 
-                                                        <?php echo isset($_SESSION['departmentId']) && $_SESSION['departmentId'] == $department['department_id'] ? 'selected' : ''; ?>>
+                                                        <?php echo isset($_SESSION['departmentIdSentTender']) && $_SESSION['departmentIdSentTender'] == $department['department_id'] ? 'selected' : ''; ?>>
                                                         <?php echo $department['department_name']; ?>
                                                     </option>
                                                 <?php } ?>
@@ -432,7 +432,7 @@ $result = mysqli_query($db, $query);
                                                 <option value="0">All</option>
                                                 <?php foreach ($sections as $section) { ?>
                                                     <option value="<?php echo $section['section_id']; ?>" 
-                                                        <?php echo isset($_SESSION['sectionId']) && $_SESSION['sectionId'] == $section['section_id'] ? 'selected' : ''; ?>>
+                                                        <?php echo isset($_SESSION['sectionIdSentTender']) && $_SESSION['sectionIdSentTender'] == $section['section_id'] ? 'selected' : ''; ?>>
                                                         <?php echo $section['section_name']; ?>
                                                     </option>
                                                 <?php } ?>
@@ -445,12 +445,10 @@ $result = mysqli_query($db, $query);
                                             <label for="session">Division <span class="text-danger">*</span></label>
                                             <select class="form-control" name="division-search" id="division-search">
                                                 <option value="0">All</option>
-                                                <?php foreach ($divisions as $division) { ?>
-                                                    <option value="<?php echo $division['division_id']; ?>" 
-                                                        <?php echo isset($_SESSION['divisionId']) && $_SESSION['divisionId'] == $division['division_id'] ? 'selected' : ''; ?>>
-                                                        <?php echo $division['division_name']; ?>
+                                                    <option value="<?php echo isset($_SESSION['divisionIdSentTender']) && $_SESSION['divisionIdSentTender'] ? $_SESSION['divisionIdSentTender']  : ''; ?>"
+                                                        <?php echo isset($_SESSION['divisionIdSentTender']) ? 'selected' : ''; ?>>
+                                                        
                                                     </option>
-                                                <?php } ?>
                                             </select>
                                             <div class="invalid-feedback">Please select a session.</div>
                                         </div>
@@ -460,23 +458,25 @@ $result = mysqli_query($db, $query);
                                             <label for="semester">Sub Division <span class="text-danger">*</span></label>
                                             <select class="form-control" name="sub-division-search" id="sub-division-search" required>
                                                 <option value="0">All</option>
-                                                <?php foreach ($subDivisions as $subDivision) { ?>
-                                                    <option value="<?php echo $subDivision['id']; ?>" 
-                                                        <?php echo isset($_SESSION['subDivisionId']) && $_SESSION['subDivisionId'] == $subDivision['id'] ? 'selected' : ''; ?>>
-                                                        <?php echo $subDivision['name']; ?>
+                                                    <option value="<?php echo isset($_SESSION['subDivisionIdSentTender']) && $_SESSION['subDivisionIdSentTender'] == $_SESSION['subDivisionIdSentTender'] ? 'selected' : ''; ?> ?>" 
+                                                        <?php echo isset($_SESSION['subDivisionIdSentTender']) ? 'selected' : ''; ?>>
                                                     </option>
-                                                <?php } ?>
                                             </select>
                                             <div class="invalid-feedback">Please select a semester.</div>
                                         </div>
                                     </div>
-                                    <div class="col-md-4">
-                                        <div class="form-group">
-                                            <label>&nbsp;</label> <!-- Empty label for spacing -->
-                                            <button type="submit" class="btn btn-primary btn-md d-flex align-items-center">
-                                                <i class="fas fa-search" style="margin-right: 8px;"></i> Search
-                                            </button>
-                                        </div>
+                                    
+                                   <!-- Buttons -->
+                                    <div class="col-md-6 col-sm-12 d-flex align-items-center mt-3">
+                                        <!-- Submit Button -->
+                                        <button type="submit" class="btn btn-primary btn-md d-flex align-items-center">
+                                            <i class="fas fa-search" style="margin-right: 8px;"></i> Search
+                                        </button>
+                                        &nbsp;
+                                        <!-- Reset Button -->
+                                        <button type="reset" class="btn btn-primary btn-md d-flex align-items-center" id="filterResetButton">
+                                            <i class="fas fa-undo" style="margin-right: 8px;"></i> Reset
+                                        </button>
                                     </div>
                                 </div>
                             </form>
@@ -694,8 +694,7 @@ $result = mysqli_query($db, $query);
 
     </script>
 
-
-    <script type="text/javascript">
+<script type="text/javascript">
         $(document).ready(function () {
             // Initialize the DataTable with buttons
             var table = $('#basic-btn2').DataTable({
@@ -766,6 +765,7 @@ $result = mysqli_query($db, $query);
                     }
                 });
             });
+            
 
             $('#division-search').on('change', function () {
                 let divisionId = $('#division-search').val();
@@ -798,6 +798,8 @@ $result = mysqli_query($db, $query);
                 });
             });
 
+            
+
             // Fetch session values from the `sessionData` variable
             var departmentId = sessionData.departmentId;
             var sectionId = sessionData.sectionId;
@@ -817,26 +819,90 @@ $result = mysqli_query($db, $query);
             }
 
             if (divisionId) {
+                
                 console.log("Division ID:", divisionId);
-                $('#division-search').val(divisionId);
+                $.ajax({
+                    url: 'fetch-division-data-sent-tender.php',
+                    type: 'POST',
+                    data: { divisionIdSentTender: divisionId },
+                    success: function (response) {
+                        if (response.success) {
+                            console.log(response.success);
+                            // console.log(response.divisionName);
+
+                            // Clear existing options except the default "All" option
+                            $('#division-search').empty();
+
+                            // Add new options based on the response.divisionId and response.divisionName arrays
+                            response.divisionId.forEach((id, index) => {
+                                let divisionName = response.divisionName[index];
+                                $('#division-search').append(new Option(divisionName, id));
+                            });
+                             // Select the fetched division
+                            $('#division-search').val(divisionId);
+
+                        } else {
+                            console.error(response.error);
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('AJAX Error:', status, error);
+                    }
+                });
+                // $('#division-search').val(divisionId);
+
             }
 
             if (subDivisionId) {
                 console.log("Sub-Division ID:", subDivisionId);
-                $('#sub-division-search').val(subDivisionId);
+                $.ajax({
+                    url: 'fetch-sub-division-data-sent-tender.php',
+                    type: 'POST',
+                    data: { subDivisionIdSentTender: subDivisionId },
+                    success: function (response) {
+                        if (response.success) {
+                            console.log(response.subDivisionName);
+
+                            // Clear existing options except the default "All" option
+                            $('#sub-division-search').empty();
+
+                            // Add new options based on the response.divisionId and response.divisionName arrays
+                            response.subDivisionId.forEach((id, index) => {
+                                let subDivisionName = response.subDivisionName[index];
+                                $('#sub-division-search').append(new Option(subDivisionName, id));
+                            });
+                             // Select the fetched division
+                            $('#sub-division-search').val(subDivisionId);
+
+                        } else {
+                            console.error(response.error);
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('AJAX Error:', status, error);
+                    }
+                });
+                // $('#sub-division-search').val(subDivisionId);
             }
+
+            // Reset Filter
+            $('#filterResetButton').click(function () {
+                sessionStorage.clear();
+                location.reload();
+            });
 
         });
     </script>
 
     <script>
         // PHP exposes session values to JavaScript
-        var sessionData = <?php echo json_encode([
+        let sessionData = <?php echo json_encode([
             'departmentId' => $_SESSION['departmentIdSentTender'] ?? null,
             'sectionId' => $_SESSION['sectionIdSentTender'] ?? null,
             'divisionId' => $_SESSION['divisionIdSentTender'] ?? null,
             'subDivisionId' => $_SESSION['subDivisionIdSentTender'] ?? null
         ]); ?>;
+
     </script>
 
 

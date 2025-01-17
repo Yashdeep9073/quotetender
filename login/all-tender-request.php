@@ -86,7 +86,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
 <meta http-equiv="content-type" content="text/html;charset=UTF-8" />
 
 <head>
-    <title>Sent Tender </title>
+    <title>All Tender Request </title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimal-ui">
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
@@ -410,43 +410,43 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
             //     ]
             // });
 
-            var table = $('#basic-btn2').DataTable({
-                orderCellsTop: true,
-                fixedHeader: true,
-                columnDefs: [
-                    { targets: 0, visible: true }
-                ]
-            });
+            // var table = $('#basic-btn2').DataTable({
+            //     orderCellsTop: true,
+            //     fixedHeader: true,
+            //     columnDefs: [
+            //         { targets: 0, visible: true }
+            //     ]
+            // });
 
-            // Clone the header row for filtering
-            $('#basic-btn2 thead tr').clone(true).appendTo('#basic-btn2 thead');
-            var columnsWithSearch = [3, 4, 5, 6, 8, 9, 10, 11, 13
-            ]; // Columns for filtering
+            // // Clone the header row for filtering
+            // $('#basic-btn2 thead tr').clone(true).appendTo('#basic-btn2 thead');
+            // var columnsWithSearch = [3, 4, 5, 6, 8, 9, 10, 11, 13
+            // ]; // Columns for filtering
 
-            // Add filters to the cloned header
-            $('#basic-btn2 thead tr:eq(1) th').each(function (i) {
-                if (columnsWithSearch.includes(i) && !$(this).hasClass("noFilter")) {
-                    var title = $(this).text();
-                    var column = table.column(i); // Use the existing DataTable instance
-                    var select = $('<select class="form-control"><option value="">' + title + '</option></select>')
-                        .appendTo($(this).empty())
-                        .on('change', function () {
-                            var val = $.fn.dataTable.util.escapeRegex($(this).val());
-                            column
-                                .search(val ? '^' + val + '$' : '', true, false)
-                                .draw();
-                        });
+            // // Add filters to the cloned header
+            // $('#basic-btn2 thead tr:eq(1) th').each(function (i) {
+            //     if (columnsWithSearch.includes(i) && !$(this).hasClass("noFilter")) {
+            //         var title = $(this).text();
+            //         var column = table.column(i); // Use the existing DataTable instance
+            //         var select = $('<select class="form-control"><option value="">' + title + '</option></select>')
+            //             .appendTo($(this).empty())
+            //             .on('change', function () {
+            //                 var val = $.fn.dataTable.util.escapeRegex($(this).val());
+            //                 column
+            //                     .search(val ? '^' + val + '$' : '', true, false)
+            //                     .draw();
+            //             });
 
-                    // Populate the select dropdown with unique values from the column
-                    column.data().unique().sort().each(function (d, j) {
-                        if (d) {
-                            select.append('<option value="' + d + '">' + d + '</option>');
-                        }
-                    });
-                } else {
-                    $(this).html('<span></span>');
-                }
-            });
+            //         // Populate the select dropdown with unique values from the column
+            //         column.data().unique().sort().each(function (d, j) {
+            //             if (d) {
+            //                 select.append('<option value="' + d + '">' + d + '</option>');
+            //             }
+            //         });
+            //     } else {
+            //         $(this).html('<span></span>');
+            //     }
+            // });
 
             // Optional: Hide update message after 5 seconds
 
