@@ -76,7 +76,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['department-search']) |
             MAX(se.section_name) AS section_name,
             MAX(sd.subdivision) AS subdivision,
             ur.tentative_cost,
-            sm.city_state
+            sm.city_state,
+            ur.updated_by
+
         FROM
             user_tender_requests ur
         LEFT JOIN
@@ -125,7 +127,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['department-search']) |
     MAX(se.section_name) AS section_name,
     MAX(sd.subdivision) AS subdivision,
     ur.tentative_cost,
-    sm.city_state
+    sm.city_state,
+    ur.updated_by
 FROM
     user_tender_requests ur
 LEFT JOIN
@@ -515,6 +518,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                 echo "<th class='work-name'>Work Name</th>";
                                 echo "<th>Tentative Cost</th>";
                                 echo "<th>Reminder</th>";
+                                echo "<th>Updated By</th>";
                                 echo "<th>Edit</th>";
                                 echo "</tr>";
                                 echo "</thead>";
@@ -554,6 +558,9 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                     } else {
                                         echo "</td>";
                                     }
+
+                                    echo "<td>" . $row['updated_by'] . "</td>";
+
 
                                     $res = $row['t_id'];
                                     $res = base64_encode($res);

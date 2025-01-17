@@ -22,6 +22,13 @@ $en = $_GET["id"];
 
 $d = base64_decode($en);
 
+// $updatedBy = $_SESSION['login_user'];
+
+// echo '<script>
+//     console.log("Updated By:", "' . htmlspecialchars($updatedBy, ENT_QUOTES, 'UTF-8') . '");
+// </script>';
+
+
 if (isset($_POST['submit'])) {
     $user = $_POST['user'];
     $days = $_POST['day'] ?? 0;    
@@ -52,7 +59,9 @@ if (isset($_POST['submit'])) {
     date_default_timezone_set('Asia/Kolkata');
     $allotted_at = date('Y-m-d H:i:s');
 
-    mysqli_query($db, "UPDATE user_tender_requests set `status`='Allotted',`selected_user_id`='$user',
+    $updatedBy = $_SESSION['login_user'];
+
+    mysqli_query($db, "UPDATE user_tender_requests set `status`='Allotted',`selected_user_id`='$user',updated_by = '$updatedBy',
     `reminder_days`='$days', `allotted_at`='$allotted_at' WHERE id = '" . $d . "' 
     ");
 
