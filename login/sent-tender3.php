@@ -172,6 +172,66 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                 transform: rotate(360deg);
             }
         }
+
+        
+        .dt-buttons {
+            margin-top: 5px !important;
+        }
+
+        .btn-group {
+            display: inline-block;
+            /* margin: 0 5px; */
+            padding: 8px 16px;
+            border-radius: 10px;
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+            text-transform: uppercase;
+            cursor: pointer;
+
+        }
+
+        .dt-buttons .dt-button:hover {
+            background-color: #0056b3;
+            /* Darker blue on hover */
+            transform: scale(1.05);
+            /* Slight zoom effect */
+        }
+
+        .dt-buttons .buttons-copy {
+            background-color: #ff9f43;
+            /* Grey for Copy */
+        }
+
+        .dt-buttons .buttons-copy:hover {
+            background-color: #ff9f43;
+        }
+
+        .dt-buttons .buttons-excel {
+            background-color: #28c76f;
+            /* Green for Excel */
+        }
+
+        .dt-buttons .buttons-excel:hover {
+            background-color: #218838;
+        }
+
+        .dt-buttons .buttons-csv {
+            background-color: #00cfe8;
+            /* Teal for CSV */
+        }
+
+        .dt-buttons .buttons-csv:hover {
+            background-color: #138496;
+        }
+
+        .dt-buttons .buttons-print {
+            background-color: #ff4560;
+        }
+
+        .dt-buttons .buttons-print:hover {
+            background-color: #c82333;
+        }
     </style>
 </head>
 
@@ -356,7 +416,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                 <?php
 
 
-                                echo '<table id="basic-btn" class="table table-striped table-bordered nowrap">';
+                                echo '<table id="basic-btn2" class="table table-striped table-bordered nowrap">';
                                 echo "<thead>";
                                 // echo "<tr class='table-success thead-light'>";
                                 // echo "<th colspan='20' class='text-center'><h4 class='text-light'>S.NO : " . "   Tender ID : <span class='text-light'>" . $tenderID . "</span></h4></th>";
@@ -525,38 +585,6 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
 
     <script>
         $(document).ready(function () {
-            // // Setup - add a text input to each footer cell
-            // $('#basic-btn thead tr').clone(true).appendTo('#basic-btn thead');
-            // $('#basic-btn thead tr:eq(1) th').each(function (i) {
-            //     if (!$(this).hasClass("noFilter")) {
-            //         var title = $(this).text();
-            //         $(this).html('<input type="text" placeholder="Search ' + title + '" />');
-
-            //         $('input', this).on('keyup change', function () {
-            //             if (table.column(i).search() !== this.value) {
-            //                 table
-            //                     .column(i)
-            //                     .search(this.value)
-            //                     .draw();
-            //             }
-            //         });
-            //     }
-            //     else {
-            //         $(this).html('<span></span>');
-            //     }
-
-            // });
-
-            // var table = $('#basic-btn').DataTable({
-            //     orderCellsTop: true,
-            //     fixedHeader: true,
-            //     columnDefs: [
-            //         { targets: 0, visible: true }
-            //     ]
-            // });
-
-
-
             // Optional: Hide update message after 5 seconds
             $("#updateuser").delay(5000).slideUp(300);
 
@@ -729,12 +757,40 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
     </script>
 
 
-    <script>
+    <script type="text/javascript">
         $(document).ready(function () {
-            setInterval(function () {
-                $("#total").load("load-total.php");
-                refresh();
-            }, 100);
+            // Initialize the DataTable with buttons
+            var table = $('#basic-btn2').DataTable({
+                dom: 'Bfrtip', // Enable the buttons layout
+                buttons: [
+                    {
+                        extend: 'excelHtml5',
+                        text: '<i class="fas fa-file-excel"></i> Excel',
+                        className: 'btn btn-primary rounded-sm',
+                        titleAttr: 'Export to Excel'
+                    },
+                    {
+                        extend: 'csvHtml5',
+                        text: '<i class="fas fa-file-csv"></i> CSV',
+                        className: 'btn btn-primary rounded-sm',
+                        titleAttr: 'Export to CSV'
+                    },
+                    {
+                        extend: 'copy',
+                        text: '<i class="fas fa-copy"></i> Copy',
+                        className: 'btn btn-primary rounded-sm',
+                        titleAttr: 'Copy to clipboard'
+                    },
+                    {
+                        extend: 'print',
+                        text: '<i class="fas fa-print"></i> Print',
+                        className: 'btn btn-primary rounded-sm',
+                        titleAttr: 'Print'
+                    }
+                ]
+
+
+            }); s
         });
     </script>
 

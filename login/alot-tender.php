@@ -163,7 +163,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
     unset($_SESSION['sectionIdAlotTender']);
     unset($_SESSION['divisionIdAlotTender']);
     unset($_SESSION['subDivisionIdAlotTender']);
-    
+
 }
 
 //fecth Department
@@ -386,11 +386,11 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                     <div class="col-md-4">
                                         <div class="form-group">
                                             <label for="faculty">Department <span class="text-danger">*</span></label>
-                                            <select class="form-control" name="department-search" id="department-search">
+                                            <select class="form-control" name="department-search"
+                                                id="department-search">
                                                 <option value="0">All</option>
                                                 <?php foreach ($departments as $department) { ?>
-                                                    <option value="<?php echo $department['department_id']; ?>" 
-                                                        <?php echo isset($_SESSION['departmentId']) && $_SESSION['departmentId'] == $department['department_id'] ? 'selected' : ''; ?>>
+                                                    <option value="<?php echo $department['department_id']; ?>" <?php echo isset($_SESSION['departmentId']) && $_SESSION['departmentId'] == $department['department_id'] ? 'selected' : ''; ?>>
                                                         <?php echo $department['department_name']; ?>
                                                     </option>
                                                 <?php } ?>
@@ -404,8 +404,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                             <select class="form-control" name="section-search" id="section-search">
                                                 <option value="0">All</option>
                                                 <?php foreach ($sections as $section) { ?>
-                                                    <option value="<?php echo $section['section_id']; ?>" 
-                                                        <?php echo isset($_SESSION['sectionId']) && $_SESSION['sectionId'] == $section['section_id'] ? 'selected' : ''; ?>>
+                                                    <option value="<?php echo $section['section_id']; ?>" <?php echo isset($_SESSION['sectionId']) && $_SESSION['sectionId'] == $section['section_id'] ? 'selected' : ''; ?>>
                                                         <?php echo $section['section_name']; ?>
                                                     </option>
                                                 <?php } ?>
@@ -419,8 +418,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                             <select class="form-control" name="division-search" id="division-search">
                                                 <option value="0">All</option>
                                                 <?php foreach ($divisions as $division) { ?>
-                                                    <option value="<?php echo $division['division_id']; ?>" 
-                                                        <?php echo isset($_SESSION['divisionId']) && $_SESSION['divisionId'] == $division['division_id'] ? 'selected' : ''; ?>>
+                                                    <option value="<?php echo $division['division_id']; ?>" <?php echo isset($_SESSION['divisionId']) && $_SESSION['divisionId'] == $division['division_id'] ? 'selected' : ''; ?>>
                                                         <?php echo $division['division_name']; ?>
                                                     </option>
                                                 <?php } ?>
@@ -430,12 +428,13 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                     </div>
                                     <div class="col-md-4">
                                         <div class="form-group">
-                                            <label for="semester">Sub Division <span class="text-danger">*</span></label>
-                                            <select class="form-control" name="sub-division-search" id="sub-division-search" required>
+                                            <label for="semester">Sub Division <span
+                                                    class="text-danger">*</span></label>
+                                            <select class="form-control" name="sub-division-search"
+                                                id="sub-division-search" required>
                                                 <option value="0">All</option>
                                                 <?php foreach ($subDivisions as $subDivision) { ?>
-                                                    <option value="<?php echo $subDivision['id']; ?>" 
-                                                        <?php echo isset($_SESSION['subDivisionId']) && $_SESSION['subDivisionId'] == $subDivision['id'] ? 'selected' : ''; ?>>
+                                                    <option value="<?php echo $subDivision['id']; ?>" <?php echo isset($_SESSION['subDivisionId']) && $_SESSION['subDivisionId'] == $subDivision['id'] ? 'selected' : ''; ?>>
                                                         <?php echo $subDivision['name']; ?>
                                                     </option>
                                                 <?php } ?>
@@ -443,15 +442,16 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                             <div class="invalid-feedback">Please select a semester.</div>
                                         </div>
                                     </div>
-                                     <!-- Buttons -->
-                                     <div class="col-md-6 col-sm-12 d-flex align-items-center mt-3">
+                                    <!-- Buttons -->
+                                    <div class="col-md-6 col-sm-12 d-flex align-items-center mt-3">
                                         <!-- Submit Button -->
                                         <button type="submit" class="btn btn-primary btn-md d-flex align-items-center">
                                             <i class="fas fa-search" style="margin-right: 8px;"></i> Search
                                         </button>
                                         &nbsp;
                                         <!-- Reset Button -->
-                                        <button type="reset" class="btn btn-primary btn-md d-flex align-items-center" id="filterResetButton">
+                                        <button type="reset" class="btn btn-primary btn-md d-flex align-items-center"
+                                            id="filterResetButton">
                                             <i class="fas fa-undo" style="margin-right: 8px;"></i> Reset
                                         </button>
                                     </div>
@@ -493,12 +493,29 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                 <br />
                                 <?php
                                 if ($allowDelete == true || (in_array('All', $permissions)) || (in_array('Recycle Bin', $permissions))) {
-                                    echo "<div class='col-md row'>
-                                <a href='#' id='recycle_records' class='btn btn-danger rounded-sm'> <i class='feather icon-trash'></i>  &nbsp;
-                                Move to Bin Selected Items</a>
-                                </div> <br />";
-                                }
-
+                                    echo "
+                                <a href='#' id='recycle_records' class='btn btn-danger me-3 rounded-sm'> 
+                                <i class='feather icon-trash'></i>
+                                Move to Bin</a>&nbsp&nbsp&nbsp&nbsp
+                                ";
+                                } ?>
+                                <div class="dt-buttons btn-group">
+                                <button class="btn btn-secondary buttons-excel buttons-html5 btn-primary rounded-sm"
+                                        tabindex="0" aria-controls="basic-btn2" type="button"
+                                        onclick="exportTableToExcel()" title="Export to Excel"><span><i
+                                                class="fas fa-file-excel"></i>
+                                            Excel</span></button>
+                                    <button class="btn btn-secondary buttons-csv buttons-html5 btn-primary rounded-sm"
+                                        tabindex="0" aria-controls="basic-btn2" type="button" onclick="exportTableToCSV()"
+                                        title="Export to CSV"><span><i class="fas fa-file-csv"></i> CSV</span></button>
+                                    <button class="btn btn-secondary buttons-copy buttons-html5 btn-primary rounded-sm"
+                                        tabindex="0" aria-controls="basic-btn2" type="button"
+                                        title="Copy to clipboard"><span><i class="fas fa-copy"></i> Copy</span></button>
+                                    <button class="btn btn-secondary buttons-print btn-primary rounded-sm" tabindex="0"
+                                        onclick="printTable()" aria-controls="basic-btn2" type="button"
+                                        title="Print"><span><i class="fas fa-print"></i> Print</span></button>
+                                </div>
+                                <?php
                                 echo '<table id="basic-btn2" class="table table-striped table-bordered">';
                                 echo "<thead>";
                                 echo "<tr>";
@@ -603,6 +620,8 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
     <script src="assets/js/plugins/buttons.bootstrap4.min.js"></script>
     <script src="assets/js/pages/data-export-custom.js"></script>
 
+    <!-- Excel Generate  -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
     <script type="text/javascript">
         $(".recyclebutton").on('click', function () {
@@ -677,37 +696,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
     <script type="text/javascript">
         $(document).ready(function () {
             // Initialize the DataTable with buttons
-            var table = $('#basic-btn2').DataTable({
-                dom: 'Bfrtip', // Enable the buttons layout
-                buttons: [
-                    {
-                        extend: 'excelHtml5',
-                        text: '<i class="fas fa-file-excel"></i> Excel',
-                        className: 'btn btn-primary rounded-sm',
-                        titleAttr: 'Export to Excel'
-                    },
-                    {
-                        extend: 'csvHtml5',
-                        text: '<i class="fas fa-file-csv"></i> CSV',
-                        className: 'btn btn-primary rounded-sm',
-                        titleAttr: 'Export to CSV'
-                    },
-                    {
-                        extend: 'copy',
-                        text: '<i class="fas fa-copy"></i> Copy',
-                        className: 'btn btn-primary rounded-sm',
-                        titleAttr: 'Copy to clipboard'
-                    },
-                    {
-                        extend: 'print',
-                        text: '<i class="fas fa-print"></i> Print',
-                        className: 'btn btn-primary rounded-sm',
-                        titleAttr: 'Print'
-                    }
-                ]
-
-
-            });
+            var table = $('#basic-btn2').DataTable();
 
             // Fetch the number of entries
             var info = table.page.info();
@@ -780,7 +769,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                 });
             });
 
-              // Fetch session values from the `sessionData` variable
+            // Fetch session values from the `sessionData` variable
             var departmentId = sessionData.departmentId;
             var sectionId = sessionData.sectionId;
             var divisionId = sessionData.divisionId;
@@ -799,7 +788,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
             }
 
             if (divisionId) {
-                
+
                 console.log("Division ID:", divisionId);
                 $.ajax({
                     url: 'fetch-division-data-sent-tender.php',
@@ -817,7 +806,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                 let divisionName = response.divisionName[index];
                                 $('#division-search').append(new Option(divisionName, id));
                             });
-                             // Select the fetched division
+                            // Select the fetched division
                             $('#division-search').val(divisionId);
 
                         } else {
@@ -850,7 +839,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                 let subDivisionName = response.subDivisionName[index];
                                 $('#sub-division-search').append(new Option(subDivisionName, id));
                             });
-                             // Select the fetched division
+                            // Select the fetched division
                             $('#sub-division-search').val(subDivisionId);
 
                         } else {
@@ -864,8 +853,8 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                 // $('#sub-division-search').val(subDivisionId);
             }
 
-             // Reset Filter
-             $('#filterResetButton').click(function () {
+            // Reset Filter
+            $('#filterResetButton').click(function () {
                 sessionStorage.clear();
                 location.reload();
             });
@@ -874,18 +863,131 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
         });
     </script>
 
-        <script>
-                // PHP exposes session values to JavaScript
-                var sessionData = <?php echo json_encode([
-                    'departmentId' => $_SESSION['departmentIdAlotTender'] ?? null,
-                    'sectionId' => $_SESSION['sectionIdAlotTender'] ?? null,
-                    'divisionId' => $_SESSION['divisionIdAlotTender'] ?? null,
-                    'subDivisionId' => $_SESSION['subDivisionIdAlotTender'] ?? null
-                ]); ?>;
-            </script>
-        <script>
+    <script>
+        // PHP exposes session values to JavaScript
+        var sessionData = <?php echo json_encode([
+            'departmentId' => $_SESSION['departmentIdAlotTender'] ?? null,
+            'sectionId' => $_SESSION['sectionIdAlotTender'] ?? null,
+            'divisionId' => $_SESSION['divisionIdAlotTender'] ?? null,
+            'subDivisionId' => $_SESSION['subDivisionIdAlotTender'] ?? null
+        ]); ?>;
+    </script>
+    <script>
         if (window.history.replaceState) {
             window.history.replaceState(null, null, window.location.href);
+        }
+    </script>
+
+    <script>
+        function printTable() {
+            // Clone the table to avoid altering the original
+            const tableClone = document.getElementById("basic-btn2").cloneNode(true);
+
+            // Remove the "Action" column and its corresponding cells
+            const thElements = tableClone.querySelectorAll("th");
+            const actionColumnIndex = Array.from(thElements).findIndex((th) =>
+                th.textContent.trim().toLowerCase() === "edit"
+            );
+
+            if (actionColumnIndex !== -1) {
+                // Remove the "Action" header
+                thElements[actionColumnIndex].remove();
+
+                // Remove cells in the "Action" column
+                tableClone.querySelectorAll("tr").forEach((row) => {
+                    const cells = row.querySelectorAll("td, th");
+                    if (cells[actionColumnIndex]) {
+                        cells[actionColumnIndex].remove();
+                    }
+                });
+            }
+
+            const pageTitle = document.title; // Get the current page title
+            const printWindow = window.open("", "", "height=800,width=1200");
+
+            printWindow.document.write(`
+        <html>
+            <head>
+            <title>${pageTitle}</title>
+            <style>
+                body {
+                font-family: Arial, sans-serif;
+                margin: 20px;
+                padding: 0;
+                background-color: #f9f9f9;
+                color: #333;
+                }
+                h1 {
+                text-align: center;
+                color: #007bff;
+                margin-bottom: 20px;
+                font-size: 24px;
+                text-transform: uppercase;
+                }
+                table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-bottom: 20px;
+                background-color: #fff;
+                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+                border-radius: 8px;
+                overflow: hidden;
+                }
+                th {
+                background-color: #007bff;
+                color: white;
+                text-align: left;
+                padding: 12px 15px;
+                font-size: 14px;
+                text-transform: uppercase;
+                }
+                td {
+                padding: 10px 15px;
+                border-bottom: 1px solid #ddd;
+                font-size: 13px;
+                }
+                tr:nth-child(even) {
+                background-color: #f2f2f2;
+                }
+                tr:hover {
+                background-color: #eaf4ff;
+                }
+                footer {
+                text-align: center;
+                margin-top: 20px;
+                font-size: 12px;
+                color: #555;
+                }
+            </style>
+            </head>
+            <body>
+            <h1>${pageTitle}</h1>
+            ${tableClone.outerHTML}
+            <footer>
+                Printed on: ${new Date().toLocaleString()}
+            </footer>
+            </body>
+        </html>
+        `);
+
+            printWindow.document.close();
+            printWindow.print();
+        }
+    </script>
+
+    <script>
+        function exportTableToExcel(tableId, filename = 'table.xlsx') {
+            const table = document.getElementById("basic-btn2");
+            const wb = XLSX.utils.table_to_book(table, { sheet: "Sheet1" });
+            XLSX.writeFile(wb, filename);
+        }
+    </script>
+
+    <script>
+        function exportTableToCSV(tableId, filename = 'table.csv') {
+            const table = document.getElementById("basic-btn2");
+            const wb = XLSX.utils.table_to_book(table, { sheet: "Sheet1" });
+            XLSX.writeFile(wb, filename);
         }
     </script>
 

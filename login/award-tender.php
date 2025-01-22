@@ -504,11 +504,28 @@ if ($resultSection) {
 
                                 <?php
                                 if ($allowDelete == true || (in_array('All', $permissions)) || (in_array('Recycle Bin', $permissions))) {
-                                    echo "<div class='col-md row'>
-                                <a href='#' id='recycle_records' class='btn btn-danger rounded-sm'> <i class='feather icon-trash'></i>  &nbsp;
-                                Move to Bin Selected Items</a>
-                                </div> <br />";
-                                }
+                                    echo "
+                                <a href='#' id='recycle_records' class='btn btn-danger me-3 rounded-sm'> <i class='feather icon-trash'></i>  &nbsp;
+                                Move to Bin</a>&nbsp&nbsp&nbsp&nbsp
+                                ";
+                                }?>
+                                <div class="dt-buttons btn-group">
+                                <button class="btn btn-secondary buttons-excel buttons-html5 btn-primary rounded-sm"
+                                        tabindex="0" aria-controls="basic-btn2" type="button"
+                                        onclick="exportTableToExcel()" title="Export to Excel"><span><i
+                                                class="fas fa-file-excel"></i>
+                                            Excel</span></button>
+                                    <button class="btn btn-secondary buttons-csv buttons-html5 btn-primary rounded-sm"
+                                        tabindex="0" aria-controls="basic-btn2" type="button" onclick="exportTableToCSV()"
+                                        title="Export to CSV"><span><i class="fas fa-file-csv"></i> CSV</span></button>
+                                    <button class="btn btn-secondary buttons-copy buttons-html5 btn-primary rounded-sm"
+                                        tabindex="0" aria-controls="basic-btn2" type="button"
+                                        title="Copy to clipboard"><span><i class="fas fa-copy"></i> Copy</span></button>
+                                    <button class="btn btn-secondary buttons-print btn-primary rounded-sm" tabindex="0"
+                                        onclick="printTable()" aria-controls="basic-btn2" type="button"
+                                        title="Print"><span><i class="fas fa-print"></i> Print</span></button>
+                                </div>
+                                <?php
 
                                 echo '<table id="basic-btn3" class="table table-striped table-bordered nowrap">';
                                 echo "<thead>";
@@ -624,6 +641,9 @@ if ($resultSection) {
     <script src="assets/js/plugins/buttons.bootstrap4.min.js"></script>
     <script src="assets/js/pages/data-export-custom.js"></script>
 
+        <!-- Excel Generate  -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script> 
+
     <script type="text/javascript">
         $(".recyclebutton").on('click', function () {
 
@@ -697,37 +717,7 @@ if ($resultSection) {
     <script type="text/javascript">
         $(document).ready(function () {
             // Initialize the DataTable with buttons
-            var table = $('#basic-btn3').DataTable({
-                dom: 'Bfrtip', // Enable the buttons layout
-                buttons: [
-                    {
-                        extend: 'excelHtml5',
-                        text: '<i class="fas fa-file-excel"></i> Excel',
-                        className: 'btn btn-primary rounded-sm',
-                        titleAttr: 'Export to Excel'
-                    },
-                    {
-                        extend: 'csvHtml5',
-                        text: '<i class="fas fa-file-csv"></i> CSV',
-                        className: 'btn btn-primary rounded-sm',
-                        titleAttr: 'Export to CSV'
-                    },
-                    {
-                        extend: 'copy',
-                        text: '<i class="fas fa-copy"></i> Copy',
-                        className: 'btn btn-primary rounded-sm',
-                        titleAttr: 'Copy to clipboard'
-                    },
-                    {
-                        extend: 'print',
-                        text: '<i class="fas fa-print"></i> Print',
-                        className: 'btn btn-primary rounded-sm',
-                        titleAttr: 'Print'
-                    }
-                ]
-
-
-            });
+            var table = $('#basic-btn3').DataTable();
 
             // Fetch the number of entries
             var info = table.page.info();
@@ -905,9 +895,123 @@ if ($resultSection) {
             'subDivisionId' => $_SESSION['subDivisionIdAwardTender'] ?? null
         ]); ?>;
     </script>
+
     <script>
         if (window.history.replaceState) {
             window.history.replaceState(null, null, window.location.href);
+        }
+    </script>
+
+<script>
+        function printTable() {
+            // Clone the table to avoid altering the original
+            const tableClone = document.getElementById("basic-btn3").cloneNode(true);
+
+            // Remove the "Action" column and its corresponding cells
+            const thElements = tableClone.querySelectorAll("th");
+            const actionColumnIndex = Array.from(thElements).findIndex((th) =>
+                th.textContent.trim().toLowerCase() === "edit"
+            );
+
+            if (actionColumnIndex !== -1) {
+                // Remove the "Action" header
+                thElements[actionColumnIndex].remove();
+
+                // Remove cells in the "Action" column
+                tableClone.querySelectorAll("tr").forEach((row) => {
+                    const cells = row.querySelectorAll("td, th");
+                    if (cells[actionColumnIndex]) {
+                        cells[actionColumnIndex].remove();
+                    }
+                });
+            }
+
+            const pageTitle = document.title; // Get the current page title
+            const printWindow = window.open("", "", "height=800,width=1200");
+
+            printWindow.document.write(`
+        <html>
+            <head>
+            <title>${pageTitle}</title>
+            <style>
+                body {
+                font-family: Arial, sans-serif;
+                margin: 20px;
+                padding: 0;
+                background-color: #f9f9f9;
+                color: #333;
+                }
+                h1 {
+                text-align: center;
+                color: #007bff;
+                margin-bottom: 20px;
+                font-size: 24px;
+                text-transform: uppercase;
+                }
+                table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-bottom: 20px;
+                background-color: #fff;
+                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+                border-radius: 8px;
+                overflow: hidden;
+                }
+                th {
+                background-color: #007bff;
+                color: white;
+                text-align: left;
+                padding: 12px 15px;
+                font-size: 14px;
+                text-transform: uppercase;
+                }
+                td {
+                padding: 10px 15px;
+                border-bottom: 1px solid #ddd;
+                font-size: 13px;
+                }
+                tr:nth-child(even) {
+                background-color: #f2f2f2;
+                }
+                tr:hover {
+                background-color: #eaf4ff;
+                }
+                footer {
+                text-align: center;
+                margin-top: 20px;
+                font-size: 12px;
+                color: #555;
+                }
+            </style>
+            </head>
+            <body>
+            <h1>${pageTitle}</h1>
+            ${tableClone.outerHTML}
+            <footer>
+                Printed on: ${new Date().toLocaleString()}
+            </footer>
+            </body>
+        </html>
+        `);
+
+            printWindow.document.close();
+            printWindow.print();
+        }
+    </script>
+
+<script>
+        function exportTableToExcel(tableId, filename = 'table.xlsx') {
+            const table = document.getElementById("basic-btn3");
+            const wb = XLSX.utils.table_to_book(table, { sheet: "Sheet1" });
+            XLSX.writeFile(wb, filename);
+        }
+    </script>
+
+    <script>
+        function exportTableToCSV(tableId, filename = 'table.csv') {
+            const table = document.getElementById("basic-btn3");
+            const wb = XLSX.utils.table_to_book(table, { sheet: "Sheet1" });
+            XLSX.writeFile(wb, filename);
         }
     </script>
 </body>
