@@ -538,7 +538,7 @@ if ($resultSection) {
                                 echo "<th>User</th>";
                                 echo "<th>Tender No</th>";
                                 echo "<th>Tender ID</th>";
-                                echo "<th>Tender ID</th>";
+                                echo "<th>Reference No</th>";
                                 echo "<th>Department</th>";
                                 echo "<th>Section</th>";
                                 echo "<th>Division</th>";
