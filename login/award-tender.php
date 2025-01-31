@@ -68,7 +68,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['department-search']) |
     dv.division_name,
     sd.subdivision,
     ur.tenderID,
-    ur.remark
+    ur.remark,
+    ur.reference_code
+
 
 FROM 
     user_tender_requests ur 
@@ -128,7 +130,9 @@ ORDER BY
     dv.division_name,
     sd.subdivision,
     ur.tenderID,
-    ur.remark
+    ur.remark,
+    ur.reference_code
+
 FROM 
     user_tender_requests ur 
 LEFT JOIN
@@ -534,6 +538,7 @@ if ($resultSection) {
                                 echo "<th>User</th>";
                                 echo "<th>Tender No</th>";
                                 echo "<th>Tender ID</th>";
+                                echo "<th>Tender ID</th>";
                                 echo "<th>Department</th>";
                                 echo "<th>Section</th>";
                                 echo "<th>Division</th>";
@@ -574,6 +579,7 @@ if ($resultSection) {
                                         . $row['3'] . "</span>" . "</td>";
                                     echo "<td>" . $row['4'] . "</td>";
                                     echo "<td>" . $row['13'] . "</td>";
+                                    echo "<td>" . $row['15'] . "</td>";
                                     echo "<td>" . $row['5'] . "</td>";
                                     echo "<td>" . $row['10'] . "</td>";
                                     echo "<td>" . $row['11'] . "</td>";
