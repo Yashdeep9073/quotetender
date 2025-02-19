@@ -233,14 +233,14 @@ $member1 = mysqli_fetch_row($memberData1);
                                     $res = $row[6];
                                     $res = base64_encode($res);
 
-                                    if ($row[5] == 'Requested' || $row[5] == 'Sent') {
+                                    if ($row[5] == 'Requested') {
 
                                         echo "<td>  - </td>";
                                         echo "<td> -</td>";
                                         echo "<td> <button type='button' class='btn btn-warning'><i class='feather icon-edit'></i> &nbsp;Pending</button>  </td>";
                                     } else {
 
-                                        if ($row[5] == 'Allotted' && (empty($row[7]))) {
+                                        if ($row[5] == 'Allotted' && (empty($row[7])) || $row[5] == 'Sent') {
                                             echo "<td>" . '<a href="../login/tender/' . $row[4] . '"  target="_blank" style="padding:6px 15.2px;"/>View File 1 </a>' . "</br>";
                                             if (!empty($row[9])) {
                                                 echo '<a href="../login/tender/' . $row[9] . '" target="_blank" style="padding:6px 15.2px;" />View File 2</a>' . "</td>";
