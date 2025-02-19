@@ -14,7 +14,7 @@ $memberData = mysqli_query($db, $memberQuery);
 $member = mysqli_fetch_row($memberData);
 
 $query = "SELECT department.department_name,  ur.tenderID, ur.created_at,
-ur.due_date, ur.file_name,  ur.status, ur.id, ur.remark, ur.project_status, ur.file_name2 FROM user_tender_requests ur 
+ur.due_date, ur.file_name,  ur.status, ur.id, ur.remark, ur.project_status, ur.file_name2 , ur.tentative_cost FROM user_tender_requests ur 
 inner join department on ur.department_id = department.department_id WHERE ur.member_id='" . $member[0] . "'";
 
 $result = mysqli_query($db, $query);
@@ -202,84 +202,82 @@ $member1 = mysqli_fetch_row($memberData1);
                         <div class="card-body">
                             <div class="dt-responsive table-responsive">
                                 <?php
-                                    echo '<table id="basic-btn" class="table table-striped table-bordered nowrap">';
-                                    echo "<thead>";
-                                    echo "<tr>";
-                                    echo "<th>SNO</th>";
-                                    echo "<th>Department</th>";
-                                    echo "<th>Tender No</th>";
-                                    echo "<th>Date Add</th>";
-                                    echo "<th>Start Date</th>";
-                                    echo "<th>File</th>";
-                                    echo "<th>Award Status</th>";
-                                    echo "<th>Status</th>";
+                                echo '<table id="basic-btn" class="table table-striped table-bordered nowrap">';
+                                echo "<thead>";
+                                echo "<tr>";
+                                echo "<th>SNO</th>";
+                                echo "<th>Department</th>";
+                                echo "<th>Tender No</th>";
+                                echo "<th>Tentative Cost</th>";
+                                echo "<th>Date Add</th>";
+                                echo "<th>Start Date</th>";
+                                echo "<th>File</th>";
+                                echo "<th>Award Status</th>";
+                                echo "<th>Status</th>";
 
-                                    echo "</tr>";
-                                    echo "</thead>";
-                                    $count = 1;
+                                echo "</tr>";
+                                echo "</thead>";
+                                $count = 1;
 
-                                    echo "<tbody>";
-                                    while ($row = mysqli_fetch_row($result)) {
+                                echo "<tbody>";
+                                while ($row = mysqli_fetch_row($result)) {
 
-                                        echo "<tr class='record'>";
-                                        echo "<td> $count</td>";
+                                    echo "<tr class='record'>";
+                                    echo "<td> $count</td>";
 
-                                        echo "<td>" . $row['0'] . "</td>";
-                                        echo "<td>" . $row['1'] . "</td>";
-                                        echo "<td>" . date_format(date_create($row[2]),"Y-m-d ") . "</td>";
-                                        echo "<td>" . date_format(date_create($row[3]),"Y-m-d ") . "</td>";
-                                        $res = $row[6];
-                                        $res = base64_encode($res);
+                                    echo "<td>" . $row['0'] . "</td>";
+                                    echo "<td>" . $row['1'] . "</td>";
+                                    echo "<td>" . $row['6'] . "</td>";
+                                    echo "<td>" . date_format(date_create($row[2]), "Y-m-d ") . "</td>";
+                                    echo "<td>" . date_format(date_create($row[3]), "Y-m-d ") . "</td>";
+                                    $res = $row[6];
+                                    $res = base64_encode($res);
 
-                                        if ($row[5] == 'Requested' || $row[5]=='Sent') {
-                                        
-                                            echo "<td>  - </td>";
-                                            echo "<td> -</td>";
-                                            echo "<td> <button type='button' class='btn btn-warning'><i class='feather icon-edit'></i> &nbsp;Pending</button>  </td>";
-                                        }
-                                        
-                                        else {
+                                    if ($row[5] == 'Requested' || $row[5] == 'Sent') {
 
-                                            if($row[5]=='Allotted' && (empty($row[7])))
-                                            {
+                                        echo "<td>  - </td>";
+                                        echo "<td> -</td>";
+                                        echo "<td> <button type='button' class='btn btn-warning'><i class='feather icon-edit'></i> &nbsp;Pending</button>  </td>";
+                                    } else {
+
+                                        if ($row[5] == 'Allotted' && (empty($row[7]))) {
                                             echo "<td>" . '<a href="../login/tender/' . $row[4] . '"  target="_blank" style="padding:6px 15.2px;"/>View File 1 </a>' . "</br>";
                                             if (!empty($row[9])) {
-                                                echo  '<a href="../login/tender/' . $row[9] . '" target="_blank" style="padding:6px 15.2px;" />View File 2</a>' . "</td>";
+                                                echo '<a href="../login/tender/' . $row[9] . '" target="_blank" style="padding:6px 15.2px;" />View File 2</a>' . "</td>";
                                             } else {
                                                 echo '<a href="../login/tender/' . $row[9] . '" class="btn disabled" target="_blank"/>No file </a>' . "</td>";
                                             }
 
                                             echo "<td>  <a href='reward-tender-edit.php?id=$res'><button type='button' class='btn btn-warning'><i class='feather icon-edit'></i> &nbsp; Make Award</button></a>  </td>";
                                             echo "<td> <button type='button' class='btn btn-success'><i class='feather icon-edit'></i> &nbsp;Apporved</button>  </td>";
-                                           
-                                            }
-                                            
-                                            if($row[7]=='accepted'|| $row[7]=='denied')
-                                            {
-                                            $projectStatus= !empty($row[8])? $row[8]:$row[7]." by you";
+
+                                        }
+
+                                        if ($row[7] == 'accepted' || $row[7] == 'denied') {
+                                            $projectStatus = !empty($row[8]) ? $row[8] : $row[7] . " by you";
                                             echo "<td>" . '<a href="../login/tender/' . $row[4] . '"  target="_blank" style="padding:6px 15.2px;"/>View File 1 </a>' . "</br>";
                                             if (!empty($row[9])) {
-                                                echo  '<a href="../login/tender/' . $row[9] . '" target="_blank" style="padding:6px 15.2px;" />View File 2</a>' . "</td>";
+                                                echo '<a href="../login/tender/' . $row[9] . '" target="_blank" style="padding:6px 15.2px;" />View File 2</a>' . "</td>";
                                             } else {
                                                 echo '<a href="../login/tender/' . $row[9] . '" class="btn disabled" target="_blank"/>No file </a>' . "</td>";
                                             }
-                                            echo "<td>".$projectStatus." </td>";
+                                            echo "<td>" . $projectStatus . " </td>";
                                             echo "<td>  <a href='#'><button type='button' class='btn btn-danger'><i class='feather icon-edit'></i> &nbsp; Closed</button></a>  </td>";
-                                            
-                                            }
-                                           
+
                                         }
 
-
-
-                                        echo "</tr>";
-                                        $count++;
                                     }
 
 
-                                    echo "</tfoot>";
-                                    echo "</table>";
-                             
+
+                                    echo "</tr>";
+                                    $count++;
+                                }
+
+
+                                echo "</tfoot>";
+                                echo "</table>";
+
                                 ?>
 
                             </div>
@@ -322,37 +320,37 @@ $member1 = mysqli_fetch_row($memberData1);
 
 
     <script>
-    $(document).ready(function() {
-        $("#updateuser").delay(5000).slideUp(300);
-    });
+        $(document).ready(function () {
+            $("#updateuser").delay(5000).slideUp(300);
+        });
     </script>
 
     <script type="text/javascript">
-    $(function() {
-        $(".delbutton").click(function() {
+        $(function () {
+            $(".delbutton").click(function () {
 
-            var element = $(this);
+                var element = $(this);
 
-            var del_id = element.attr("id");
+                var del_id = element.attr("id");
 
-            var info = 'id=' + del_id;
-            if (confirm("Are you sure you want to delete this Record?")) {
-                $.ajax({
-                    type: "GET",
-                    url: "deleteuser.php",
-                    data: info,
-                    success: function() {}
-                });
-                $(this).parents(".record").animate({
+                var info = 'id=' + del_id;
+                if (confirm("Are you sure you want to delete this Record?")) {
+                    $.ajax({
+                        type: "GET",
+                        url: "deleteuser.php",
+                        data: info,
+                        success: function () { }
+                    });
+                    $(this).parents(".record").animate({
                         backgroundColor: "#FF3"
                     }, "fast")
-                    .animate({
-                        opacity: "hide"
-                    }, "slow");
-            }
-            return false;
+                        .animate({
+                            opacity: "hide"
+                        }, "slow");
+                }
+                return false;
+            });
         });
-    });
     </script>
 
 
