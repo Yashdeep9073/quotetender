@@ -574,6 +574,7 @@ $result = mysqli_query($db, $query);
                                 echo "<tbody>";
                                 while ($row = mysqli_fetch_assoc($resultMain)) {
 
+                                    
                                     echo "<tr class='record'>";
                                     echo "<td><div class='custom-control custom-checkbox'>
                                     <input type='checkbox' class='custom-control-input request_checkbox' id='customCheck" . $row['sno'] . "' data-request-id='" . $row['t_id'] . "'>

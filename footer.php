@@ -6,10 +6,10 @@
                     <div class="footer-inner">
                         <div class="footer-content">
                             <div class="title">
-                                <h4>Sectors  </h4>
+                                <h4>Sectors </h4>
                             </div>
                             <div class="content">
-                              <ul class="lab-ul">
+                                <ul class="lab-ul">
                                     <li><a href="public-sector.php">Semi Govt. Sector</a></li>
                                     <li><a href="private-sector.php">Private Sector</a></li>
                                     <li><a href="Govt-Sector.php">Govt Sector</a></li>
@@ -32,7 +32,7 @@
                                 <ul class="lab-ul">
                                     <li><a href="about-us.php">About Us</a></li>
                                     <li><a href="contact-us.php">Contact Us</a></li>
-                                     <li><a href="login.php">Amendment Tender</a></li>
+                                    <li><a href="login.php">Amendment Tender</a></li>
 
 
                                 </ul>
@@ -87,7 +87,8 @@
     <div class="container">
         <div class="section-wrapper">
             <p>
-                &copy; <?php echo date("Y");?><a href="index.php">Quotetender.in | All Rights Reserved. </a> Developed by <a href=" https://vibrantick.in/" target="_blank"> Vibrantick Infotech Solutions</a> 
+                &copy; <?php echo date("Y"); ?><a href="index.php">Quotetender.in | All Rights Reserved. </a> Developed
+                by <a href=" https://vibrantick.in/" target="_blank"> Vibrantick Infotech Solutions</a>
             </p>
         </div>
     </div>

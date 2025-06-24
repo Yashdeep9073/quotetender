@@ -372,6 +372,8 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                     $count = 1;
                                     foreach ($tenderRequests as $row) {
                                         echo "<tbody>";
+
+                                        
                                         echo "<tr class='record'>";
                                         echo "<td>
                                     <div class='custom-control custom-checkbox'>
@@ -430,6 +432,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                             echo "<a href='#' id='" . $row['id'] . "'class='recyclebutton btn btn-danger' title='Click To Delete'> 
                                         <i class='feather icon-trash'></i>  &nbsp; Move to Bin</a></td>";
                                         }
+
                                         if ($row['auto_quotation'] != 1) {
                                             if (!empty($row['email_sent_date']) && strtotime($row['email_sent_date'])) {
                                                 $originalDate2 = $row['email_sent_date'];

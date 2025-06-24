@@ -300,8 +300,8 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                     // } else {
                                     //     echo '<a href="../login/tender/' . $row['file_name2'] . '" class="btn disabled" target="_blank"/>No file </a>' . "</td>";
                                     // }
-                                    $res = $row['id'];
-                                    $res = base64_encode($res);
+                                    $res = isset($row['id']) ? base64_encode($row['id']) : '';
+
 
                                     if ($allowedAction == 'all' || $allowedAction == 'update') {
                                         echo "<td>  <a href='sent-edit.php?id=$res'><button type='button' class='btn btn-warning rounded-sm'><i class='feather icon-edit'></i>

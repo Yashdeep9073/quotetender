@@ -225,7 +225,7 @@ window.location.href='registered-users.php?status=$re';
                                                 <label class="sr-only control-label" for="name">Email<span class=" ">
                                                     </span></label>
                                                 <input id="name" name="email" type="email" class="form-control input-md"
-                                                    required placeholder="Enter Email" value="<?php echo $row[4]; ?>" readonly>
+                                                    required placeholder="Enter Email" value="<?php echo $row[4]; ?>" >
                                             </div>
                                         </div>
 

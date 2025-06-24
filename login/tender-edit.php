@@ -218,6 +218,60 @@ if (isset($_POST['submit'])) {
 }
 
 
+if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
+    # code...
+
+    try {
+
+        // Get current date in YYYYMMDD format
+        $date = date('Ymd'); // e.g., '20250530'
+
+        $db->begin_transaction();
+
+        // Lock the row for the current date
+        $stmt = $db->prepare("SELECT last_sequence FROM reference_sequence WHERE date = ? FOR UPDATE");
+        $stmt->bind_param("s", $date);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        if ($result->num_rows === 0) {
+            // No sequence for today, create one
+            $stmt = $db->prepare("INSERT INTO reference_sequence (date, last_sequence) VALUES (?, 0)");
+            $stmt->bind_param("s", $date);
+            $stmt->execute();
+            $lastSequence = 0;
+        } else {
+            $row = $result->fetch_assoc();
+            $lastSequence = $row['last_sequence'];
+        }
+
+        // Increment sequence
+        $newSequence = $lastSequence + 1;
+
+        // Update sequence
+        $stmt = $db->prepare("UPDATE reference_sequence SET last_sequence = ? WHERE date = ?");
+        $stmt->bind_param("is", $newSequence, $date);
+        $stmt->execute();
+
+        $db->commit();
+
+        // Format invoice number
+        $referenceNumber = sprintf("REF-%s-%05d", $date, $newSequence); // e.g., VIS-20250530-00001
+
+        echo json_encode([
+            "status" => 200,
+            "referenceNumber" => $referenceNumber
+        ]);
+        exit;
+    } catch (\Throwable $th) {
+        //throw $th;
+        echo json_encode([
+            "status" => 500,
+            "error" => $th->getMessage()
+        ]);
+        exit;
+    }
+}
 
 $requestQuery = mysqli_query($db, "SELECT department.department_name, ur.file_name, ur.tenderID, ur.id 
 FROM user_tender_requests ur 
@@ -257,6 +311,8 @@ $sections = mysqli_query($db, $sectionQuery);
     <link rel="stylesheet" href="assets/css/plugins/dataTables.bootstrap4.min.css">
 
     <link rel="stylesheet" href="assets/css/style.css">
+    <script src="https://code.jquery.com/jquery-3.7.1.js"
+        integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
     <script>
         function getstate(val) {
             //alert(val);
@@ -281,7 +337,38 @@ $sections = mysqli_query($db, $sectionQuery);
                 }
             });
         }
+
+        async function generateReferenceNumber() {
+            const response = await fetch("tender-edit.php?id=<?php echo $_GET['id'] ?>", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                body: "refCode=true"
+            });
+
+            const data = await response.json();
+            return data.referenceNumber;
+        }
+
+
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const buttons = document.querySelectorAll('.refNumber');
+
+            buttons.forEach(function (btn) {
+                btn.addEventListener('click', async function (e) {
+                    e.preventDefault();
+                    const refNumber = await generateReferenceNumber();
+
+                    // Set the value of the input with id="code"
+                    document.getElementById("code").value = refNumber;
+                });
+            });
+        });
+
     </script>
+
 
 </head>
 
@@ -415,15 +502,20 @@ $sections = mysqli_query($db, $sectionQuery);
                                         </div>
 
 
-                                        <div class="col-xl-6 col-lg-6 col-md-4 col-sm-12 col-12">
-                                            <div class="form-group">Reference Code*
-                                                <label class="sr-only control-label" for="name">Reference Code*<span
-                                                        class=" ">
-                                                    </span></label>
-                                                <input id="code" name="code" type="text" placeholder=" Enter Code *"
-                                                    class="form-control input-md" required value="">
+                                        <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 mb-3">
+                                            <div class="form-group">
+                                                <label for="code" class="form-label fw-bold">Reference Code <span
+                                                        class="text-danger">*</span></label>
+                                                <div class="input-group">
+                                                    <input id="code" name="code" type="text" placeholder="Enter Code *"
+                                                        class="form-control" required>
+                                                    <button type="button"
+                                                        class="btn btn-primary refNumber">Generate</button>
+                                                </div>
                                             </div>
                                         </div>
+
+
 
 
                                         <div class="col-xl-6 col-lg-6 col-md-4 col-sm-12 col-12">
@@ -536,7 +628,8 @@ $sections = mysqli_query($db, $sectionQuery);
                                         <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
 
 
-                                            <button type="submit" class="btn btn-secondary rounded-sm" name="submit" id="submit">
+                                            <button type="submit" class="btn btn-secondary rounded-sm" name="submit"
+                                                id="submit">
                                                 <i class="feather icon-save lg"></i>&nbsp; Update
                                             </button>
 
@@ -572,11 +665,10 @@ $sections = mysqli_query($db, $sectionQuery);
     <script src="assets/js/plugins/buttons.html5.min.js"></script>
     <script src="assets/js/plugins/buttons.bootstrap4.min.js"></script>
     <script src="assets/js/pages/data-export-custom.js"></script>
-    <!-- <script type="text/javascript">
-        $(document).ready(function() {
-            $('#choose-file').next('label').html('Select a file');
-        });
-    </script> -->
+
+
+
+
 </body>
 
 </html>
