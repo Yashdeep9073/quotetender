@@ -105,7 +105,7 @@ function otpGenerate($adminId, $db, $mail)
             $mail->Body = "
                 <div style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
                     <div style='text-align: center; margin-bottom: 20px;'>
-                        <img src='https://www.quotetender.in/assets/images/logo/logo.png' alt='Quote Tender Logo' style='max-width: 200px; height: auto;'>
+                        <img src='https://dvepl.com/quotetender/assets/images/logo/logo.png' alt='Quote Tender Logo' style='max-width: 200px; height: auto;'>
                     </div>
                     <p style='font-size: 18px; color: #555;'>Dear <strong>" . htmlspecialchars($adminName) . "</strong>,</p>
                     <p>We have received a login attempt on your account. For security, please verify your identity using the One-Time Password (OTP) below: <strong>" . htmlspecialchars($otp) . "</strong>.</p>

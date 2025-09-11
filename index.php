@@ -237,7 +237,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['submit'])) {
                     $mail->Body = "
 <div style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
     <div style='text-align: center; margin-bottom: 20px;'>
-        <img src='https://www.quotetender.in/assets/images/logo/logo.png' alt='Quote Tender Logo' style='max-width: 200px; height: auto;'>
+        <img src='https://dvepl.com/quotetender/assets/images/logo/logo.png' alt='Quote Tender Logo' style='max-width: 200px; height: auto;'>
     </div>
     <p style='font-size: 18px; color: #555;'>Dear <strong>" . $memberData[1] . "</strong>,</p>
     <p>Thank you for your valuable enquiry! We truly appreciate your interest. We will provide the pricing details within 3-5 working days for the following tender:</p>
@@ -371,7 +371,7 @@ $q = mysqli_query($db, $q);
     <meta property="og:description"
         content="Quotetender is your leading edge partner in finding the right tenders. Government Tenders, e-Tenders, online Tender Information.">
     <meta property="og:type" content="">
-    <meta property="og:image" content="https://www.quotetender.in/assets/images/logo/logo.png" />
+    <meta property="og:image" content="https://dvepl.com/quotetender/assets/images/logo/logo.png" />
     <!-- closing open graph tags -->
 
     <title>Comprehensive Price List & Tender Quote: Your Business Solutions</title>

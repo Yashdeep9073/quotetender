@@ -68,7 +68,7 @@ if (isset($en)){
         $mail->Body = "
 <div style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
     <div style='text-align: center; margin-bottom: 20px;'>
-        <img src='https://www.quotetender.in/assets/images/logo/logo.png' alt='Quote Tender Logo' style='max-width: 200px; height: auto;'>
+        <img src='https://dvepl.com/quotetender/assets/images/logo/logo.png' alt='Quote Tender Logo' style='max-width: 200px; height: auto;'>
     </div>
     <p style='font-size: 18px; color: #555;'>Dear <strong>" . htmlspecialchars($data["name"]) . "</strong>,</p>
     <p>We are pleased to inform you that the <strong>Tender ID:</strong> " . htmlspecialchars($data["tenderID"]) . " has been approved for you. The quotation file is attached below for your reference.</p>
@@ -177,7 +177,7 @@ if(isset($_GET['id'])){
     $mail->Body = "
 <div style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
     <div style='text-align: center; margin-bottom: 20px;'>
-        <img src='https://www.quotetender.in/assets/images/logo/logo.png' alt='Quote Tender Logo' style='max-width: 200px; height: auto;'>
+        <img src='https://dvepl.com/quotetender/assets/images/logo/logo.png' alt='Quote Tender Logo' style='max-width: 200px; height: auto;'>
     </div>
     <p style='font-size: 18px; color: #555;'>Dear <strong>". $memberData[1] ."</strong>,</p>
     <p>We are pleased to inform you that the <strong>Tender ID:</strong> " . htmlspecialchars($memberData[4]) . " has been approved for you. The quotation file is attached below for your reference.</p>

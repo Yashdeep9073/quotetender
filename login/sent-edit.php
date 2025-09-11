@@ -130,7 +130,7 @@ INNER JOIN members ON user_tender_requests.member_id =members.member_id WHERE id
     $mail->Body = "
 <div style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
     <div style='text-align: center; margin-bottom: 20px;'>
-        <img src='https://www.quotetender.in/assets/images/logo/logo.png' alt='Quote Tender Logo' style='max-width: 200px; height: auto;'>
+        <img src='https://dvepl.com/quotetender/assets/images/logo/logo.png' alt='Quote Tender Logo' style='max-width: 200px; height: auto;'>
     </div>
     <p style='font-size: 18px; color: #555;'>Dear <strong>" . $qty[1] . "</strong>,</p>
     <p>We are pleased to inform you that the <strong>Tender ID:</strong> " . htmlspecialchars($uname) . " has been allotted to you. For any further assistance or queries regarding the process, please feel free to contact us. We are here to help!</p>
