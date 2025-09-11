@@ -184,41 +184,54 @@ $type = $row11[5];
                 <!-- order-card start -->
                 <div class="col-md-6 col-xl-3">
                     <div class="card bg-c-blue order-card">
-                        <div class="card-body">
-                            <h6 class="text-white">Tender Request</h6>
-                            <h2 class="text-right text-white"><i
-                                    class="feather icon-message-square float-left"></i><span id="new"></span></h2>
+                        <a href="tender-request2.php">
+                            <div class="card-body">
+                                <h6 class="text-white">Tender Request</h6>
+                                <h2 class="text-right text-white"><i
+                                        class="feather icon-message-square float-left"></i><span id="new"></span></h2>
 
-                        </div>
+                            </div>
+                        </a>
+
                     </div>
                 </div>
                 <div class="col-md-6 col-xl-3">
                     <div class="card bg-c-green order-card">
-                        <div class="card-body">
-                            <h6 class="text-white">Sent Tenders</h6>
-                            <h2 class="text-right text-white"><i
-                                    class="feather icon-message-square float-left"></i><span id="total"></span></h2>
+                        <a href="sent-tender2.php">
+                            <div class="card-body">
+                                <h6 class="text-white">Sent Tenders</h6>
+                                <h2 class="text-right text-white"><i
+                                        class="feather icon-message-square float-left"></i><span id="total"></span></h2>
 
-                        </div>
+                            </div>
+                        </a>
+
                     </div>
                 </div>
                 <div class="col-md-6 col-xl-3">
                     <div class="card bg-c-yellow order-card">
-                        <div class="card-body">
-                            <h6 class="text-white">Registered Members</h6>
-                            <h2 class="text-right text-white"><i class="feather icon-users float-left"></i><span
-                                    id="user"></span></h2>
+                        <a href="registered-users.php">
 
-                        </div>
+                            <div class="card-body">
+                                <h6 class="text-white">Registered Members</h6>
+                                <h2 class="text-right text-white"><i class="feather icon-users float-left"></i><span
+                                        id="user"></span></h2>
+
+                            </div>
+                        </a>
+
                     </div>
                 </div>
                 <div class="col-md-6 col-xl-3">
                     <div class="card bg-c-red order-card">
-                        <div class="card-body">
-                            <h6 class="text-white">Alot Tender</h6>
-                            <h2 class="text-right text-white"><i class="feather icon-home float-left"></i><span
-                                    id="category"></span></h2>
-                        </div>
+                        <a href="alot-tender.php">
+                            <div class="card-body">
+                                <h6 class="text-white">Alot Tender</h6>
+                                <h2 class="text-right text-white"><i class="feather icon-home float-left"></i><span
+                                        id="category"></span></h2>
+                            </div>
+                        </a>
+
                     </div>
                 </div>
 

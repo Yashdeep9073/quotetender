@@ -33,6 +33,7 @@ $queryMain = "SELECT
     ur.due_date, 
     ur.file_name, 
     ur.tenderID, 
+    ur.reference_code, 
     ur.created_at, 
     ur.file_name2 
 FROM 
@@ -295,8 +296,9 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                                 class="fas fa-file-excel"></i>
                                             Excel</span></button>
                                     <button class="btn btn-secondary buttons-csv buttons-html5 btn-primary rounded-sm"
-                                        tabindex="0" aria-controls="basic-btn2" type="button" onclick="exportTableToCSV()"
-                                        title="Export to CSV"><span><i class="fas fa-file-csv"></i> CSV</span></button>
+                                        tabindex="0" aria-controls="basic-btn2" type="button"
+                                        onclick="exportTableToCSV()" title="Export to CSV"><span><i
+                                                class="fas fa-file-csv"></i> CSV</span></button>
                                     <button class="btn btn-secondary buttons-copy buttons-html5 btn-primary rounded-sm"
                                         tabindex="0" aria-controls="basic-btn2" type="button"
                                         title="Copy to clipboard"><span><i class="fas fa-copy"></i> Copy</span></button>
@@ -309,6 +311,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                         <tr>
                                             <th>SNO</th>
                                             <th>Tender ID</th>
+                                            <th>Reference Code</th>
                                             <th>Department</th>
                                             <th>Due Date</th>
                                             <th>Add Date </th>
@@ -331,6 +334,9 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                                 <td>
                                                     <a class='tender_id'
                                                         href='tender-request3.php?tender_id=<?php echo base64_encode($row['tenderID']) ?>'><?php echo $row['tenderID'] ?></a>
+                                                </td>
+                                                <td>
+                                                    <?php echo $row['reference_code'] ?>
                                                 </td>
                                                 <td>
                                                     <?php echo $row['department_name'] ?>

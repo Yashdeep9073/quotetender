@@ -31,6 +31,7 @@ department.department_name,
 ur.due_date, 
 ur.file_name, 
 ur.tenderID, 
+ ur.reference_code,  
 ur.created_at, 
 ur.id,
 ur.file_name2 
@@ -384,6 +385,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
             echo "<th>Firm Name</th>";
             echo "<th>Mobile</th>";
             echo "<th>Email</th>";
+            echo "<th>Reference Code</th>";
 
             echo "<th>Department</th>";
             echo "<th>Add Date</th>";
@@ -418,6 +420,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                 echo "<td>" . $row['mobile'] . "</td>";
                 echo "<td>" . $row['email_id'] . "</td>";
 
+                echo "<td>" . $row['reference_code'] . "</td>";
                 echo "<td>" . $row['department_name'] . "</td>";
 
                 // Convert and display the date in 'd-m-Y' format

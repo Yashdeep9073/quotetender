@@ -1,4 +1,4 @@
-x<?php
+<?php
 
 session_start();
 
@@ -12,6 +12,53 @@ include("db/config.php");
 
 $query = "SELECT * FROM members";
 $result = mysqli_query($db, $query);
+
+
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['memberIds'])) {
+
+
+    $memberIds = $_POST['memberIds'];
+
+    // Validate: Must be an array of integers
+    if (!is_array($memberIds)) {
+        echo json_encode([
+            'status' => 400,
+            'message' => 'Invalid data format.'
+        ]);
+        exit;
+    }
+
+    try {
+        // Prepare the SQL dynamically
+        $placeholders = implode(',', array_fill(0, count($memberIds), '?'));
+        $types = str_repeat('i', count($memberIds)); // All integers
+
+        $stmt = $db->prepare("DELETE FROM members WHERE member_id IN ($placeholders)");
+        $stmt->bind_param($types, ...$memberIds);
+
+        if ($stmt->execute()) {
+            echo json_encode([
+                'status' => 200,
+                'message' => 'Selected records deleted successfully.',
+                'deleted_ids' => $memberIds
+            ]);
+        } else {
+            echo json_encode([
+                'status' => 400,
+                'message' => $stmt->error
+            ]);
+        }
+
+        exit;
+    } catch (Exception $e) {
+        echo json_encode([
+            'status' => 500,
+            'message' => $e->getMessage()
+        ]);
+        exit;
+    }
+}
+
 
 ?>
 
@@ -37,6 +84,8 @@ $result = mysqli_query($db, $query);
     <link rel="stylesheet" href="assets/css/plugins/dataTables.bootstrap4.min.css">
 
     <link rel="stylesheet" href="assets/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 </head>
 
 <body class="">
@@ -78,7 +127,8 @@ $result = mysqli_query($db, $query);
                     </div>
                 </li>
                 <li class="nav-item">
-                    <a href="#!" class="full-screen" onClick="javascript:toggleFullScreen()"><i class="feather icon-maximize"></i></a>
+                    <a href="#!" class="full-screen" onClick="javascript:toggleFullScreen()"><i
+                            class="feather icon-maximize"></i></a>
                 </li>
             </ul>
 
@@ -175,12 +225,18 @@ $result = mysqli_query($db, $query);
                                 <a href='#' id='delete_records' class='btn btn-danger'> <i class='feather icon-trash'></i>  &nbsp;
                                 Delete Selected Members</a>
                                 </div> <br />";
-                                
-                               
+
+
                                 echo '<table id="basic-btn" class="table table-striped table-bordered ">';
                                 echo "<thead>";
                                 echo "<tr>";
-                                echo "<th>SNO</th>";
+                                echo '<th>
+                                    <label class="checkboxs">
+                                        <input type="checkbox" id="select-all">
+                                        <span class="checkmarks"></span>
+                                    </label>
+                                    SNO
+                                </th>';
                                 echo "<th>Name</th>";
                                 echo "<th>Firm Name</th>";
                                 echo "<th>Mobile</th>";
@@ -203,11 +259,12 @@ $result = mysqli_query($db, $query);
                                 while ($row = mysqli_fetch_row($result)) {
 
                                     echo "<tr class='record' id='" . $row[0] . "'>";
-                                    echo "<td><div class='custom-control custom-checkbox'>
+                                    echo "<td>
+                                <div class='custom-control custom-checkbox'>
                                     <input type='checkbox' class='custom-control-input member_checkbox' id='customCheck" . $count . "' data-member-id='" . $row[0] . "'>
                                     <label class='custom-control-label' for='customCheck" . $count . "'>" . $count . "</label>
                                 </div>
-                                </td>";
+                            </td>";
 
                                     echo "<td>" . $row['1'] . "</td>";
                                     echo "<td>" . $row['2'] . "</td>";
@@ -264,14 +321,14 @@ $result = mysqli_query($db, $query);
 
 
     <script>
-        $(document).ready(function() {
+        $(document).ready(function () {
             $("#updateuser").delay(5000).slideUp(300);
         });
     </script>
 
     <script>
-        $(document).ready(function() {
-            $("#basic-btn").on('click','.delbutton', function() {
+        $(document).ready(function () {
+            $("#basic-btn").on('click', '.delbutton', function () {
 
                 var element = $(this);
 
@@ -283,11 +340,11 @@ $result = mysqli_query($db, $query);
                         type: "GET",
                         url: "deleteuser.php",
                         data: info,
-                        success: function() {}
+                        success: function () { }
                     });
                     $(this).parents(".record").animate({
-                            backgroundColor: "#FF3"
-                        }, "fast")
+                        backgroundColor: "#FF3"
+                    }, "fast")
                         .animate({
                             opacity: "hide"
                         }, "slow");
@@ -295,39 +352,106 @@ $result = mysqli_query($db, $query);
                 return false;
             });
 
-            $('#delete_records').on('click', function(e) {
-                var members = [];
-                $(".member_checkbox:checked").each(function() {
+
+            $(document).on('change', '#select-all', function (e) {
+                var isChecked = $(this).prop('checked');
+
+                // Select/Deselect all checkboxes with class 'member_checkbox'
+                $('.member_checkbox').prop('checked', isChecked);
+
+                // Stop propagation
+                e.stopPropagation();
+            });
+
+            // Prevent sorting when clicking on checkbox area in header
+            $('.checkboxs').on('click', function (e) {
+                e.stopPropagation();
+            });
+
+            // Handle individual checkbox clicks to update select-all state
+            $(document).on('click', '.member_checkbox', function () {
+                updateSelectAllState();
+            });
+
+            // Function to update select-all checkbox state
+            function updateSelectAllState() {
+                var totalCheckboxes = $('.member_checkbox').length;
+                var checkedCheckboxes = $('.member_checkbox:checked').length;
+
+                // Update select all checkbox state
+                $('#select-all').prop('checked', totalCheckboxes === checkedCheckboxes);
+            }
+
+            $(document).on('click', '#delete_records', function (e) {
+                e.preventDefault();
+
+                let members = [];
+                $(".member_checkbox:checked").each(function () {
                     members.push($(this).data('member-id'));
                 });
-                if (members.length <= 0) {
-                    alert("Please select records.");
-                } else {
-                    WRN_PROFILE_DELETE = "Are you sure you want to delete " + (members.length > 1 ? "these" : "this") + " Record?";
-                    var checked = confirm(WRN_PROFILE_DELETE);
-                    if (checked == true) {
-                        var selected_values = members.join(",");
-                        $.ajax({
-                            type: "POST",
-                            url: "deleteuser.php",
-                            cache: false,
-                            data: 'member_ids=' + selected_values,
-                            success: function(response) {
-                                // hide deleted members rows
-                                var member_IDs = response.split(",");
-                                for (var i = 0; i < member_IDs.length; i++) {
-                                    
-                                    $("#" + member_IDs[i]).hide();
-                                }
-                            }
-                        });
-                    }
+
+                if (members.length == 0) {
+                    Swal.fire({
+                        icon: "error",
+                        title: "Oops...",
+                        text: "Please select record!",
+                        confirmButtonColor: "#33cc33"
+                    });
+                    return;
                 }
+
+                Swal.fire({
+                    title: "Are you sure?",
+                    text: "You won't be able to revert this!",
+                    showCancelButton: true,
+                    confirmButtonColor: "#33cc33",
+                    cancelButtonColor: "#ff5471",
+                    confirmButtonText: "Yes, delete it!"
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            url: window.location.href,
+                            type: "post",
+                            data: { memberIds: members },
+                            success: function (response) {
+                                let result = JSON.parse(response);
+
+                                if (result.status == 200) {
+                                    Swal.fire(
+                                        'Deleted!',
+                                        result.message,
+                                        'success'
+                                    ).then(() => {
+                                        // Reload the page
+                                        location.reload();
+                                    });
+                                } else {
+                                    Swal.fire(
+                                        'Deleted!',
+                                        result.message,
+                                        'error'
+                                    ).then(() => {
+                                        // Reload the page
+                                        location.reload();
+                                    });
+                                }
+
+
+                            },
+                            error: function (error) {
+                                console.log(error);
+                            },
+                        });
+
+                    }
+                })
+
+
             });
         });
     </script>
 
- 
+
 
 
 </body>
