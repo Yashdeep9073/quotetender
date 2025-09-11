@@ -88,7 +88,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
     <link rel="shortcut icon" href="../assets/images/x-icon.png" type="image/x-icon">
 
 
-
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link rel="stylesheet" href="assets/css/plugins/dataTables.bootstrap4.min.css">
 
     <link rel="stylesheet" href="assets/css/style.css">
@@ -309,7 +309,10 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                 <table id="basic-btn2" class="table table-striped table-bordered">
                                     <thead>
                                         <tr>
-                                            <th>SNO</th>
+                                            <th> <label class="checkboxs">
+                                                    <input type="checkbox" id="select-all">
+                                                    <span class="checkmarks"></span>
+                                                </label> SNO</th>
                                             <th>Tender ID</th>
                                             <th>Reference Code</th>
                                             <th>Department</th>
@@ -497,24 +500,58 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                 var del_id = element.attr("id");
 
                 var info = 'id=' + del_id;
-                if (confirm("Are you sure you want to delete this Record?")) {
-                    $.ajax({
-                        type: "GET",
-                        url: "deleteuser.php",
-                        data: info,
-                        success: function () { }
-                    });
-                    $(this).parents(".record").animate({
-                        backgroundColor: "#FF3"
-                    }, "fast")
-                        .animate({
-                            opacity: "hide"
-                        }, "slow");
+                Swal.fire({
+                    title: "Are you sure?",
+                    text: "You won't be able to revert this Record!",
+                    icon: "warning",
+                    showCancelButton: true,
+                    confirmButtonColor: "#33cc33",
+                    cancelButtonColor: "#ff5471",
+                    confirmButtonText: "Yes, delete it!",
+                    cancelButtonText: "Cancel"
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            type: "GET",
+                            url: "deleteuser.php",
+                            data: info,
+                            success: function () {
+                                // Show success message
+                                Swal.fire({
+                                    title: 'Deleted!',
+                                    text: 'The record has been deleted.',
+                                    icon: 'success',
+                                    confirmButtonColor: "#33cc33",
+                                    timer: 1500,
+                                    timerProgressBar: true,
+                                    showConfirmButton: false
+                                }).then(() => {
+                                    // Animate and remove the record
+                                    $(".record").animate({
+                                        backgroundColor: "#FF3"
+                                    }, "fast")
+                                        .animate({
+                                            opacity: "hide"
+                                        }, "slow");
 
-                    setTimeout(function () {
-                        window.location.reload()
-                    }, 2000);
-                }
+                                    // Reload page after animation
+                                    setTimeout(function () {
+                                        window.location.reload();
+                                    }, 2000);
+                                });
+                            },
+                            error: function (error) {
+                                console.log(error);
+                                Swal.fire({
+                                    title: 'Error!',
+                                    text: 'Something went wrong while deleting the record.',
+                                    icon: 'error',
+                                    confirmButtonColor: "#33cc33"
+                                });
+                            }
+                        });
+                    }
+                });
                 return false;
             });
 
@@ -524,34 +561,71 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                     requestIDs.push($(this).data('request-id'));
                 });
                 if (requestIDs.length <= 0) {
-                    alert("Please select records.");
+                    Swal.fire({
+                        icon: "error",
+                        title: "Oops...",
+                        text: "Please select records!",
+                        confirmButtonColor: "#33cc33"
+                    });
+                    return;
                 } else {
-                    WRN_PROFILE_DELETE = "Are you sure you want to delete " + (requestIDs.length > 1 ? "these" : "this") + " Record?";
-                    var checked = confirm(WRN_PROFILE_DELETE);
-                    if (checked == true) {
-                        var selected_values = requestIDs.join(",");
-                        $.ajax({
-                            type: "POST",
-                            url: "recycleuser.php",
-                            cache: false,
-                            data: 'alot_request_ids=' + selected_values,
-                            success: function () {
-                                $(".request_checkbox:checked").each(function () {
-                                    $(this).closest(".record").animate({
-                                        backgroundColor: "#FF3"
-                                    }, "fast").animate({
-                                        opacity: "hide"
-                                    }, "slow", function () {
-                                        $(this).remove();
+                    Swal.fire({
+                        title: "Are you sure?",
+                        text: "You won't be able to revert " + (requestIDs.length > 1 ? "these" : "this") + " Record" + (requestIDs.length > 1 ? "s" : "") + "!",
+                        icon: "warning",
+                        showCancelButton: true,
+                        confirmButtonColor: "#33cc33",
+                        cancelButtonColor: "#ff5471",
+                        confirmButtonText: "Yes, delete it!",
+                        cancelButtonText: "Cancel"
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            var selected_values = requestIDs.join(",");
+                            $.ajax({
+                                type: "POST",
+                                url: "recycleuser.php",
+                                cache: false,
+                                data: 'alot_request_ids=' + selected_values,
+                                success: function (response) {
+                                    // Show success message
+                                    Swal.fire({
+                                        title: 'Deleted!',
+                                        text: 'Record' + (requestIDs.length > 1 ? "s" : "") + ' deleted successfully.',
+                                        icon: 'success',
+                                        confirmButtonColor: "#33cc33",
+                                        timer: 1500,
+                                        timerProgressBar: true,
+                                        showConfirmButton: false
+                                    }).then(() => {
+                                        // Animate and remove records
+                                        $(".request_checkbox:checked").each(function () {
+                                            $(this).closest(".record").animate({
+                                                backgroundColor: "#FF3"
+                                            }, "fast").animate({
+                                                opacity: "hide"
+                                            }, "slow", function () {
+                                                $(this).remove();
+                                            });
+                                        });
+
+                                        // Reload page after animation
+                                        setTimeout(function () {
+                                            window.location.reload();
+                                        }, 2000);
                                     });
-                                });
-                                setTimeout(function () {
-                                    window.location.reload();
                                 },
-                                    2000);
-                            }
-                        });
-                    }
+                                error: function (error) {
+                                    console.log(error);
+                                    Swal.fire({
+                                        title: 'Error!',
+                                        text: 'Something went wrong while deleting records.',
+                                        icon: 'error',
+                                        confirmButtonColor: "#33cc33"
+                                    });
+                                }
+                            });
+                        }
+                    });
                 }
             });
         });
@@ -721,11 +795,39 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
         }
     </script>
 
+    <script>
+        $(document).ready(function () {
 
+            $(document).on('change', '#select-all', function (e) {
+                var isChecked = $(this).prop('checked');
 
+                // Select/Deselect all checkboxes with class 'member_checkbox'
+                $('.request_checkbox').prop('checked', isChecked);
 
+                // Stop propagation
+                e.stopPropagation();
+            });
 
+            // Prevent sorting when clicking on checkbox area in header
+            $('.checkboxs').on('click', function (e) {
+                e.stopPropagation();
+            });
 
+            // Handle individual checkbox clicks to update select-all state
+            $(document).on('click', '.request_checkbox', function () {
+                updateSelectAllState();
+            });
+
+            // Function to update select-all checkbox state
+            function updateSelectAllState() {
+                var totalCheckboxes = $('.request_checkbox').length;
+                var checkedCheckboxes = $('.request_checkbox:checked').length;
+
+                // Update select all checkbox state
+                $('#select-all').prop('checked', totalCheckboxes === checkedCheckboxes);
+            }
+        });
+    </script>
 </body>
 
 </html>

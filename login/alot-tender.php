@@ -217,7 +217,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
     <link rel="shortcut icon" href="../assets/images/x-icon.png" type="image/x-icon">
 
 
-
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link rel="stylesheet" href="assets/css/plugins/dataTables.bootstrap4.min.css">
 
     <link rel="stylesheet" href="assets/css/style.css">
@@ -500,14 +500,15 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                 ";
                                 } ?>
                                 <div class="dt-buttons btn-group">
-                                <button class="btn btn-secondary buttons-excel buttons-html5 btn-primary rounded-sm"
+                                    <button class="btn btn-secondary buttons-excel buttons-html5 btn-primary rounded-sm"
                                         tabindex="0" aria-controls="basic-btn2" type="button"
                                         onclick="exportTableToExcel()" title="Export to Excel"><span><i
                                                 class="fas fa-file-excel"></i>
                                             Excel</span></button>
                                     <button class="btn btn-secondary buttons-csv buttons-html5 btn-primary rounded-sm"
-                                        tabindex="0" aria-controls="basic-btn2" type="button" onclick="exportTableToCSV()"
-                                        title="Export to CSV"><span><i class="fas fa-file-csv"></i> CSV</span></button>
+                                        tabindex="0" aria-controls="basic-btn2" type="button"
+                                        onclick="exportTableToCSV()" title="Export to CSV"><span><i
+                                                class="fas fa-file-csv"></i> CSV</span></button>
                                     <button class="btn btn-secondary buttons-copy buttons-html5 btn-primary rounded-sm"
                                         tabindex="0" aria-controls="basic-btn2" type="button"
                                         title="Copy to clipboard"><span><i class="fas fa-copy"></i> Copy</span></button>
@@ -519,7 +520,10 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                 echo '<table id="basic-btn2" class="table table-striped table-bordered">';
                                 echo "<thead>";
                                 echo "<tr>";
-                                echo "<th>SNO</th>";
+                                echo '<th><label class="checkboxs">
+                                    <input type="checkbox" id="select-all">
+                                    <span class="checkmarks"></span>
+                                </label>  SNO</th>';
                                 echo "<th>User</th>";
                                 echo "<th>Email</th>";
                                 echo "<th>Firm</th>";
@@ -633,24 +637,58 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
             var info = 'id=' + del_id;
             console.log(`Data : ${info}`);
 
-            if (confirm("Are you sure you want to delete this Record?")) {
-                $.ajax({
-                    type: "GET",
-                    url: "recycleuser.php",
-                    data: info,
-                    success: function () { }
-                });
-                $(this).parents(".record").animate({
-                    backgroundColor: "#FF3"
-                }, "fast")
-                    .animate({
-                        opacity: "hide"
-                    }, "slow");
+            Swal.fire({
+                title: "Are you sure?",
+                text: "You won't be able to revert this Record!",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#33cc33",
+                cancelButtonColor: "#ff5471",
+                confirmButtonText: "Yes, delete it!",
+                cancelButtonText: "Cancel"
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        type: "GET",
+                        url: "recycleuser.php",
+                        data: info,
+                        success: function () {
+                            // Show success message
+                            Swal.fire({
+                                title: 'Deleted!',
+                                text: 'The record has been moved to recycle bin.',
+                                icon: 'success',
+                                confirmButtonColor: "#33cc33",
+                                timer: 1500,
+                                timerProgressBar: true,
+                                showConfirmButton: false
+                            });
+                        },
+                        error: function (error) {
+                            console.log(error);
+                            Swal.fire({
+                                title: 'Error!',
+                                text: 'Something went wrong while moving the record to recycle bin.',
+                                icon: 'error',
+                                confirmButtonColor: "#33cc33"
+                            });
+                        }
+                    });
 
-                setTimeout(function () {
-                    window.location.reload()
-                }, 2000);
-            }
+                    // Animate and remove the record
+                    $(this).parents(".record").animate({
+                        backgroundColor: "#FF3"
+                    }, "fast")
+                        .animate({
+                            opacity: "hide"
+                        }, "slow");
+
+                    // Reload page after animation
+                    setTimeout(function () {
+                        window.location.reload();
+                    }, 2000);
+                }
+            });
         });
 
         $('#recycle_records').on('click', function (e) {
@@ -659,34 +697,51 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                 requestIDs.push($(this).data('request-id'));
             });
             if (requestIDs.length <= 0) {
-                alert("Please select records.");
+                Swal.fire({
+                    icon: "error",
+                    title: "Oops...",
+                    text: "Please select records!",
+                    confirmButtonColor: "#33cc33"
+                });
+                return;
             } else {
-                WRN_PROFILE_DELETE = "Are you sure you want to delete " + (requestIDs.length > 1 ? "these" : "this") + " Record?";
-                var checked = confirm(WRN_PROFILE_DELETE);
-                if (checked == true) {
-                    var selected_values = requestIDs.join(",");
-                    $.ajax({
-                        type: "POST",
-                        url: "recycleuser.php",
-                        cache: false,
-                        data: 'alot_request_ids=' + selected_values,
-                        success: function () {
-                            $(".request_checkbox:checked").each(function () {
-                                $(this).closest(".record").animate({
-                                    backgroundColor: "#FF3"
-                                }, "fast").animate({
-                                    opacity: "hide"
-                                }, "slow", function () {
-                                    $(this).remove();
+
+                Swal.fire({
+                    title: "Are you sure?",
+                    text: "You won't be able to revert " + (requestIDs.length > 1 ? "these" : "this") + " Record" + (requestIDs.length > 1 ? "s" : "") + "!",
+                    icon: "warning",
+                    showCancelButton: true,
+                    confirmButtonColor: "#33cc33",
+                    cancelButtonColor: "#ff5471",
+                    confirmButtonText: "Yes, delete it!",
+                    cancelButtonText: "Cancel"
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        var selected_values = requestIDs.join(",");
+                        $.ajax({
+                            type: "POST",
+                            url: "recycleuser.php",
+                            cache: false,
+                            data: 'alot_request_ids=' + selected_values,
+                            success: function () {
+                                $(".request_checkbox:checked").each(function () {
+                                    $(this).closest(".record").animate({
+                                        backgroundColor: "#FF3"
+                                    }, "fast").animate({
+                                        opacity: "hide"
+                                    }, "slow", function () {
+                                        $(this).remove();
+                                    });
                                 });
-                            });
-                            setTimeout(function () {
-                                window.location.reload();
-                            },
-                                2000);
-                        }
-                    });
-                }
+                                setTimeout(function () {
+                                    window.location.reload();
+                                },
+                                    2000);
+                            }
+                        });
+                    }
+                })
+          
             }
         });
 
@@ -989,6 +1044,40 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
             const wb = XLSX.utils.table_to_book(table, { sheet: "Sheet1" });
             XLSX.writeFile(wb, filename);
         }
+    </script>
+
+    <script>
+        $(document).ready(function () {
+
+            $(document).on('change', '#select-all', function (e) {
+                var isChecked = $(this).prop('checked');
+
+                // Select/Deselect all checkboxes with class 'member_checkbox'
+                $('.request_checkbox').prop('checked', isChecked);
+
+                // Stop propagation
+                e.stopPropagation();
+            });
+
+            // Prevent sorting when clicking on checkbox area in header
+            $('.checkboxs').on('click', function (e) {
+                e.stopPropagation();
+            });
+
+            // Handle individual checkbox clicks to update select-all state
+            $(document).on('click', '.request_checkbox', function () {
+                updateSelectAllState();
+            });
+
+            // Function to update select-all checkbox state
+            function updateSelectAllState() {
+                var totalCheckboxes = $('.request_checkbox').length;
+                var checkedCheckboxes = $('.request_checkbox:checked').length;
+
+                // Update select all checkbox state
+                $('#select-all').prop('checked', totalCheckboxes === checkedCheckboxes);
+            }
+        });
     </script>
 
 </body>
