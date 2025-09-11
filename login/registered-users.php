@@ -227,7 +227,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['memberIds'])) {
                                 </div> <br />";
 
 
-                                echo '<table id="basic-btn" class="table table-striped table-bordered ">';
+                                echo '<table id="basic-btn2" class="table table-striped table-bordered ">';
                                 echo "<thead>";
                                 echo "<tr>";
                                 echo '<th>
@@ -451,6 +451,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['memberIds'])) {
         });
     </script>
 
+
+    <script type="text/javascript">
+        $(document).ready(function () {
+            // Initialize the DataTable with buttons
+            var table = $('#basic-btn2').DataTable();
+
+            // Fetch the number of entries
+            var info = table.page.info();
+            var totalEntries = info.recordsTotal;
+
+            $('#new').text(totalEntries);
+        });
+    </script>
 
 
 
