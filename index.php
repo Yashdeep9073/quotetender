@@ -1,13 +1,14 @@
 <?php
-// ini_set('display_errors', 1);
-// ini_set('display_startup_errors', 1);
-error_reporting(0);
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(1);
 
 session_start();
 
 require("login/db/config.php");
 require_once "./vendor/autoload.php";
 require_once "./env.php";
+require "./login/utility/referenceCodeGenerator.php";
 
 
 use PHPMailer\PHPMailer\PHPMailer;
@@ -18,6 +19,8 @@ $sent_at = date('Y-m-d H:i:s');
 
 // Register user
 if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['submit'])) {
+
+
 
     $recaptcha = $_POST['g-recaptcha-response'];
 
@@ -36,7 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['submit'])) {
         $msg1 = "Google reCAPTACHA verified";
     } else {
         $msg1 = "Error in Google reCAPTACHA";
-    } 
+    }
 
     if (!isset($_SESSION["login_register"])) {
         header("location: login.php");
@@ -144,13 +147,16 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['submit'])) {
                     // Fetch tender quote details
                     $tenderQuote = mysqli_fetch_row($tenderExistsResult);
 
+                    $response = referenceCode($db, "REF");
+                    $referenceNumber = $response["data"];
+
                     // Insert tender request with 'Sent' status
                     $query = "INSERT INTO user_tender_requests (
                                 member_id, tenderID, department_id, due_date, file_name, status, tender_no, reference_code,
-                                section_id, sub_division_id, division_id, name_of_work, sent_at, tentative_cost, auto_quotation
+                                section_id, sub_division_id, division_id, name_of_work, sent_at, tentative_cost, auto_quotation,reference_code
                                 ) VALUES (
                                 '$member_id', '$tender', '$department_id', '$due_date', '$tenderQuote[0]', 'Sent', '$tenderQuote[2]', '$tenderQuote[3]', '$tenderQuote[4]',
-                                '$tenderQuote[5]', '$tenderQuote[6]', '$tenderQuote[7]', '$sent_at', '$tenderQuote[9]', '$tenderQuote[10]'
+                                '$tenderQuote[5]', '$tenderQuote[6]', '$tenderQuote[7]', '$sent_at', '$tenderQuote[9]', '$tenderQuote[10]',$referenceNumber
                                 )";
                     mysqli_query($db, $query);
                 } else {
@@ -158,20 +164,30 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['submit'])) {
                     if (mysqli_num_rows($tenderExistsResult) == 0) {
                         // Handle file upload logic
                         if ($fileUploaded1 == true || $fileUploaded2 == true || empty($_FILES["uploaded_file"]["tmp_name"])) {
+
+                            $response = referenceCode($db, "REF");
+                            $referenceNumber = $response["data"];
+
                             // Insert tender request with 'Requested' status
-                            $query = "INSERT INTO user_tender_requests (member_id, tenderID, department_id, due_date, file_name, status, file_name2) VALUES (
-                            '$member_id', '$tender', '$department_id', '$due_date', '$unique_filename1', 'Requested', '$unique_filename2')";
+                            $query = "INSERT INTO user_tender_requests (member_id, tenderID, department_id, due_date, file_name, status, file_name2,reference_code) VALUES (
+                            '$member_id', '$tender', '$department_id', '$due_date', '$unique_filename1', 'Requested', '$unique_filename2','$referenceNumber')";
                             mysqli_query($db, $query);
 
                             // Update the member's pending request count
                             mysqli_query($db, "UPDATE members SET `pending_request` = '$pendingRequests' WHERE `member_id` = '$member_id'");
                         } else {
+
+                            $response = referenceCode($db, "REF");
+                            $referenceNumber = $response["data"];
                             // Handle case where tender exists but no files are uploaded
                             $tenderQuote = mysqli_fetch_row($tenderExistsResult);
 
-                            $query = "INSERT INTO user_tender_requests (member_id, tenderID, department_id, due_date, file_name, status, tender_no, reference_code,section_id, sub_division_id, division_id, name_of_work, tentative_cost, auto_quotation) VALUES (
+                            $response = referenceCode($db, "REF");
+                            $referenceNumber = $response["data"];
+
+                            $query = "INSERT INTO user_tender_requests (member_id, tenderID, department_id, due_date, file_name, status, tender_no, reference_code,section_id, sub_division_id, division_id, name_of_work, tentative_cost, auto_quotation,reference_code) VALUES (
                             '$member_id', '$tender', '$department_id', '$due_date', '$tenderQuote[0]', 'Requested', '$tenderQuote[2]', '$tenderQuote[3]', '$tenderQuote[4]',
-                            '$tenderQuote[5]', '$tenderQuote[6]', '$tenderQuote[7]','$tenderQuote[9]', '$tenderQuote[10]')";
+                            '$tenderQuote[5]', '$tenderQuote[6]', '$tenderQuote[7]','$tenderQuote[9]', '$tenderQuote[10]','$referenceNumber')";
                             mysqli_query($db, $query);
                         }
                     }
@@ -318,6 +334,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['submit'])) {
         }
     }
 }
+
 $ba = "SELECT * FROM banner";
 $ba = mysqli_query($db, $ba);
 

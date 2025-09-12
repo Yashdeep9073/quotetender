@@ -36,6 +36,8 @@ $result = mysqli_query($db, $query);
 
     <link rel="stylesheet" href="assets/css/plugins/dataTables.bootstrap4.min.css">
 
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
 
@@ -251,38 +253,79 @@ $result = mysqli_query($db, $query);
     <script src="assets/js/pages/data-export-custom.js"></script>
 
     <script>
-    $(document).ready(function() {
-        $("#gold").delay(5000).slideUp(300);
-    });
+        $(document).ready(function () {
+            $("#gold").delay(5000).slideUp(300);
+        });
     </script>
 
 
     <script type="text/javascript">
-    $(function() {
-        $(".delbutton").click(function() {
+        $(function () {
+            $(".delbutton").click(function () {
 
-            var element = $(this);
+                var element = $(this);
 
-            var del_id = element.attr("id");
+                var del_id = element.attr("id");
 
-            var info = 'id=' + del_id;
-            if (confirm("Are you sure you want to delete this Record?")) {
-                $.ajax({
-                    type: "GET",
-                    url: "deletegold.php",
-                    data: info,
-                    success: function() {}
+                var info = 'id=' + del_id;
+
+                Swal.fire({
+                    title: "Are you sure?",
+                    text: "You won't be able to revert this Record!",
+                    icon: "warning",
+                    showCancelButton: true,
+                    confirmButtonColor: "#33cc33",
+                    cancelButtonColor: "#ff5471",
+                    confirmButtonText: "Yes, delete it!",
+                    cancelButtonText: "Cancel"
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            type: "GET",
+                            url: "deletegold.php",
+                            data: info,
+                            success: function (response) {
+                                // Show success message
+                                Swal.fire({
+                                    title: 'Deleted!',
+                                    text: 'The record has been deleted.',
+                                    icon: 'success',
+                                    confirmButtonColor: "#33cc33",
+                                    timer: 1500,
+                                    timerProgressBar: true,
+                                    showConfirmButton: false
+                                }).then(() => {
+                                    // Animate and remove the record
+                                    $(".record").animate({
+                                        backgroundColor: "#FF3"
+                                    }, "fast")
+                                        .animate({
+                                            opacity: "hide"
+                                        }, "slow");
+
+                                    // Reload page after animation
+                                    setTimeout(function () {
+                                        window.location.reload();
+                                    }, 2000);
+                                });
+                            },
+                            error: function (error) {
+                                console.log(error);
+                                Swal.fire({
+                                    title: 'Error!',
+                                    text: 'Something went wrong while deleting the record.',
+                                    icon: 'error',
+                                    confirmButtonColor: "#33cc33"
+                                });
+                            }
+                        });
+                    }
                 });
-                $(this).parents(".record").animate({
-                        backgroundColor: "#FF3"
-                    }, "fast")
-                    .animate({
-                        opacity: "hide"
-                    }, "slow");
-            }
-            return false;
+
+
+                return false;
+            });
         });
-    });
     </script>
 </body>
 

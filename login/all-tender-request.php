@@ -175,6 +175,9 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
             background-color: #c82333;
         }
     </style>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 </head>
 
 <body class="">
@@ -331,7 +334,10 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                 echo '<table id="basic-btn2" class="table table-striped table-bordered">';
                                 echo "<thead>";
                                 echo "<tr>";
-                                echo "<th>SNO</th>";
+                                echo '<th><label class="checkboxs">
+                                                    <input type="checkbox" id="select-all">
+                                                    <span class="checkmarks"></span>
+                                                </label> SNO</th>';
                                 echo "<th>Status</th>";
                                 echo "<th>Tender ID</th>";
                                 echo "<th>Tender No</th>";
@@ -578,37 +584,87 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
             $('#recycle_records').on('click', function (e) {
                 var requestIDs = [];
                 $(".request_checkbox:checked").each(function () {
-                    requestIDs.push($(this).data('request-id'));
-                });
-                if (requestIDs.length <= 0) {
-                    alert("Please select records.");
-                } else {
-                    WRN_PROFILE_DELETE = "Are you sure you want to delete " + (requestIDs.length > 1 ? "these" : "this") + " Record?";
-                    var checked = confirm(WRN_PROFILE_DELETE);
-                    if (checked == true) {
-                        var selected_values = requestIDs.join(",");
-                        $.ajax({
-                            type: "POST",
-                            url: "recycleuser.php",
-                            cache: false,
-                            data: 'alot_request_ids=' + selected_values,
-                            success: function () {
-                                $(".request_checkbox:checked").each(function () {
-                                    $(this).closest(".record").animate({
-                                        backgroundColor: "#FF3"
-                                    }, "fast").animate({
-                                        opacity: "hide"
-                                    }, "slow", function () {
-                                        $(this).remove();
-                                    });
-                                });
-                                setTimeout(function () {
-                                    window.location.reload();
-                                },
-                                    2000);
-                            }
-                        });
+                    var id = $(this).data('request-id');
+                    if (id !== "" && id != null) {
+                        requestIDs.push(id);
                     }
+                });
+
+
+
+
+
+                if (requestIDs.length <= 0) {
+                    Swal.fire({
+                        icon: "error",
+                        title: "Oops...",
+                        text: "Please select records!",
+                        confirmButtonColor: "#33cc33"
+                    });
+                    return;
+                } else {
+                    Swal.fire({
+                        title: "Are you sure?",
+                        text: "You won't be able to revert " + (requestIDs.length > 1 ? "these" : "this") + " Record" + (requestIDs.length > 1 ? "s" : "") + "!",
+                        icon: "warning",
+                        showCancelButton: true,
+                        confirmButtonColor: "#33cc33",
+                        cancelButtonColor: "#ff5471",
+                        confirmButtonText: "Yes, delete it!",
+                        cancelButtonText: "Cancel"
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            var selected_values = requestIDs.join(",");
+                            $.ajax({
+                                type: "POST",
+                                url: "recycleuser.php",
+                                cache: false,
+                                data: 'alot_request_ids=' + selected_values,
+                                success: function () {
+                                    $(".request_checkbox:checked").each(function () {
+                                        $(this).closest(".record").animate({
+                                            backgroundColor: "#FF3"
+                                        }, "fast").animate({
+                                            opacity: "hide"
+                                        }, "slow", function () {
+                                            $(this).remove();
+                                        });
+                                    });
+                                    setTimeout(function () {
+                                        window.location.reload();
+                                    },
+                                        2000);
+                                }
+                            });
+                        }
+                    })
+
+                    // WRN_PROFILE_DELETE = "Are you sure you want to delete " + (requestIDs.length > 1 ? "these" : "this") + " Record?";
+                    // var checked = confirm(WRN_PROFILE_DELETE);
+                    // if (checked == true) {
+                    //     var selected_values = requestIDs.join(",");
+                    //     $.ajax({
+                    //         type: "POST",
+                    //         url: "recycleuser.php",
+                    //         cache: false,
+                    //         data: 'alot_request_ids=' + selected_values,
+                    //         success: function () {
+                    //             $(".request_checkbox:checked").each(function () {
+                    //                 $(this).closest(".record").animate({
+                    //                     backgroundColor: "#FF3"
+                    //                 }, "fast").animate({
+                    //                     opacity: "hide"
+                    //                 }, "slow", function () {
+                    //                     $(this).remove();
+                    //                 });
+                    //             });
+                    //             setTimeout(function () {
+                    //                 window.location.reload();
+                    //             },
+                    //                 2000);
+                    //         }
+                    //     });
+                    // }
                 }
             });
         });
@@ -874,7 +930,39 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
         }
     </script>
 
+    <script>
+        $(document).ready(function () {
 
+            $(document).on('change', '#select-all', function (e) {
+                var isChecked = $(this).prop('checked');
+
+                // Select/Deselect all checkboxes with class 'member_checkbox'
+                $('.request_checkbox').prop('checked', isChecked);
+
+                // Stop propagation
+                e.stopPropagation();
+            });
+
+            // Prevent sorting when clicking on checkbox area in header
+            $('.checkboxs').on('click', function (e) {
+                e.stopPropagation();
+            });
+
+            // Handle individual checkbox clicks to update select-all state
+            $(document).on('click', '.request_checkbox', function () {
+                updateSelectAllState();
+            });
+
+            // Function to update select-all checkbox state
+            function updateSelectAllState() {
+                var totalCheckboxes = $('.request_checkbox').length;
+                var checkedCheckboxes = $('.request_checkbox:checked').length;
+
+                // Update select all checkbox state
+                $('#select-all').prop('checked', totalCheckboxes === checkedCheckboxes);
+            }
+        });
+    </script>
 </body>
 
 </html>

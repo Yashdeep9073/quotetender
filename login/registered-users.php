@@ -328,27 +328,66 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['memberIds'])) {
 
     <script>
         $(document).ready(function () {
-            $("#basic-btn").on('click', '.delbutton', function () {
+            $("#basic-btn2").on('click', '.delbutton', function () {
 
                 var element = $(this);
 
                 var del_id = element.attr("id");
 
                 var info = 'id=' + del_id;
-                if (confirm("Are you sure you want to delete this Record?")) {
-                    $.ajax({
-                        type: "GET",
-                        url: "deleteuser.php",
-                        data: info,
-                        success: function () { }
-                    });
-                    $(this).parents(".record").animate({
-                        backgroundColor: "#FF3"
-                    }, "fast")
-                        .animate({
-                            opacity: "hide"
-                        }, "slow");
-                }
+                Swal.fire({
+                    title: "Are you sure?",
+                    text: "You won't be able to revert this Record!",
+                    icon: "warning",
+                    showCancelButton: true,
+                    confirmButtonColor: "#33cc33",
+                    cancelButtonColor: "#ff5471",
+                    confirmButtonText: "Yes, delete it!",
+                    cancelButtonText: "Cancel"
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            type: "GET",
+                            url: "deleteuser.php",
+                            data: info,
+                            success: function () {
+                                // Show success message
+                                Swal.fire({
+                                    title: 'Deleted!',
+                                    text: 'The record has been deleted.',
+                                    icon: 'success',
+                                    confirmButtonColor: "#33cc33",
+                                    timer: 1500,
+                                    timerProgressBar: true,
+                                    showConfirmButton: false
+                                }).then(() => {
+                                    // Animate and remove the record
+                                    $(".record").animate({
+                                        backgroundColor: "#FF3"
+                                    }, "fast")
+                                        .animate({
+                                            opacity: "hide"
+                                        }, "slow");
+
+                                    // Reload page after animation
+                                    setTimeout(function () {
+                                        window.location.reload();
+                                    }, 2000);
+                                });
+                            },
+                            error: function (error) {
+                                console.log(error);
+                                Swal.fire({
+                                    title: 'Error!',
+                                    text: 'Something went wrong while deleting the record.',
+                                    icon: 'error',
+                                    confirmButtonColor: "#33cc33"
+                                });
+                            }
+                        });
+                    }
+                });
+
                 return false;
             });
 
@@ -384,11 +423,24 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['memberIds'])) {
 
             $(document).on('click', '#delete_records', function (e) {
                 e.preventDefault();
-
                 let members = [];
-                $(".member_checkbox:checked").each(function () {
-                    members.push($(this).data('member-id'));
+
+                // Get the DataTable instance
+                var table = $('#basic-btn2').DataTable();
+
+                // Only get checkboxes from currently displayed rows
+                table.rows({ page: 'current' }).every(function () {
+                    var $row = $(this.node());
+                    var $checkbox = $row.find('.member_checkbox:checked');
+
+                    if ($checkbox.length > 0) {
+                        members.push($checkbox.data('member-id'));
+                    }
                 });
+
+                console.log(members);
+                // return;
+
 
                 if (members.length == 0) {
                     Swal.fire({

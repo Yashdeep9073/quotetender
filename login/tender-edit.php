@@ -218,26 +218,33 @@ if (isset($_POST['submit'])) {
 }
 
 
+// Lock the sequence row
+$stmtCount = $db->prepare("SELECT last_sequence FROM reference_sequence WHERE id = 1 ");
+$stmtCount->execute();
+$lastCount = $stmtCount->get_result()->fetch_array();
+
+
+
 if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
     # code...
+// Get current timestamp in YYYYMMDDHHMMSS format
+    $timestamp = date('YmdHis'); // e.g., '20250725152030' for July 25, 2025, 15:20:30
 
+    // Use a transaction to ensure atomicity
     try {
-
-        // Get current date in YYYYMMDD format
-        $date = date('Ymd'); // e.g., '20250530'
-
         $db->begin_transaction();
 
-        // Lock the row for the current date
-        $stmt = $db->prepare("SELECT last_sequence FROM reference_sequence WHERE date = ? FOR UPDATE");
-        $stmt->bind_param("s", $date);
+        // Fetch invoice settings
+        $prefix = "REF";
+
+        // Lock the sequence row
+        $stmt = $db->prepare("SELECT last_sequence FROM reference_sequence WHERE id = 1 FOR UPDATE");
         $stmt->execute();
         $result = $stmt->get_result();
 
         if ($result->num_rows === 0) {
-            // No sequence for today, create one
-            $stmt = $db->prepare("INSERT INTO reference_sequence (date, last_sequence) VALUES (?, 0)");
-            $stmt->bind_param("s", $date);
+            // No sequence row, create one
+            $stmt = $db->prepare("INSERT INTO reference_sequence (id, last_sequence) VALUES (1, 0)");
             $stmt->execute();
             $lastSequence = 0;
         } else {
@@ -249,31 +256,30 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
         $newSequence = $lastSequence + 1;
 
         // Update sequence
-        $stmt = $db->prepare("UPDATE reference_sequence SET last_sequence = ? WHERE date = ?");
-        $stmt->bind_param("is", $newSequence, $date);
+        $stmt = $db->prepare("UPDATE reference_sequence SET last_sequence = ? WHERE id = 1");
+        $stmt->bind_param("i", $newSequence);
         $stmt->execute();
 
         $db->commit();
 
-        // Format invoice number
-        $referenceNumber = sprintf("REF-%s-%05d", $date, $newSequence); // e.g., VIS-20250530-00001
-
+        // Format invoice number with prefix, timestamp, and sequence
+        $refNumber = sprintf("%s-%s-%05d", $prefix, $timestamp, $newSequence); // e.g., VIS-20250725152030-00001
         echo json_encode([
-            "status" => 200,
-            "referenceNumber" => $referenceNumber
+            "status" => 201,
+            "data" => $refNumber
         ]);
         exit;
-    } catch (\Throwable $th) {
-        //throw $th;
+    } catch (Exception $e) {
+        $db->rollback();
         echo json_encode([
             "status" => 500,
-            "error" => $th->getMessage()
+            "error" => $e->getMessage()
         ]);
         exit;
     }
 }
 
-$requestQuery = mysqli_query($db, "SELECT department.department_name, ur.file_name, ur.tenderID, ur.id 
+$requestQuery = mysqli_query($db, "SELECT department.department_name, ur.file_name, ur.tenderID, ur.id ,ur.reference_code
 FROM user_tender_requests ur 
 inner join members m on ur.member_id= m.member_id
 inner join department on ur.department_id = department.department_id where ur.id='" . $d . "'");
@@ -338,6 +344,31 @@ $sections = mysqli_query($db, $sectionQuery);
             });
         }
 
+        document.addEventListener('DOMContentLoaded', function () {
+            const buttons = document.querySelectorAll('.refNumber');
+
+            buttons.forEach(function (btn) {
+                btn.addEventListener('click', async function (e) {
+                    e.preventDefault();
+
+                    const codeInput = document.getElementById("code");
+                    if (codeInput) {
+                        try {
+                            // Clear the existing value first
+                            codeInput.value = '';
+
+                            // Generate and set the new reference number
+                            const refNumber = await generateReferenceNumber();
+                            codeInput.value = refNumber;
+
+                        } catch (error) {
+                            console.error('Error generating reference number:', error);
+                        }
+                    }
+                });
+            });
+        });
+
         async function generateReferenceNumber() {
             const response = await fetch("tender-edit.php?id=<?php echo $_GET['id'] ?>", {
                 method: "POST",
@@ -348,24 +379,8 @@ $sections = mysqli_query($db, $sectionQuery);
             });
 
             const data = await response.json();
-            return data.referenceNumber;
+            return data.data; // This matches your API response structure
         }
-
-
-
-        document.addEventListener('DOMContentLoaded', function () {
-            const buttons = document.querySelectorAll('.refNumber');
-
-            buttons.forEach(function (btn) {
-                btn.addEventListener('click', async function (e) {
-                    e.preventDefault();
-                    const refNumber = await generateReferenceNumber();
-
-                    // Set the value of the input with id="code"
-                    document.getElementById("code").value = refNumber;
-                });
-            });
-        });
 
     </script>
 
@@ -457,6 +472,20 @@ $sections = mysqli_query($db, $sectionQuery);
                 </div>
             </div>
 
+            <div class="row">
+                <div class="col-md-6 col-xl-3">
+                    <div class="card bg-c-green order-card">
+                        <div class="card-body">
+                            <h6 class="text-white">Last Reference Code</h6>
+                            <h2 class="text-right text-white"><i
+                                    class="feather icon-bookmark float-left"></i><span
+                                    id="total"><?php echo $lastCount['last_sequence']; ?></span></h2>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
 
             <div class="row">
 
@@ -508,9 +537,10 @@ $sections = mysqli_query($db, $sectionQuery);
                                                         class="text-danger">*</span></label>
                                                 <div class="input-group">
                                                     <input id="code" name="code" type="text" placeholder="Enter Code *"
-                                                        class="form-control" required>
-                                                    <button type="button"
-                                                        class="btn btn-primary refNumber">Generate</button>
+                                                        class="form-control" value="<?php echo $requestData[4]; ?>"
+                                                        required>
+                                                    <!-- <button type="button"
+                                                        class="btn btn-primary refNumber">Generate</button> -->
                                                 </div>
                                             </div>
                                         </div>

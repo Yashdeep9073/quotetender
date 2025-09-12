@@ -222,7 +222,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['memberIds'])) {
                                 Delete Selected User</a>
                                 </div> <br />";
 
-                                echo '<table id="basic-btn" class="table table-striped table-bordered nowrap">';
+                                echo '<table id="basic-btn2" class="table table-striped table-bordered nowrap">';
                                 echo "<thead>";
                                 echo "<tr>";
                                 echo '<th> <label class="checkboxs">
@@ -338,20 +338,60 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['memberIds'])) {
                 var del_id = element.attr("id");
 
                 var info = 'id=' + del_id;
-                if (confirm("Are you sure you want to delete this Record?")) {
-                    $.ajax({
-                        type: "GET",
-                        url: "deleteuser.php",
-                        data: info,
-                        success: function () { }
-                    });
-                    $(this).parents(".record").animate({
-                        backgroundColor: "#FF3"
-                    }, "fast")
-                        .animate({
-                            opacity: "hide"
-                        }, "slow");
-                }
+
+                Swal.fire({
+                    title: "Are you sure?",
+                    text: "You won't be able to revert this Record!",
+                    icon: "warning",
+                    showCancelButton: true,
+                    confirmButtonColor: "#33cc33",
+                    cancelButtonColor: "#ff5471",
+                    confirmButtonText: "Yes, delete it!",
+                    cancelButtonText: "Cancel"
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            type: "GET",
+                            url: "deleteuser.php",
+                            data: info,
+                            success: function () {
+                                // Show success message
+                                Swal.fire({
+                                    title: 'Deleted!',
+                                    text: 'The record has been deleted.',
+                                    icon: 'success',
+                                    confirmButtonColor: "#33cc33",
+                                    timer: 1500,
+                                    timerProgressBar: true,
+                                    showConfirmButton: false
+                                }).then(() => {
+                                    // Animate and remove the record
+                                    $(".record").animate({
+                                        backgroundColor: "#FF3"
+                                    }, "fast")
+                                        .animate({
+                                            opacity: "hide"
+                                        }, "slow");
+
+                                    // Reload page after animation
+                                    setTimeout(function () {
+                                        window.location.reload();
+                                    }, 2000);
+                                });
+                            },
+                            error: function (error) {
+                                console.log(error);
+                                Swal.fire({
+                                    title: 'Error!',
+                                    text: 'Something went wrong while deleting the record.',
+                                    icon: 'error',
+                                    confirmButtonColor: "#33cc33"
+                                });
+                            }
+                        });
+                    }
+                });
+
                 return false;
             });
 
@@ -453,6 +493,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['memberIds'])) {
         });
     </script>
 
+
+
+    <script type="text/javascript">
+        $(document).ready(function () {
+            // Initialize the DataTable with buttons
+            var table = $('#basic-btn2').DataTable();
+
+            // Fetch the number of entries
+            var info = table.page.info();
+            var totalEntries = info.recordsTotal;
+
+            $('#new').text(totalEntries);
+        });
+    </script>
 
 </body>
 
