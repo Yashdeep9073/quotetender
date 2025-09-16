@@ -69,6 +69,109 @@ $permissions = [];
 while ($item = mysqli_fetch_row($adminPermissionResult)) {
     array_push($permissions, $item[0]);
 }
+
+
+
+
+if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['tender_id']) && isset($_POST['reference_code'])) {
+    try {
+        $tenderId = $_POST['tender_id'];
+        $referenceCode = $_POST['reference_code'];
+
+        $db->begin_transaction();
+
+        $stmtExistingTenderId = $db->prepare("SELECT * FROM user_tender_requests WHERE id = ?");
+        $stmtExistingTenderId->bind_param("i", $tenderId);
+        $stmtExistingTenderId->execute();
+
+        $result = $stmtExistingTenderId->get_result();
+
+        if ($result->num_rows == 0) {  // Fixed: should be == 0, not < 0
+            echo json_encode([
+                "status" => 400,
+                "error" => "Tender id is invalid",
+            ]);
+            $db->rollback(); // Add rollback
+            exit;
+        }
+
+        // Fixed: bind parameters and execute the update statement
+        $stmtUpdateReference = $db->prepare("UPDATE user_tender_requests SET reference_code = ? WHERE id = ?");
+        $stmtUpdateReference->bind_param("si", $referenceCode, $tenderId); // Fixed: added bind_param
+        $stmtUpdateReference->execute(); // Fixed: added execute
+
+        $db->commit(); // Commit the transaction
+
+        echo json_encode([
+            "status" => 200,
+            "message" => "Reference code updated successfully",
+        ]);
+        exit;
+
+    } catch (\Throwable $th) {
+        $db->rollback(); // Rollback on error
+        echo json_encode([
+            "status" => 500,
+            "error" => "Database error: " . $th->getMessage(),
+        ]);
+        exit;
+    }
+}
+
+if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
+    # code...
+// Get current timestamp in YYYYMMDDHHMMSS format
+    $timestamp = date('YmdHis'); // e.g., '20250725152030' for July 25, 2025, 15:20:30
+
+    // Use a transaction to ensure atomicity
+    try {
+        $db->begin_transaction();
+
+        // Fetch invoice settings
+        $prefix = "REF";
+
+        // Lock the sequence row
+        $stmt = $db->prepare("SELECT last_sequence FROM reference_sequence WHERE id = 1 FOR UPDATE");
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        if ($result->num_rows === 0) {
+            // No sequence row, create one
+            $stmt = $db->prepare("INSERT INTO reference_sequence (id, last_sequence) VALUES (1, 0)");
+            $stmt->execute();
+            $lastSequence = 0;
+        } else {
+            $row = $result->fetch_assoc();
+            $lastSequence = $row['last_sequence'];
+        }
+
+        // Increment sequence
+        $newSequence = $lastSequence + 1;
+
+        // Update sequence
+        $stmt = $db->prepare("UPDATE reference_sequence SET last_sequence = ? WHERE id = 1");
+        $stmt->bind_param("i", $newSequence);
+        $stmt->execute();
+
+        $db->commit();
+
+        // Format invoice number with prefix, timestamp, and sequence
+        $refNumber = sprintf("%s-%s-%05d", $prefix, $timestamp, $newSequence); // e.g., VIS-20250725152030-00001
+        echo json_encode([
+            "status" => 201,
+            "data" => $refNumber
+        ]);
+        exit;
+    } catch (Exception $e) {
+        $db->rollback();
+        echo json_encode([
+            "status" => 500,
+            "error" => $e->getMessage()
+        ]);
+        exit;
+    }
+}
+
 ?>
 
 <!DOCTYPE html>
@@ -90,7 +193,8 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link rel="stylesheet" href="assets/css/plugins/dataTables.bootstrap4.min.css">
-
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <link rel="stylesheet" href="assets/css/style.css">
     <style>
         #basic-btn2_length {
@@ -361,25 +465,48 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                                 ?>
 
                                                 <td>
-                                                    <?php if ((in_array('All', $permissions)) || (in_array('Tender Request', $permissions)) || (in_array('Update Tenders', $permissions))) {
-                                                        echo " <a href='tender-edit.php?id=$res'>
-                                                        <button type='button' class='btn btn-warning rounded-sm'>
-                                                            <i class='feather icon-edit'></i> &nbsp;Update</button>
-                                                        </a>";
-                                                    }
-                                                    echo "<br />";
-                                                    echo "<br />";
-                                                    if (
-                                                        (in_array('All', $permissions)) || (in_array(
-                                                            'Tender Request',
-                                                            $permissions
-                                                        )) || (in_array('Recycle Bin', $permissions))
-                                                    ) {
-                                                        echo "<a href='#' id='" . $row['id'] . "' class='recyclebutton btn btn-danger rounded-sm' title='Click To Delete'> 
-                                                            <i class='feather icon-trash'></i>  &nbsp; Move to Bin
-                                                            </a>";
-                                                    }
-                                                    ?>
+                                                    <?php if ((in_array('All', $permissions)) || (in_array('Tender Request', $permissions)) || (in_array('Update Tenders', $permissions)) || (in_array('Recycle Bin', $permissions)) || (in_array('Reference Number', $permissions))) { ?>
+                                                        <div class="dropdown">
+                                                            <button class="btn btn-secondary " type="button"
+                                                                id="actionMenu<?php echo $row['id']; ?>"
+                                                                data-bs-toggle="dropdown" aria-expanded="false">
+                                                                <i class="feather icon-more-vertical"></i>
+                                                            </button>
+                                                            <ul class="dropdown-menu"
+                                                                aria-labelledby="actionMenu<?php echo $row['id']; ?>">
+                                                                <?php if ((in_array('All', $permissions)) || (in_array('Tender Request', $permissions)) || (in_array('Update Tenders', $permissions))) { ?>
+                                                                    <li>
+                                                                        <a class="dropdown-item"
+                                                                            href="tender-edit.php?id=<?php echo $res; ?>">
+                                                                            <i class="feather icon-edit me-2"></i>Update
+                                                                        </a>
+                                                                    </li>
+                                                                <?php } ?>
+
+                                                                <?php if ((in_array('All', $permissions)) || (in_array('Tender Request', $permissions)) || (in_array('Recycle Bin', $permissions)) || (in_array('Reference Number', $permissions))) { ?>
+                                                                    <li>
+                                                                        <hr class="dropdown-divider">
+                                                                    </li>
+                                                                    <li>
+                                                                        <a class="dropdown-item recyclebutton" href="#"
+                                                                            data-id="<?php echo $row['id']; ?>" title="Move to Bin">
+                                                                            <i class="feather icon-trash me-2"></i>Move to Bin
+                                                                        </a>
+                                                                    </li>
+                                                                    <li>
+                                                                        <a class="dropdown-item update-Reference"
+                                                                            href="javascript:void(0);"
+                                                                            data-tender-id="<?php echo $row['id']; ?>"
+                                                                            data-reference-code="<?php echo $row['reference_code']; ?>"
+                                                                            data-bs-toggle="modal" data-bs-target="#edit-units"
+                                                                            title="Change Reference Number">
+                                                                            <i class="feather icon-book me-2"></i>Reference No
+                                                                        </a>
+                                                                    </li>
+                                                                <?php } ?>
+                                                            </ul>
+                                                        </div>
+                                                    <?php } ?>
                                                 </td>
                                             </tr>
 
@@ -395,6 +522,41 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
             </div>
         </div>
     </section>
+
+
+    <div class="modal fade" id="edit-units" tabindex="-1" aria-labelledby="editUnitsLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editUnitsLabel">Update Reference Number</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form class="update-reference-code">
+                    <div class="modal-body">
+                        <input type="hidden" class="form-control" name="editTenderId" id="editTenderId">
+                        <div class="row">
+                            <div class="col-12 col-md-12 mb-3">
+                                <label for="editReferenceCode" class="form-label">Reference Number</label>
+                                <div class="input-group">
+
+                                    <input type="text" class="form-control" id="editReferenceCode"
+                                        name="editReferenceCode">
+                                    <button type="button" name="updateReferenceCode"
+                                        class="btn btn-primary refNumber">Generate</button>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Submit</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
 
     <script src=" assets/js/vendor-all.min.js"></script>
     <script src="assets/js/plugins/bootstrap.min.js"></script>
@@ -632,33 +794,6 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
 
     </script>
 
-    <!-- <script>
-    $(document).on('click', '.tender_id', function (e) {
-        e.preventDefault();
-        const tender_id = $(this).text();
-
-        if (tender_id.trim() !== '') {
-            // console.log("Selected Tender ID:", tender_id);
-            $.ajax({
-                url: 'tender-request3.php', // The PHP file that will handle the deletion
-                type: 'POST',
-                data: { tender_id: tender_id },
-                success: function(response) {
-                    // Redirect to tender-request3.php after successful AJAX request
-                    window.location.href = 'tender-request3.php';
-                },
-                error: function(xhr, status, error) {
-                    console.error("AJAX request failed:", status, error);
-                }
-            });
-        } else {
-            console.log("Tender ID is empty or invalid.");
-        }
-    }); 
-</script>-->
-
-
-
     <script>
         $(document).ready(function () {
             setInterval(function () {
@@ -826,6 +961,124 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                 // Update select all checkbox state
                 $('#select-all').prop('checked', totalCheckboxes === checkedCheckboxes);
             }
+
+
+            $(document).on('click', ".update-Reference", function (event) {
+                let tenderId = $(this).data('tender-id');
+                let referenceCode = $(this).data('reference-code');
+
+                // Set values in modal form
+                $('#editTenderId').val(tenderId);
+                $('#editReferenceCode').val(referenceCode);
+            });
+
+
+
+            $('.refNumber').on('click', async function (e) {
+                e.preventDefault();
+
+                const $codeInput = $("#editReferenceCode");
+                if ($codeInput.length) {
+                    try {
+                        // Clear the existing value first
+                        $codeInput.val('');
+
+
+
+                        // Generate and set the new reference number
+                        const refNumber = await generateReferenceNumber();
+                        $codeInput.val(refNumber);
+
+                    } catch (error) {
+                        console.error('Error generating reference number:', error);
+                    }
+                }
+            });
+
+            function generateReferenceNumber() {
+                return $.ajax({
+                    url: window.location.href,
+                    method: "POST",
+                    data: { refCode: true },
+                    dataType: "json"
+                }).then(function (data) {
+                    return data.data; // This matches your API response structure
+                });
+            }
+
+
+
+            $(document).on("submit", ".update-reference-code", function (e) {
+                e.preventDefault();
+
+                // Get values correctly using the name attributes
+                let tenderId = $("input[name='editTenderId']").val();
+                let referenceCode = $("input[name='editReferenceCode']").val();
+
+
+                // Your AJAX submission logic here
+                $.ajax({
+                    url: window.location.href, // Change to your actual endpoint
+                    method: 'POST',
+                    data: {
+                        tender_id: tenderId,
+                        reference_code: referenceCode
+                    },
+
+                    success: function (response) {
+                        $('#edit-units').modal('hide');
+
+                        let result = JSON.parse(response);
+                        if (result.status == 200) {
+
+                            // Show success message
+                            Swal.fire({
+                                title: 'Updated!',
+                                text: result.message,
+                                icon: 'success',
+                                confirmButtonColor: "#33cc33",
+                                timer: 1500,
+                                timerProgressBar: true,
+                                showConfirmButton: false
+                            }).then(() => {
+                                // Reload page after animation
+                                setTimeout(function () {
+                                    window.location.reload();
+                                }, 2000);
+                            });
+
+                        } else {
+                            // Show error message
+                            Swal.fire({
+                                title: 'Error!',
+                                text: result.error || 'Something went wrong',
+                                icon: 'error',
+                                confirmButtonColor: "#dc3545",
+                                timer: 1500,
+                                timerProgressBar: true,
+                                showConfirmButton: false
+                            });
+                        }
+
+                        console.log(response);
+
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Error:', error);
+                        // Show error message
+                        Swal.fire({
+                            title: 'Error!',
+                            text: 'Failed to update reference code',
+                            icon: 'error',
+                            confirmButtonColor: "#dc3545",
+                            timer: 1500,
+                            timerProgressBar: true,
+                            showConfirmButton: false
+                        });
+                    }
+                });
+            });
+
         });
     </script>
 </body>
