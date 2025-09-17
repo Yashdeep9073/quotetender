@@ -71,8 +71,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['username'])) {
 
     if ($count == 1) {
 
-        // $_SESSION['login_user'] = $myusername2;
-        // $_SESSION['login_user_id'] = $adminData[9];
+        $_SESSION['login_user'] = $myusername2;
+        $_SESSION['login_user_id'] = $adminData[9];
 
         /*?>setcookie('password',$myusername2,time() + (86400 * 7));<?php */
 
@@ -124,7 +124,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['username'])) {
         echo json_encode([
             "success" => true,
             "message" => "Login successful.",
-            "otpId" => $otpId,
+            // "otpId" => $otpId,
         ]);
         exit();
 
@@ -472,11 +472,27 @@ if (isset($_SESSION["login_user"])) {
                 dataType: 'json',
                 success: function (response) {
                     if (response.success) {
-                        // Store OTP ID for later verification
-                        currentOtpId = response.otpId || null;
+                        // // Store OTP ID for later verification
+                        // currentOtpId = response.otpId || null;
 
-                        // Show OTP verification modal
-                        showOtpModal();
+                        // // Show OTP verification modal
+                        // showOtpModal();
+
+                        // Disable navigation protection before redirect
+                        disableNavigationProtection();
+
+                        Swal.fire({
+                            title: 'Success!',
+                            text: 'OTP verified successfully. Redirecting to dashboard...',
+                            icon: 'success',
+                            timer: 2000,
+                            showConfirmButton: false,
+                            allowOutsideClick: true,
+                            allowEscapeKey: true,
+                            allowEnterKey: true
+                        }).then(() => {
+                            window.location.href = 'dashboard.php';
+                        });
 
                         $('#userName').val(''); // Reset form
                         $('#userPassword').val(''); // Reset form
