@@ -1,7 +1,7 @@
 <?php
 
 ini_set('display_errors', 1);
-
+require "./utility/referenceCodeGenerator.php";
 session_start();
 
 
@@ -71,6 +71,11 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
 }
 
 
+// Lock the sequence row
+$stmtCount = $db->prepare("SELECT last_sequence FROM reference_sequence WHERE id = 1 ");
+$stmtCount->execute();
+$lastCount = $stmtCount->get_result()->fetch_array();
+
 
 
 if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['tender_id']) && isset($_POST['reference_code'])) {
@@ -119,51 +124,18 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['tender_id']) && isset(
 }
 
 if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
-    # code...
-// Get current timestamp in YYYYMMDDHHMMSS format
-    $timestamp = date('YmdHis'); // e.g., '20250725152030' for July 25, 2025, 15:20:30
 
     // Use a transaction to ensure atomicity
     try {
-        $db->begin_transaction();
-
-        // Fetch invoice settings
         $prefix = "REF";
-
-        // Lock the sequence row
-        $stmt = $db->prepare("SELECT last_sequence FROM reference_sequence WHERE id = 1 FOR UPDATE");
-        $stmt->execute();
-        $result = $stmt->get_result();
-
-        if ($result->num_rows === 0) {
-            // No sequence row, create one
-            $stmt = $db->prepare("INSERT INTO reference_sequence (id, last_sequence) VALUES (1, 0)");
-            $stmt->execute();
-            $lastSequence = 0;
-        } else {
-            $row = $result->fetch_assoc();
-            $lastSequence = $row['last_sequence'];
-        }
-
-        // Increment sequence
-        $newSequence = $lastSequence + 1;
-
-        // Update sequence
-        $stmt = $db->prepare("UPDATE reference_sequence SET last_sequence = ? WHERE id = 1");
-        $stmt->bind_param("i", $newSequence);
-        $stmt->execute();
-
-        $db->commit();
-
-        // Format invoice number with prefix, timestamp, and sequence
-        $refNumber = sprintf("%s-%s-%05d", $prefix, $timestamp, $newSequence); // e.g., VIS-20250725152030-00001
+        $response = referenceCode($db, $prefix);
+        $refNumber = $response['data'];
         echo json_encode([
             "status" => 201,
             "data" => $refNumber
         ]);
         exit;
     } catch (Exception $e) {
-        $db->rollback();
         echo json_encode([
             "status" => 500,
             "error" => $e->getMessage()
@@ -353,6 +325,18 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
                         </div>
                     </div>
                 </div>
+                <div class="col-md-6 col-xl-3">
+                    <div class="card bg-c-red order-card">
+                        <div class="card-body">
+                            <h6 class="text-white">Last Reference Code</h6>
+                            <h2 class="text-right text-white"><i class="feather icon-bookmark float-left"></i><span
+                                    id="total"><?php echo $lastCount['last_sequence']; ?></span></h2>
+
+                        </div>
+                    </div>
+                </div>
+
+
                 <div class="col-sm-12">
                     <div class="card">
                         <div class="card-header table-card-header">

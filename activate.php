@@ -1,29 +1,30 @@
 <?php
 require("login/db/config.php");
 error_reporting(0);
-if (isset($_GET['token'])) {
-    $token = $_GET['token'];
-    $sql = "SELECT member_id FROM  members WHERE activation_token = '"  . $token . "'";
-    $re = mysqli_query($db, $sql);
-
-    //$count=mysqli_num_rows($result);
-    $row1 = mysqli_fetch_row($re);
-    $id = $row1[0];
-
-    if ($row1 > 0) {
-        $updateSql = "UPDATE members SET status = 1 WHERE member_id = '"  . $id . "'";
-        mysqli_query($db, $updateSql);
-        $msg = "Account activated successfully!";
-
-        $sql = "UPDATE members SET activation_token = 0 WHERE member_id = '"  . $id . "'";
-        mysqli_query($db, $sql);
-        header("refresh:5;url=login.php");
-    } else {
-
-        $msg = "Invalid or expired token.";
-    }
+if (!isset($_GET['token'])) {
+    header("Location: index.php");
+    exit;
 }
 
+$token = $_GET['token'];
+$sql = "SELECT member_id FROM  members WHERE activation_token = '" . $token . "'";
+$re = mysqli_query($db, $sql);
+
+//$count=mysqli_num_rows($result);
+$row1 = mysqli_fetch_row($re);
+$id = $row1[0];
+
+if ($row1 > 0) {
+    $updateSql = "UPDATE members SET status = 1 WHERE member_id = '" . $id . "'";
+    mysqli_query($db, $updateSql);
+    $msg = "Account activated successfully!";
+
+    $sql = "UPDATE members SET activation_token = 0 WHERE member_id = '" . $id . "'";
+    mysqli_query($db, $sql);
+    header("refresh:5;url=login.php");
+} else {
+    $msg = "Invalid or expired token.";
+}
 ?>
 
 <!DOCTYPE html>
@@ -35,6 +36,8 @@ if (isset($_GET['token'])) {
     <title>Account Activation</title>
     <!-- Include Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 
 <body>

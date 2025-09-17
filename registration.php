@@ -7,143 +7,202 @@ use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
 require("login/db/config.php");
-// Storing google recaptcha response
-// in $recaptcha variable
-$recaptcha = $_POST['g-recaptcha-response'];
-
-// Put secret key here, which we get
-// from google console
-$secret_key = '6LeyShEqAAAAAKVRQAie1sCk9E5rBjvR9Ce0x5k_';
-
-// Hitting request to the URL, Google will
-// respond with success or error scenario
-$url = 'https://www.google.com/recaptcha/api/siteverify?secret='
-    . $secret_key . '&response=' . $recaptcha;
-
-// Making request to verify captcha
-$response = file_get_contents($url);
-
-// Response return by google is in
-// JSON format, so we have to parse
-// that json
-$response = json_decode($response);
-
-// Checking, if response is true or not
-if ($response->success == true) {
-    $msg = "Google reCAPTACHA verified";
-} else {
-    $msg = "Error in Google reCAPTACHA";
-}
+require 'env.php';
 
 
 // Register user
-if (isset($_POST['submit'])) {
-    $name = $_POST['name'];
-    $firmname = $_POST['firmName'];
-    $email = $_POST['email'];
-    $phone = $_POST['mobile'];
-    $city = $_POST['city'];
-    $password = md5(($_POST['password']));
-    $activationToken = bin2hex(random_bytes(16)); // Replace with your activation token
-$adminEmail="quotetenderindia@gmail.com";
-
-    date_default_timezone_set('Asia/Kolkata');
-    $created_date = date('Y-m-d H:i:s A'); // query for inser user log in to data base
-
-    $qu = "SELECT email_id FROM members WHERE email_id = '$email'";
-    $re = mysqli_query($db, $qu);
-    //$count=mysqli_num_rows($result);
-    $row1 = mysqli_fetch_row($re);
-    $username = $row1['0'];
-
-    if ($username) {
-
-        $msg = "Email id  is already exists in our record";
-    } else {
-
-        $serial = "";
-        $status = 1;
-
-        //    $valid=0;
-        $query = "insert into members (name, firm_name, email_id,mobile,city_state, password,created_date,activation_token )values
-       ('$name', '$firmname','$email','$phone','$city','$password','$created_date','$activationToken')";
-        $quuery = mysqli_query($db, $query);
+if (isset($_POST['firmName']) && $_SERVER['REQUEST_METHOD'] == "POST") {
 
 
-        if ($quuery > 0) {
+    try {
+        $name = $_POST['name'];
+        $firmname = $_POST['firmName'];
+        $email = $_POST['email'];
+        $phone = $_POST['mobile'];
+        $city = $_POST['city'];
+        $password = md5(($_POST['password']));
+        $activationToken = bin2hex(random_bytes(16)); // Replace with your activation token
+        $adminEmail = "quotetenderindia@gmail.com";
+
+        // Storing google recaptcha response
+        $recaptcha = $_POST['g-recaptcha-response'];
+
+        // from google console
+        $secret_key = '6LeyShEqAAAAAKVRQAie1sCk9E5rBjvR9Ce0x5k_';
+
+        // Hitting request to the URL, Google will
+        $url = 'https://www.google.com/recaptcha/api/siteverify?secret='
+            . $secret_key . '&response=' . $recaptcha;
+
+        // Making request to verify captcha
+        $response = file_get_contents($url);
 
 
-            $mail = new PHPMailer(true);
+        $response = json_decode($response);
 
-            //Enable SMTP debugging.
+        // Checking, if response is true or not
+        if ($response->success == false) {
+            echo json_encode([
+                "status" => 400,
+                "error" => "Error in Google reCAPTACHA",
 
-            $mail->SMTPDebug = 0;
+            ]);
+            exit;
+        }
 
+        date_default_timezone_set('Asia/Kolkata');
+        $created_date = date('Y-m-d H:i:s A'); // query for inser user log in to data base
 
-            //Set PHPMailer to use SMTP.
-
-            $mail->isSMTP();
-
-            //Set SMTP host name                      
-
-            $mail->Host = "smtp.hostinger.com";
-
-                //Set this to true if SMTP host requires authentication to send email
-
-                $mail->SMTPAuth = true;
-
-                //Provide username and password
-
-                $mail->Username = "info@quotetender.in";
-
-                $mail->Password = "Zxcv@123";
-
-                //If SMTP requires TLS encryption then set it
-
-                $mail->SMTPSecure = "ssl";
-
-                //Set TCP port to connect to
-
-                $mail->Port = 465;
-
-                $mail->From = "info@quotetender.in";
-
-            $mail->FromName = "Quote Tender  ";
-
-            $mail->addAddress($email, "Recepient Name");
-            $mail->addAddress($adminEmail);
-
-            $mail->isHTML(true);
-
-            $activationLink = 'https://quotetender.in/activate.php?token=' . $activationToken;
-            $mail->Subject = "Account Activation";
-
-            $mail->Body =  "<p> Dear User, <br/>
-               Your registration process is completed please click here to activate you account. <a href='$activationLink' style='background-color:green; color:#fff; padding:10px; text-decoration:none;'>Click Here</a> </p><br/>
-                     <p><b>Name. :-</b> ".  $name  ." </p>
-     <p><b>Firm Name. :-</b> ".  $firmname  ." </p>
-      <p><b>Mobile No:-</b> ". $phone ."</p>
-    <p><b>Email Id :-</b> ".  $email  ."</p>
-                <strong>Thanks , <br/>Quote Tender</strong> <br/>
-            Mobile: 94176 01244| Email: info@quotender.in ";
+        $qu = "SELECT email_id FROM members WHERE email_id = '$email'";
+        $re = mysqli_query($db, $qu);
+        //$count=mysqli_num_rows($result);
+        $row1 = mysqli_fetch_row($re);
+        $username = $row1['0'];
 
 
+        if ($username) {
+            echo json_encode([
+                "status" => 400,
+                "error" => "Email id  is already exists in our record",
 
-            if (!$mail->send()) {
-
-                echo "Mailer Error: " . $mail->ErrorInfo;
-            } else {
-
-                $msg = "Message has been sent successfully";
-            }
-
-            $msg = "Thank you for completing the registration process Please wait for your account to be Authenticated.  ";
-
-            header("refresh:10;url=login.php");
+            ]);
         } else {
 
-            echo "error in registration page";
+            $serial = "";
+            $status = 1;
+            //    $valid=0;
+            $query = "insert into members (name, firm_name, email_id,mobile,city_state, password,created_date,activation_token )values
+            ('$name', '$firmname','$email','$phone','$city','$password','$created_date','$activationToken')";
+            $quuery = mysqli_query($db, $query);
+
+
+            if ($quuery > 0) {
+                $mail = new PHPMailer(true);
+                //Enable SMTP debugging.
+                $mail->SMTPDebug = 0;
+                $mail->isSMTP();
+                $mail->Host = getenv('SMTP_HOST');
+                $mail->SMTPAuth = true;
+                $mail->Username = getenv('SMTP_USER_NAME');
+                $mail->Password = getenv('SMTP_PASSCODE');
+                $mail->SMTPSecure = "ssl";
+                $mail->Port = getenv('SMTP_PORT');
+                $mail->setFrom(getenv('SMTP_USER_NAME'), "Quote Tender");
+                $mail->addAddress($email, "Recepient Name");
+                $mail->addAddress($adminEmail);
+                $mail->isHTML(true);
+                $activationLink = getenv('BASE_URL') . '/activate.php?token=' . $activationToken;
+                $mail->Subject = "Account Activation";
+                $mail->Body = "
+<div style='font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;'>
+    <div style='text-align: center; margin-bottom: 30px;'>
+        <img src='https://dvepl.com/quotetender/assets/images/logo/logo.png' alt='Quote Tender Logo' style='max-width: 200px; height: auto; display: block; margin: 0 auto;'>
+    </div>
+    
+    <div style='background-color: #f9f9f9; border-radius: 10px; padding: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border: 1px solid #eee;'>
+        <h2 style='color: #4CBB17; text-align: center; margin-bottom: 25px; font-size: 24px;'>Account Activation</h2>
+        
+        <p style='font-size: 16px; color: #555; margin-bottom: 20px;'>
+            Dear <strong>" . htmlspecialchars($name) . "</strong>,
+        </p>
+        
+        <p style='margin-bottom: 25px; font-size: 16px;'>
+            Thank you for registering with Quote Tender. Your registration process is completed. 
+            Please click the button below to activate your account:
+        </p>
+        
+        <div style='text-align: center; margin: 30px 0;'>
+            <a href='" . htmlspecialchars($activationLink) . "' 
+            style='background-color: #4CBB17; color: #ffffff; padding: 15px 30px; text-decoration: none; 
+                    border-radius: 5px; font-weight: bold; display: inline-block; 
+                    box-shadow: 0 4px 6px rgba(0,0,0,0.1); -webkit-box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
+                    font-size: 16px; border: none; cursor: pointer;'>
+                Activate Account
+            </a>
+        </div>
+        
+        <div style='text-align: center; margin: 20px 0;'>
+            <p style='margin-bottom: 15px; font-size: 14px; color: #666;'>
+                <strong>Activation Link:</strong>
+            </p>
+            <p style='font-size: 12px; color: #666; word-break: break-all; background-color: #f0f0f0; padding: 10px; border-radius: 4px;'>
+                " . htmlspecialchars($activationLink) . "
+            </p>
+        </div>
+        
+        <div style='background-color: #e8f5e9; padding: 20px; border-radius: 8px; margin: 25px 0; border: 1px solid #c8e6c9;'>
+            <h3 style='color: #2e7d32; margin-top: 0; margin-bottom: 15px; font-size: 18px;'>Registration Details</h3>
+            <table style='width: 100%; border-collapse: collapse; font-size: 14px;'>
+                <tr>
+                    <td style='padding: 8px 0; border-bottom: 1px solid #ddd;'><strong>Name:</strong></td>
+                    <td style='padding: 8px 0; border-bottom: 1px solid #ddd;'>" . htmlspecialchars($name) . "</td>
+                </tr>
+                <tr>
+                    <td style='padding: 8px 0; border-bottom: 1px solid #ddd;'><strong>Firm Name:</strong></td>
+                    <td style='padding: 8px 0; border-bottom: 1px solid #ddd;'>" . htmlspecialchars($firmname) . "</td>
+                </tr>
+                <tr>
+                    <td style='padding: 8px 0; border-bottom: 1px solid #ddd;'><strong>Mobile:</strong></td>
+                    <td style='padding: 8px 0; border-bottom: 1px solid #ddd;'>" . htmlspecialchars($phone) . "</td>
+                </tr>
+                <tr>
+                    <td style='padding: 8px 0;'><strong>Email:</strong></td>
+                    <td style='padding: 8px 0;'>" . htmlspecialchars($email) . "</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    
+    <div style='margin-top: 30px; text-align: center;'>
+        <p style='margin-bottom: 20px; font-size: 14px;'>
+            <strong>Thanks & Regards,</strong><br/>
+            <span style='color: #4CBB17;'>Admin, Quote Tender</span><br/>
+            <span>Mobile: <a href='tel:+919417601244' style='color: #4CBB17; text-decoration: none;'>+91-9417601244</a></span><br/>
+            <span>Email: <a href='mailto:help@quotetender.in' style='color: #4CBB17; text-decoration: none;'>help@quotetender.in</a></span>
+        </p>
+
+        <hr style='border: none; border-top: 1px solid #ddd; margin: 20px 0;'>
+
+        <p style='text-align: center; font-size: 12px; color: #888;'>
+            &copy; 2024 Quote Tender. All Rights Reserved.
+        </p>
+    </div>
+</div>";
+                if (!$mail->send()) {
+                    echo json_encode([
+                        "status" => 500,
+                        "error" => "Mailer Error: " . $mail->ErrorInfo,
+
+                    ]);
+                    exit;
+                } else {
+                    $msg = "Message has been sent successfully";
+
+                    echo json_encode([
+                        "status" => 201,
+                        "message" => "Thank you for completing the registration process Please wait for your account to be Authenticated",
+
+                    ]);
+                    exit;
+                }
+            } else {
+                echo "error in registration page";
+
+                echo json_encode([
+                    "status" => 400,
+                    "error" => "error in registration page",
+
+                ]);
+                exit;
+            }
         }
+    } catch (\Throwable $th) {
+        echo json_encode([
+            "status" => 500,
+            "error" => $th->getMessage(),
+
+        ]);
+        exit;
     }
 }
 
@@ -172,6 +231,9 @@ $q = mysqli_query($db, $q);
     <link rel="stylesheet" href="assets/css/style.css">
     <script src="https://www.google.com/recaptcha/api.js" async defer>
     </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 </head>
 
 <body>
@@ -242,24 +304,24 @@ $q = mysqli_query($db, $q);
   </div> ";
                 }
                 ?><br />
-                <form class="account-form" action="" method="post" autocomplete="off">
+                <form class="account-form">
                     <div class="form-group">
-                        <input type="text" placeholder=" Name" name="name" required>
+                        <input type="text" placeholder="Name" name="name">
                     </div>
                     <div class="form-group">
-                        <input type="text" placeholder="Firm Name" name="firmName" required>
+                        <input type="text" placeholder="Firm Name" name="firmName">
                     </div>
                     <div class="form-group">
-                        <input type="text" placeholder="Email" name="email" required>
+                        <input type="text" placeholder="Email" name="email">
                     </div>
                     <div class="form-group">
-                        <input type="Number" placeholder="Mobile" name="mobile" required>
+                        <input type="Number" placeholder="Mobile" name="mobile">
                     </div>
                     <div class="form-group">
-                        <input type="text" placeholder="City" name="city" required>
+                        <input type="text" placeholder="City" name="city">
                     </div>
                     <div class="form-group">
-                        <input type="password" placeholder=" Password" name="password" required>
+                        <input type="password" placeholder=" Password" name="password">
                     </div>
                     <div class="form-group">
                         <div class="g-recaptcha" data-sitekey="6LeyShEqAAAAAJIMoyXfN7DmfesxwLNYOgBHIh4N"
@@ -268,8 +330,9 @@ $q = mysqli_query($db, $q);
 
                     </div>
                     <div class="form-group">
-                        <input type="submit" id="submit" value="Sign Up" class="btn btn-block btn-primary mb-0"
-                            name="submit" disabled>
+                        <button type="submit" id="submitBtn" value="Sign Up" class="btn btn-block btn-primary mb-0"
+                            name="submit" disabled>Sign Up</button>
+
                     </div>
                 </form>
                 <div class="account-bottom">
@@ -344,12 +407,121 @@ $q = mysqli_query($db, $q);
     <script src="assets/js/counter-up.js"></script>
     <script src="assets/js/isotope.pkgd.js"></script>
     <script src="assets/js/functions.js"></script>
-   
-        <script type="text/javascript">
-    function callback() {
-        const submitButton = document.getElementById("submit");
-        submitButton.removeAttribute("disabled");
-    }
+
+    <script type="text/javascript">
+        function callback() {
+            const submitButton = document.getElementById("submitBtn");
+            submitButton.removeAttribute("disabled");
+        }
+    </script>
+
+    <script>
+        $(document).ready(function () {
+            $(document).on("submit", ".account-form", async function (e) {
+                e.preventDefault();
+
+                // Get data from input fields
+                let name = $('input[name="name"]').val().trim();
+                let firmName = $('input[name="firmName"]').val().trim();
+                let email = $('input[name="email"]').val().trim();
+                let mobile = $('input[name="mobile"]').val().trim();
+                let city = $('input[name="city"]').val().trim();
+                let password = $('input[name="password"]').val().trim();
+                let recaptchaResponse = grecaptcha.getResponse(); // Get reCAPTCHA response
+
+
+                // Basic validation
+                if (!name || !firmName || !email || !mobile || !city || !password) {
+                    Swal.fire("Error", "All fields are required. Please fill out the form completely.", "error");
+                    return;
+                }
+
+                // Email validation
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(email)) {
+                    Swal.fire("Error", "Please enter a valid email address", "error");
+                    return;
+                }
+
+                // Mobile validation (assuming 10 digits for India)
+                const mobileRegex = /^[0-9]{10}$/;
+                if (!mobileRegex.test(mobile)) {
+                    Swal.fire("Error", "Please enter a valid 10-digit mobile number", "error");
+                    return;
+                }
+
+                // Password validation (minimum 6 characters)
+                if (password.length < 6) {
+                    Swal.fire("Error", "Password must be at least 6 characters long", "error");
+                    return;
+                }
+
+                // Check if reCAPTCHA is completed
+                if (!recaptchaResponse) {
+                    Swal.fire("Error", "Please complete the reCAPTCHA verification.", "error");
+                    return;
+                }
+
+                // Store original button text and disable button during processing
+                const $submitBtn = $('#submitBtn');
+                const originalBtnText = $submitBtn.html();
+                $submitBtn.prop('disabled', true).html('<i class="feather icon-loader"></i>&nbsp;Signing In...');
+
+
+                let formData = {
+                    name: name,
+                    firmName: firmName,
+                    email: email,
+                    mobile: mobile,
+                    city: city,
+                    password: password,
+                    'g-recaptcha-response': recaptchaResponse // Include reCAPTCHA response
+                };
+
+                await $.ajax({
+                    url: window.location.href,
+                    type: 'POST',
+                    data: formData,
+                    dataType: 'json',
+                    success: function (response) {
+                        if (response.status == 201) {
+                            // Success - reset form
+                            $('.account-form')[0].reset();
+                            grecaptcha.reset();
+
+                            // Restore button state
+                            $submitBtn.prop('disabled', false).val(originalBtnText);
+
+                            // Show success message
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Success!',
+                                text: 'Registration successful! Please check your email for activation link.',
+                                confirmButtonText: 'OK'
+                            });
+                        } else {
+                            // Reset reCAPTCHA on failure
+                            grecaptcha.reset();
+                            // Restore button state
+
+                            $submitBtn.prop('disabled', false).html(originalBtnText);
+
+                            Swal.fire("Error", response.error, "error");
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        // Reset reCAPTCHA on error
+                        grecaptcha.reset();
+                        $('#submitBtn').prop('disabled', false); // Enable button - user needs to complete new reCAPTCHA
+
+                        console.error("AJAX Error:", status, error);
+                        console.error("Raw Response:", xhr.responseText);
+                        Swal.fire("Error", "An error occurred while processing your request. Please try again.", "error");
+                    }
+                });
+            });
+
+        });
     </script>
 </body>
 

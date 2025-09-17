@@ -127,7 +127,7 @@ function otpGenerate($adminId, $db, $mail)
                 </div>";
 
 
-            
+
             // Try to send email
             if (!$mail->send()) {
                 $errorMessage = "Mailer Error: " . $mail->ErrorInfo;
@@ -164,4 +164,6 @@ function otpGenerate($adminId, $db, $mail)
         ];
     }
 }
+
+
 ?>

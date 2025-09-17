@@ -1,5 +1,6 @@
 <?php
 
+// declare(strict_types=1);
 session_start();
 
 
@@ -17,7 +18,7 @@ $en = $_GET["id"];
 $d = base64_decode($en);
 
 
-$result = mysqli_query($db, "SELECT * FROM members WHERE member_id='"  . $d . "'");
+$result = mysqli_query($db, "SELECT * FROM members WHERE member_id='" . $d . "'");
 $row = mysqli_fetch_row($result);
 
 /* Attempt to connect to MySQL database */
@@ -27,36 +28,34 @@ if (isset($_POST['submit'])) {
     $mobile = $_POST['mobile'];
     $email = $_POST['email'];
     $city = $_POST['city'];
- 
+
     $status = $_POST['status'];
-    $tender = $_POST['tender'];
-    $oldRequests=empty($row[11]) ? 0 : $row[11];
-    $pending_request=($_POST['tender'] - $oldRequests)+ (int) $row[12];
+    $tender = (int) $_POST['tender'];
+    $oldRequests = empty($row[11]) ? 0 : $row[11];
 
-if (!empty($_POST['password'])) {
-    
-       $password = md5($_POST['password']);
-    mysqli_query($db, "UPDATE members set name=' $name', firm_name='$fname',mobile='$mobile',email_id='$email',city_state='$city',
-    password='$password',status='$status', max_request='$tender',pending_request='$pending_request' WHERE member_id='"  . $d . "'");
-    $stat = 1;
-    $re = base64_encode($stat);
-    echo ("<SCRIPT LANGUAGE='JavaScript'>
+    $pending_request = ($tender - $oldRequests) + (int) $row[12];
+
+    if (!empty($_POST['password'])) {
+
+        $password = md5($_POST['password']);
+        mysqli_query($db, "UPDATE members set name=' $name', firm_name='$fname',mobile='$mobile',email_id='$email',city_state='$city',
+    password='$password',status='$status', max_request='$tender',pending_request='$pending_request' WHERE member_id='" . $d . "'");
+        $stat = 1;
+        $re = base64_encode($stat);
+        echo ("<SCRIPT LANGUAGE='JavaScript'>
 window.location.href='registered-users.php?status=$re';
 </SCRIPT>");
 
-}
-
-else
-{
-      mysqli_query($db, "UPDATE members set name='$name', firm_name='$fname',mobile='$mobile',email_id='$email',city_state='$city',
-      status='$status', max_request='$tender',pending_request='$pending_request' WHERE member_id='"  . $d . "'");
-    $stat = 1;
-    $re = base64_encode($stat);
-    echo ("<SCRIPT LANGUAGE='JavaScript'>
+    } else {
+        mysqli_query($db, "UPDATE members set name='$name', firm_name='$fname',mobile='$mobile',email_id='$email',city_state='$city',
+      status='$status', max_request='$tender',pending_request='$pending_request' WHERE member_id='" . $d . "'");
+        $stat = 1;
+        $re = base64_encode($stat);
+        echo ("<SCRIPT LANGUAGE='JavaScript'>
 window.location.href='registered-users.php?status=$re';
 </SCRIPT>");
-    
-}
+
+    }
 }
 
 
@@ -194,7 +193,7 @@ window.location.href='registered-users.php?status=$re';
                                                     </span></label>
                                                 <input id="name" name="name" type="text" placeholder="Username"
                                                     class="form-control input-md" required
-                                                    value="<?php echo $row[1];?>">
+                                                    value="<?php echo $row[1]; ?>">
                                             </div>
                                         </div>
                                         <div class="col-xl-6 col-lg-6 col-md-4 col-sm-12 col-12">
@@ -225,7 +224,7 @@ window.location.href='registered-users.php?status=$re';
                                                 <label class="sr-only control-label" for="name">Email<span class=" ">
                                                     </span></label>
                                                 <input id="name" name="email" type="email" class="form-control input-md"
-                                                    required placeholder="Enter Email" value="<?php echo $row[4]; ?>" >
+                                                    required placeholder="Enter Email" value="<?php echo $row[4]; ?>">
                                             </div>
                                         </div>
 
@@ -243,22 +242,19 @@ window.location.href='registered-users.php?status=$re';
                                                 <label class="sr-only control-label" for="name">City<span class=" ">
                                                     </span></label>
                                                 <input id="name" name="password" type="password"
-                                                    class="form-control input-md" placeholder="If you want to chage the current password"
-                                                    value="">
+                                                    class="form-control input-md"
+                                                    placeholder="If you want to chage the current password" value="">
                                             </div>
                                         </div>
                                         <div class="col-xl-6 col-lg-6 col-md-4 col-sm-12 col-12">
                                             <div class="form-group">Status*
                                                 <label class="sr-only control-label" for="name">Status<span class=" ">
                                                     </span></label>
-                                                <select id="" name="status" class="form-control" required>
-                                                  <option value="<?php echo $row['8'] ?>">
-                                                        <?php if($row['8']==1) { echo "Enable";  } else {echo "Disable";}?>
-                                                    </option>
-                                                   
-                                                    <option value="1">Enable</option>
-                                                    <option value="0">Disabe</option>
-
+                                                <select name="status" class="form-control" required>
+                                                    <option value="1" <?= ($row['8'] == 1) ? 'selected' : ''; ?>>
+                                                        Enable</option>
+                                                    <option value="0" <?= ($row['8'] == 0) ? 'selected' : ''; ?>>
+                                                        Disabled</option>
                                                 </select>
                                             </div>
                                         </div>
@@ -267,7 +263,7 @@ window.location.href='registered-users.php?status=$re';
                                                 <label class="sr-only control-label" for="name">Status<span class=" ">
                                                     </span></label>
                                                 <input id="name" name="tender" type="number"
-                                                    placeholder=" Free Tender *" class="form-control input-md" 
+                                                    placeholder=" Free Tender *" class="form-control input-md"
                                                     value="<?php echo $row[11]; ?>">
                                             </div>
                                         </div>

@@ -242,6 +242,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['memberIds'])) {
                                 echo "<th>Mobile</th>";
                                 echo "<th>Email</th>";
                                 echo "<th>City</th>";
+                                echo "<th>Status</th>";
 
                                 echo "<th> Tender</th>";
                                 echo "<th>Edit</th>";
@@ -271,6 +272,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['memberIds'])) {
                                     echo "<td>" . $row['3'] . "</td>";
                                     echo "<td>" . $row['4'] . "</td>";
                                     echo "<td>" . $row['5'] . "</td>";
+                                    echo "<td>" . (($row['8'] == 1) ? "Enable" : "Disabled") . "</td>";
                                     echo "<td>" . "Free: " . $row['11'] . "<br/> " . "<span style='color:green;'> " . " Balance: " . $row['12'] . "</span>" . "</td>";
 
 
