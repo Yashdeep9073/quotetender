@@ -483,7 +483,7 @@ if (isset($_SESSION["login_user"])) {
 
                         Swal.fire({
                             title: 'Success!',
-                            text: 'OTP verified successfully. Redirecting to dashboard...',
+                            text: 'User verified successfully. Redirecting to dashboard...',
                             icon: 'success',
                             timer: 2000,
                             showConfirmButton: false,
