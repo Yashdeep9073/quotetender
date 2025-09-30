@@ -477,8 +477,7 @@ $sections = mysqli_query($db, $sectionQuery);
                     <div class="card bg-c-green order-card">
                         <div class="card-body">
                             <h6 class="text-white">Last Reference Code</h6>
-                            <h2 class="text-right text-white"><i
-                                    class="feather icon-bookmark float-left"></i><span
+                            <h2 class="text-right text-white"><i class="feather icon-bookmark float-left"></i><span
                                     id="total"><?php echo $lastCount['last_sequence']; ?></span></h2>
 
                         </div>

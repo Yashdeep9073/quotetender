@@ -166,38 +166,102 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
 
 }
 
-//fecth Department
-$queryDepartment = "SELECT * FROM department WHERE status = 1";
-$resultDepartment = mysqli_query($db, $queryDepartment);
-$departments = [];
 
-if ($resultDepartment) {
-    while ($row = mysqli_fetch_assoc($resultDepartment)) {
-        $departments[] = $row;
+// fetch city by state code with ajax
+if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
+    try {
+
+        $stateCode = $_POST['stateCode'];
+
+        if (empty($stateCode)) {
+            echo json_encode([
+                "status" => 400,
+                "error" => "Invalid state",
+            ]);
+            exit;
+        }
+
+        $db->begin_transaction();
+
+        // Fetch unique, non-empty cities only
+        $stmtFetchCities = $db->prepare("SELECT * FROM cities WHERE state_code = ?");
+        $stmtFetchCities->bind_param("s", $stateCode);
+        $stmtFetchCities->execute();
+        $cities = $stmtFetchCities->get_result()->fetch_all(MYSQLI_ASSOC);
+
+
+        echo json_encode([
+            "status" => 200,
+            "data" => $cities,
+        ]);
+        exit;
+
+    } catch (\Throwable $th) {
+        //throw $th;
+        echo json_encode([
+            "status" => 500,
+            "error" => $th->getMessage(),
+        ]);
+        exit;
     }
 }
 
-//fecth Sections
 
-$querySection = "SELECT * FROM section WHERE status = 1";
-$resultSection = mysqli_query($db, $querySection);
-$sections = [];
+try {
+    //fecth Department
+    $queryDepartment = "SELECT * FROM department WHERE status = 1";
+    $resultDepartment = mysqli_query($db, $queryDepartment);
+    $departments = [];
 
-if ($resultSection) {
-    while ($row = mysqli_fetch_assoc($resultSection)) {
-        $sections[] = $row;
+    if ($resultDepartment) {
+        while ($row = mysqli_fetch_assoc($resultDepartment)) {
+            $departments[] = $row;
+        }
     }
-}
 
-$adminID = $_SESSION['login_user_id'];
-$adminPermissionQuery = "SELECT nm.title FROM admin_permissions ap 
+    //fecth Sections
+
+    $querySection = "SELECT * FROM section WHERE status = 1";
+    $resultSection = mysqli_query($db, $querySection);
+    $sections = [];
+
+    if ($resultSection) {
+        while ($row = mysqli_fetch_assoc($resultSection)) {
+            $sections[] = $row;
+        }
+    }
+
+    $adminID = $_SESSION['login_user_id'];
+    $adminPermissionQuery = "SELECT nm.title FROM admin_permissions ap 
 inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_id='" . $adminID . "' ";
-$adminPermissionResult = mysqli_query($db, $adminPermissionQuery);
+    $adminPermissionResult = mysqli_query($db, $adminPermissionQuery);
 
-$permissions = [];
-while ($item = mysqli_fetch_row($adminPermissionResult)) {
-    array_push($permissions, $item[0]);
+    $permissions = [];
+    while ($item = mysqli_fetch_row($adminPermissionResult)) {
+        array_push($permissions, $item[0]);
+    }
+
+
+    // Fetch unique, non-empty cities only
+    $stmtFetchCities = $db->prepare("SELECT * FROM cities ");
+    $stmtFetchCities->execute();
+    $cities = $stmtFetchCities->get_result()->fetch_all(MYSQLI_ASSOC);
+
+    // echo "<pre>";
+    // print_r($cities);
+    // exit;
+
+    // Fetch unique, non-empty cities only
+    $stmtFetchStates = $db->prepare("SELECT * FROM state ");
+    $stmtFetchStates->execute();
+    $states = $stmtFetchStates->get_result()->fetch_all(MYSQLI_ASSOC);
+
+
+} catch (\Throwable $th) {
+    //throw $th;
 }
+
+
 ?>
 
 <!DOCTYPE html>
@@ -404,7 +468,8 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                             <select class="form-control" name="section-search" id="section-search">
                                                 <option value="0">All</option>
                                                 <?php foreach ($sections as $section) { ?>
-                                                    <option value="<?php echo $section['section_id']; ?>" <?php echo isset($_SESSION['sectionId']) && $_SESSION['sectionId'] == $section['section_id'] ? 'selected' : ''; ?>>
+                                                    <option <?php echo isset($_SESSION['sectionId']) && $_SESSION['sectionId'] == $section['section_id'] ? 'selected' : ''; ?>
+                                                        value="<?php echo $section['section_id']; ?>">
                                                         <?php echo $section['section_name']; ?>
                                                     </option>
                                                 <?php } ?>
@@ -438,6 +503,29 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                                         <?php echo $subDivision['name']; ?>
                                                     </option>
                                                 <?php } ?>
+                                            </select>
+                                            <div class="invalid-feedback">Please select a semester.</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="semester">State <span class="text-danger">*</span></label>
+                                            <select class="form-control select-state" name="state" required>
+                                                <option value="0">All</option>
+                                                <?php foreach ($states as $state) { ?>
+                                                    <option value="<?= $state['state_code'] ?>">
+                                                        <?= $state['state_name'] ?>
+                                                    </option>
+                                                <?php } ?>
+                                            </select>
+                                            <div class="invalid-feedback">Please select a semester.</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="semester">City <span class="text-danger">*</span></label>
+                                            <select class="form-control select-city" name="city" required>
+                                                <option value="0">All</option>
                                             </select>
                                             <div class="invalid-feedback">Please select a semester.</div>
                                         </div>
@@ -608,6 +696,9 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
         </div>
     </section>
 
+    <!-- jQuery first -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
     <script src="assets/js/vendor-all.min.js"></script>
     <script src="assets/js/plugins/bootstrap.min.js"></script>
     <script src="assets/js/pcoded.min.js"></script>
@@ -626,6 +717,12 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
 
     <!-- Excel Generate  -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <!-- CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+    <!-- Select2 (must come AFTER jQuery) -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
     <script type="text/javascript">
         $(".recyclebutton").on('click', function () {
@@ -741,7 +838,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                         });
                     }
                 })
-          
+
             }
         });
 
@@ -750,8 +847,66 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
 
     <script type="text/javascript">
         $(document).ready(function () {
+
+            $('#department-search').select2({
+                placeholder: "Select Department"
+            });
+            $('#section-search').select2({
+                placeholder: "Select Section"
+            });
+            $('#division-search').select2({
+                placeholder: "Select Division"
+            });
+            $('#sub-division-search').select2({
+                placeholder: "Select Sub Division"
+            });
+
+            $('.select-state').select2({
+                placeholder: "Select State"
+            });
+            $('.select-city').select2({
+                placeholder: "Select City"
+            });
+
+
+            $(document).on("change", ".select-state", async function (e) {
+                let stateCode = $(this).val();
+                await $.ajax({
+                    url: window.location.href,
+                    type: 'POST',
+                    data: { stateCode: stateCode },
+                    dataType: 'json',
+                    success: function (response) {
+                        if (response.status == 200) {
+                            let citySelect = $(".select-city");
+                            citySelect.empty(); // clear old options
+                            citySelect.append('<option value="">Select City</option>');
+                            $.each(response.data, function (index, city) {
+                                citySelect.append(
+                                    `<option value="${city.city_id}">${city.city_name}</option>`
+                                );
+                            });
+                        } else {
+                            Swal.fire("No Data", "No cities found.", "warning");
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        console.error("AJAX Error:", status, error);
+                        console.error("Raw Response:", xhr.responseText);
+                        Swal.fire("Error", "An error occurred while processing your request. Please try again.", "error");
+                    }
+                });
+            });
+
+
             // Initialize the DataTable with buttons
-            var table = $('#basic-btn2').DataTable();
+            var table = $('#basic-btn2').DataTable({
+                pageLength: 100,
+                lengthMenu: [25, 50, 100, 200, 500, 1000], // Custom dropdown options
+                responsive: true,
+                ordering: true,
+                searching: true
+            });
 
             // Fetch the number of entries
             var info = table.page.info();

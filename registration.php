@@ -9,76 +9,103 @@ use PHPMailer\PHPMailer\Exception;
 require("login/db/config.php");
 require 'env.php';
 
+$web = "SELECT * FROM web_content  ";
+$contet = mysqli_query($db, $web);
+$cont = mysqli_fetch_row($contet);
+
+$q = "SELECT * FROM category where show_in_menu='yes'";
+$q = mysqli_query($db, $q);
+
+try {
+    // Fetch unique, non-empty cities only
+    $stmtFetchStates = $db->prepare("SELECT * FROM state ");
+    $stmtFetchStates->execute();
+    $states = $stmtFetchStates->get_result()->fetch_all(MYSQLI_ASSOC);
+} catch (\Throwable $th) {
+    //throw $th;
+}
 
 // Register user
 if (isset($_POST['firmName']) && $_SERVER['REQUEST_METHOD'] == "POST") {
-
-
     try {
-        $name = $_POST['name'];
-        $firmname = $_POST['firmName'];
-        $email = $_POST['email'];
-        $phone = $_POST['mobile'];
-        $city = $_POST['city'];
-        $password = md5(($_POST['password']));
-        $activationToken = bin2hex(random_bytes(16)); // Replace with your activation token
-        $adminEmail = "quotetenderindia@gmail.com";
+        // Validate required fields
+        $required_fields = ['name', 'firmName', 'email', 'mobile', 'state', 'city', 'password'];
+        foreach ($required_fields as $field) {
+            if (empty($_POST[$field])) {
+                echo json_encode([
+                    "status" => 400,
+                    "error" => "Missing required field: " . $field
+                ]);
+                exit;
+            }
+        }
 
-        // Storing google recaptcha response
-        $recaptcha = $_POST['g-recaptcha-response'];
+        // Sanitize input data
+        $name = trim($_POST['name']);
+        $firmname = trim($_POST['firmName']);
+        $email = trim($_POST['email']);
+        $phone = trim($_POST['mobile']);
+        $state = trim($_POST['state']);
+        $city = trim($_POST['city']);
+        $password = trim($_POST['password']);
 
-        // from google console
-        $secret_key = '6LeyShEqAAAAAKVRQAie1sCk9E5rBjvR9Ce0x5k_';
-
-        // Hitting request to the URL, Google will
-        $url = 'https://www.google.com/recaptcha/api/siteverify?secret='
-            . $secret_key . '&response=' . $recaptcha;
-
-        // Making request to verify captcha
-        $response = file_get_contents($url);
-
-
-        $response = json_decode($response);
-
-        // Checking, if response is true or not
-        if ($response->success == false) {
+        // Validate email format
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             echo json_encode([
                 "status" => 400,
-                "error" => "Error in Google reCAPTACHA",
-
+                "error" => "Invalid email format"
             ]);
             exit;
         }
 
-        date_default_timezone_set('Asia/Kolkata');
-        $created_date = date('Y-m-d H:i:s A'); // query for inser user log in to data base
+        // reCAPTCHA validation
+        $recaptcha = $_POST['g-recaptcha-response'];
+        $secret_key = '6LeyShEqAAAAAKVRQAie1sCk9E5rBjvR9Ce0x5k_';
+        $url = 'https://www.google.com/recaptcha/api/siteverify?secret=' . $secret_key . '&response=' . $recaptcha;
+        $response = json_decode(file_get_contents($url));
 
-        $qu = "SELECT email_id FROM members WHERE email_id = '$email'";
-        $re = mysqli_query($db, $qu);
-        //$count=mysqli_num_rows($result);
-        $row1 = mysqli_fetch_row($re);
-        $username = $row1['0'];
-
-
-        if ($username) {
+        if (!$response->success) {
             echo json_encode([
                 "status" => 400,
-                "error" => "Email id  is already exists in our record",
-
+                "error" => "Error in Google reCAPTCHA"
             ]);
-        } else {
+            exit;
+        }
 
-            $serial = "";
-            $status = 1;
-            //    $valid=0;
-            $query = "insert into members (name, firm_name, email_id,mobile,city_state, password,created_date,activation_token )values
-            ('$name', '$firmname','$email','$phone','$city','$password','$created_date','$activationToken')";
-            $quuery = mysqli_query($db, $query);
+        // Set timezone and create date
+        date_default_timezone_set('Asia/Kolkata');
+        $created_date = date('Y-m-d H:i:s A');
 
+        // Check if email already exists - USING PREPARED STATEMENT
+        $check_query = "SELECT email_id FROM members WHERE email_id = ?";
+        $check_stmt = mysqli_prepare($db, $check_query);
+        mysqli_stmt_bind_param($check_stmt, "s", $email);
+        mysqli_stmt_execute($check_stmt);
+        $result = mysqli_stmt_get_result($check_stmt);
 
-            if ($quuery > 0) {
-                $mail = new PHPMailer(true);
-                //Enable SMTP debugging.
+        if (mysqli_num_rows($result) > 0) {
+            echo json_encode([
+                "status" => 400,
+                "error" => "Email ID already exists in our records"
+            ]);
+            exit;
+        }
+
+        // Insert new member - USING PREPARED STATEMENT
+        $password_hash = md5($password);
+        $activationToken = bin2hex(random_bytes(16));
+        $status = '0'; // Default status
+
+        $insert_query = "INSERT INTO members (name, firm_name, email_id, mobile, city_state,state_code, password, created_date, activation_token, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?,?)";
+
+        $insert_stmt = mysqli_prepare($db, $insert_query);
+        mysqli_stmt_bind_param($insert_stmt, "ssssssssss", $name, $firmname, $email, $phone, $city, $state, $password_hash, $created_date, $activationToken, $status);
+
+        if (mysqli_stmt_execute($insert_stmt)) {
+            // Email sending code
+            $mail = new PHPMailer(true);
+            try {
+                // SMTP configuration
                 $mail->SMTPDebug = 0;
                 $mail->isSMTP();
                 $mail->Host = getenv('SMTP_HOST');
@@ -88,130 +115,130 @@ if (isset($_POST['firmName']) && $_SERVER['REQUEST_METHOD'] == "POST") {
                 $mail->SMTPSecure = "ssl";
                 $mail->Port = getenv('SMTP_PORT');
                 $mail->setFrom(getenv('SMTP_USER_NAME'), "Quote Tender");
-                $mail->addAddress($email, "Recepient Name");
-                $mail->addAddress($adminEmail);
+                $mail->addAddress($email, $name);
                 $mail->isHTML(true);
+                $mail->addCC('quotetenderindia@gmail.com');
+
+
                 $activationLink = getenv('BASE_URL') . '/activate.php?token=' . $activationToken;
                 $mail->Subject = "Account Activation";
                 $mail->Body = "
-<div style='font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;'>
-    <div style='text-align: center; margin-bottom: 30px;'>
-        <img src='https://dvepl.com/quotetender/assets/images/logo/logo.png' alt='Quote Tender Logo' style='max-width: 200px; height: auto; display: block; margin: 0 auto;'>
-    </div>
-    
-    <div style='background-color: #f9f9f9; border-radius: 10px; padding: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border: 1px solid #eee;'>
-        <h2 style='color: #4CBB17; text-align: center; margin-bottom: 25px; font-size: 24px;'>Account Activation</h2>
-        
-        <p style='font-size: 16px; color: #555; margin-bottom: 20px;'>
-            Dear <strong>" . htmlspecialchars($name) . "</strong>,
-        </p>
-        
-        <p style='margin-bottom: 25px; font-size: 16px;'>
-            Thank you for registering with Quote Tender. Your registration process is completed. 
-            Please click the button below to activate your account:
-        </p>
-        
-        <div style='text-align: center; margin: 30px 0;'>
-            <a href='" . htmlspecialchars($activationLink) . "' 
-            style='background-color: #4CBB17; color: #ffffff; padding: 15px 30px; text-decoration: none; 
-                    border-radius: 5px; font-weight: bold; display: inline-block; 
-                    box-shadow: 0 4px 6px rgba(0,0,0,0.1); -webkit-box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
-                    font-size: 16px; border: none; cursor: pointer;'>
-                Activate Account
-            </a>
-        </div>
-        
-        <div style='text-align: center; margin: 20px 0;'>
-            <p style='margin-bottom: 15px; font-size: 14px; color: #666;'>
-                <strong>Activation Link:</strong>
-            </p>
-            <p style='font-size: 12px; color: #666; word-break: break-all; background-color: #f0f0f0; padding: 10px; border-radius: 4px;'>
-                " . htmlspecialchars($activationLink) . "
-            </p>
-        </div>
-        
-        <div style='background-color: #e8f5e9; padding: 20px; border-radius: 8px; margin: 25px 0; border: 1px solid #c8e6c9;'>
-            <h3 style='color: #2e7d32; margin-top: 0; margin-bottom: 15px; font-size: 18px;'>Registration Details</h3>
-            <table style='width: 100%; border-collapse: collapse; font-size: 14px;'>
-                <tr>
-                    <td style='padding: 8px 0; border-bottom: 1px solid #ddd;'><strong>Name:</strong></td>
-                    <td style='padding: 8px 0; border-bottom: 1px solid #ddd;'>" . htmlspecialchars($name) . "</td>
-                </tr>
-                <tr>
-                    <td style='padding: 8px 0; border-bottom: 1px solid #ddd;'><strong>Firm Name:</strong></td>
-                    <td style='padding: 8px 0; border-bottom: 1px solid #ddd;'>" . htmlspecialchars($firmname) . "</td>
-                </tr>
-                <tr>
-                    <td style='padding: 8px 0; border-bottom: 1px solid #ddd;'><strong>Mobile:</strong></td>
-                    <td style='padding: 8px 0; border-bottom: 1px solid #ddd;'>" . htmlspecialchars($phone) . "</td>
-                </tr>
-                <tr>
-                    <td style='padding: 8px 0;'><strong>Email:</strong></td>
-                    <td style='padding: 8px 0;'>" . htmlspecialchars($email) . "</td>
-                </tr>
-            </table>
-        </div>
-    </div>
-    
-    <div style='margin-top: 30px; text-align: center;'>
-        <p style='margin-bottom: 20px; font-size: 14px;'>
-            <strong>Thanks & Regards,</strong><br/>
-            <span style='color: #4CBB17;'>Admin, Quote Tender</span><br/>
-            <span>Mobile: <a href='tel:+919417601244' style='color: #4CBB17; text-decoration: none;'>+91-9417601244</a></span><br/>
-            <span>Email: <a href='mailto:help@quotetender.in' style='color: #4CBB17; text-decoration: none;'>help@quotetender.in</a></span>
-        </p>
+                <div style='font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;'>
+                    <div style='text-align: center; margin-bottom: 30px;'>
+                        <img src='https://dvepl.com/quotetender/assets/images/logo/logo.png' alt='Quote Tender Logo' style='max-width: 200px; height: auto; display: block; margin: 0 auto;'>
+                    </div>
+                    
+                    <div style='background-color: #f9f9f9; border-radius: 10px; padding: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border: 1px solid #eee;'>
+                        <h2 style='color: #4CBB17; text-align: center; margin-bottom: 25px; font-size: 24px;'>Account Activation</h2>
+                        
+                        <p style='font-size: 16px; color: #555; margin-bottom: 20px;'>
+                            Dear <strong>" . htmlspecialchars($name) . "</strong>,
+                        </p>
+                        
+                        <p style='margin-bottom: 25px; font-size: 16px;'>
+                            Thank you for registering with Quote Tender. Your registration process is completed. 
+                            Please click the button below to activate your account:
+                        </p>
+                        
+                        <div style='text-align: center; margin: 30px 0;'>
+                            <a href='" . htmlspecialchars($activationLink) . "' 
+                            style='background-color: #4CBB17; color: #ffffff; padding: 15px 30px; text-decoration: none; 
+                                    border-radius: 5px; font-weight: bold; display: inline-block; 
+                                    box-shadow: 0 4px 6px rgba(0,0,0,0.1); font-size: 16px; border: none; cursor: pointer;'>
+                                Activate Account
+                            </a>
+                        </div>
+                        
+                        <div style='text-align: center; margin: 20px 0;'>
+                            <p style='margin-bottom: 15px; font-size: 14px; color: #666;'>
+                                <strong>Activation Link:</strong>
+                            </p>
+                            <p style='font-size: 12px; color: #666; word-break: break-all; background-color: #f0f0f0; padding: 10px; border-radius: 4px;'>
+                                " . htmlspecialchars($activationLink) . "
+                            </p>
+                        </div>
+                    </div>
+                </div>";
 
-        <hr style='border: none; border-top: 1px solid #ddd; margin: 20px 0;'>
-
-        <p style='text-align: center; font-size: 12px; color: #888;'>
-            &copy; 2024 Quote Tender. All Rights Reserved.
-        </p>
-    </div>
-</div>";
-                if (!$mail->send()) {
-                    echo json_encode([
-                        "status" => 500,
-                        "error" => "Mailer Error: " . $mail->ErrorInfo,
-
-                    ]);
-                    exit;
-                } else {
-                    $msg = "Message has been sent successfully";
-
+                if ($mail->send()) {
                     echo json_encode([
                         "status" => 201,
-                        "message" => "Thank you for completing the registration process Please wait for your account to be Authenticated",
-
+                        "message" => "Thank you for completing the registration process. Please check your email to activate your account."
                     ]);
-                    exit;
+                } else {
+                    echo json_encode([
+                        "status" => 201, // Still successful registration, just email failed
+                        "message" => "Registration successful but email could not be sent. Please contact support."
+                    ]);
                 }
-            } else {
-                echo "error in registration page";
-
+            } catch (Exception $e) {
+                // Registration successful but email failed
                 echo json_encode([
-                    "status" => 400,
-                    "error" => "error in registration page",
-
+                    "status" => 201,
+                    "message" => "Registration successful but email could not be sent. Please contact support."
                 ]);
-                exit;
             }
+        } else {
+            echo json_encode([
+                "status" => 500,
+                "error" => "Error in registration process: " . mysqli_error($db)
+            ]);
         }
+
+        // Close statements
+        if (isset($check_stmt))
+            mysqli_stmt_close($check_stmt);
+        if (isset($insert_stmt))
+            mysqli_stmt_close($insert_stmt);
+
+    } catch (Exception $e) {
+        echo json_encode([
+            "status" => 500,
+            "error" => "An error occurred: " . $e->getMessage()
+        ]);
+    }
+    exit;
+}
+
+
+// fetch city by state code with ajax
+if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
+    try {
+
+        $stateCode = $_POST['stateCode'];
+
+        if (empty($stateCode)) {
+            echo json_encode([
+                "status" => 400,
+                "error" => "Invalid state",
+            ]);
+            exit;
+        }
+
+        $db->begin_transaction();
+
+        // Fetch unique, non-empty cities only
+        $stmtFetchCities = $db->prepare("SELECT * FROM cities WHERE state_code = ?");
+        $stmtFetchCities->bind_param("s", $stateCode);
+        $stmtFetchCities->execute();
+        $cities = $stmtFetchCities->get_result()->fetch_all(MYSQLI_ASSOC);
+
+
+        echo json_encode([
+            "status" => 200,
+            "data" => $cities,
+        ]);
+        exit;
+
     } catch (\Throwable $th) {
+        //throw $th;
         echo json_encode([
             "status" => 500,
             "error" => $th->getMessage(),
-
         ]);
         exit;
     }
 }
-
-$web = "SELECT * FROM web_content  ";
-$contet = mysqli_query($db, $web);
-$cont = mysqli_fetch_row($contet);
-
-$q = "SELECT * FROM category where show_in_menu='yes'";
-$q = mysqli_query($db, $q);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -233,6 +260,62 @@ $q = mysqli_query($db, $q);
     </script>
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <!-- CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+    <!-- jQuery (required for Select2) -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <!-- Select2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+    <style>
+        /* Force Select2 to take full width */
+        .select2-container {
+            width: 100% !important;
+        }
+
+        /* Style for single select box */
+        .select2-container--default .select2-selection--single {
+            height: auto !important;
+            min-height: 40px;
+            border: 1px solid #d8d8d8 !important;
+            border-radius: 2px !important;
+            width: 100% !important;
+        }
+
+        /* Rendered text inside */
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            text-align: left !important;
+            line-height: 38px !important;
+            padding-left: 12px !important;
+            padding-right: 20px !important;
+            /* font-size: 14px; */
+            white-space: normal;
+            /* allows wrapping on smaller screens */
+        }
+
+        /* Dropdown arrow */
+        .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: 38px !important;
+        }
+
+        /* Mobile-friendly dropdown */
+        @media (max-width: 600px) {
+            .select2-container--default .select2-selection--single {
+                min-height: 45px;
+                font-size: 16px;
+                /* bigger text for mobile */
+            }
+
+            .select2-dropdown {
+                font-size: 16px;
+                /* dropdown items bigger */
+            }
+        }
+    </style>
+
 
 </head>
 
@@ -318,7 +401,17 @@ $q = mysqli_query($db, $q);
                         <input type="Number" placeholder="Mobile" name="mobile">
                     </div>
                     <div class="form-group">
-                        <input type="text" placeholder="City" name="city">
+                        <select name="state" class="js-example-basic-single select-state">
+                            <option>State</option>
+                            <?php foreach ($states as $state) { ?>
+                                <option value="<?= $state['state_code'] ?>"><?= $state['state_name'] ?></option>
+                            <?php } ?>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <select name="city" class="js-example-basic-single select-city">
+                            <option>City</option>
+                        </select>
                     </div>
                     <div class="form-group">
                         <input type="password" placeholder=" Password" name="password">
@@ -337,7 +430,7 @@ $q = mysqli_query($db, $q);
                 </form>
                 <div class="account-bottom">
                     <span class="d-block cate pt-10">Are you a member? <a href="login.php">Login</a></span>
-                    <span class="or"><span>or</span></span>
+                    <!-- <span class="or"><span>or</span></span>
                     <h5 class="subtitle">Register With Social Media</h5>
                     <ul class="lab-ul social-icons justify-content-center">
                         <li>
@@ -355,7 +448,7 @@ $q = mysqli_query($db, $q);
                         <li>
                             <a href="#" class="pinterest"><i class="icofont-pinterest"></i></a>
                         </li>
-                    </ul>
+                    </ul> -->
                 </div>
             </div>
         </div>
@@ -399,7 +492,6 @@ $q = mysqli_query($db, $q);
 
 
 
-    <script src="assets/js/jquery.js"></script>
     <script src="assets/js/bootstrap.min.js"></script>
     <script src="assets/js/swiper.min.js"></script>
     <script src="assets/js/progress.js"></script>
@@ -417,6 +509,38 @@ $q = mysqli_query($db, $q);
 
     <script>
         $(document).ready(function () {
+
+            $(document).on("change", ".select-state", async function (e) {
+                let stateCode = $(this).val();
+                await $.ajax({
+                    url: window.location.href,
+                    type: 'POST',
+                    data: { stateCode: stateCode },
+                    dataType: 'json',
+                    success: function (response) {
+                        if (response.status == 200) {
+                            let citySelect = $(".select-city");
+                            citySelect.empty(); // clear old options
+                            citySelect.append('<option value="">Select City</option>');
+                            $.each(response.data, function (index, city) {
+                                citySelect.append(
+                                    `<option value="${city.city_id}">${city.city_name}</option>`
+                                );
+                            });
+                        } else {
+                            Swal.fire("No Data", "No cities found.", "warning");
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        console.error("AJAX Error:", status, error);
+                        console.error("Raw Response:", xhr.responseText);
+                        Swal.fire("Error", "An error occurred while processing your request. Please try again.", "error");
+                    }
+                });
+            });
+
+            $('.js-example-basic-single').select2();
+
             $(document).on("submit", ".account-form", async function (e) {
                 e.preventDefault();
 
@@ -425,7 +549,8 @@ $q = mysqli_query($db, $q);
                 let firmName = $('input[name="firmName"]').val().trim();
                 let email = $('input[name="email"]').val().trim();
                 let mobile = $('input[name="mobile"]').val().trim();
-                let city = $('input[name="city"]').val().trim();
+                let state = $('select[name="state"]').val().trim();
+                let city = $('select[name="city"]').val().trim();
                 let password = $('input[name="password"]').val().trim();
                 let recaptchaResponse = grecaptcha.getResponse(); // Get reCAPTCHA response
 
@@ -473,6 +598,7 @@ $q = mysqli_query($db, $q);
                     firmName: firmName,
                     email: email,
                     mobile: mobile,
+                    state: state,
                     city: city,
                     password: password,
                     'g-recaptcha-response': recaptchaResponse // Include reCAPTCHA response

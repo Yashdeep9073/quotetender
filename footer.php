@@ -87,7 +87,7 @@
     <div class="container">
         <div class="section-wrapper">
             <p>
-                &copy; <?php echo date("Y"); ?><a href="index.php">Quotetender.in | All Rights Reserved. </a> Developed
+                &copy; <?php echo date("Y"); ?><a href="index.php">DVEPL | All Rights Reserved. </a> Developed
                 by <a href=" https://vibrantick.in/" target="_blank"> Vibrantick Infotech Solutions</a>
             </p>
         </div>

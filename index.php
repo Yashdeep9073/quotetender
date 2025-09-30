@@ -100,9 +100,11 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['submit'])) {
             }
 
             if ($fileUploaded1 == false || $fileUploaded2 == false) {
-                $msg = "<div class='alert alert-danger alert-dismissible fade show' role='alert' style='font-size:16px;' id='goldmessage'>
-                    <strong><i class='feather icon-check'></i>Error !</strong> File size exceeds the limit of 3MB.
-                    </div>";
+                // $msg = "<div class='alert alert-danger alert-dismissible fade show' role='alert' style='font-size:16px;' id='goldmessage'>
+                //     <strong><i class='feather icon-check'></i>Error !</strong> File size exceeds the limit of 3MB.
+                //     </div>";
+
+                $_SESSION['error'] = "Error !File size exceeds the limit of 3MB.";
             }
 
 
@@ -137,10 +139,13 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['submit'])) {
             $userExistResult = mysqli_num_rows($userExist);
 
             if ($userExistResult > 0) {
-                $msg = "<div class='alert alert-danger alert-dismissible fade show' role='alert' style='font-size:16px;' id='goldmessage'>
-                <strong><i class='feather icon-check'></i>Error !</strong> You Already Sent Request On This Tender Id.
-                </div>
-                ";
+                // $msg = "<div class='alert alert-danger alert-dismissible fade show' role='alert' style='font-size:16px;' id='goldmessage'>
+                // <strong><i class='feather icon-check'></i>Error !</strong> You Already Sent Request On This Tender Id.
+                // </div>
+                // ";
+
+                $_SESSION['error'] = "Error ! You Already Sent Request On This Tender Id.";
+
             } else {
                 // Check if there are existing tenders
                 if ($rowTender > 0) {
@@ -185,7 +190,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['submit'])) {
                             $response = referenceCode($db, "REF");
                             $referenceNumber = $response["data"];
 
-                            $query = "INSERT INTO user_tender_requests (member_id, tenderID, department_id, due_date, file_name, status, tender_no, reference_code,section_id, sub_division_id, division_id, name_of_work, tentative_cost, auto_quotation,reference_code) VALUES (
+                            $query = "INSERT INTO user_tender_requests (member_id, tenderID, department_id, due_date, file_name, status, tender_no, reference_code,section_id, sub_division_id, division_id, name_of_work, tentative_cost, auto_quotation,reference_code    ) VALUES (
                             '$member_id', '$tender', '$department_id', '$due_date', '$tenderQuote[0]', 'Requested', '$tenderQuote[2]', '$tenderQuote[3]', '$tenderQuote[4]',
                             '$tenderQuote[5]', '$tenderQuote[6]', '$tenderQuote[7]','$tenderQuote[9]', '$tenderQuote[10]','$referenceNumber')";
                             mysqli_query($db, $query);
@@ -319,18 +324,24 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['submit'])) {
                     echo "Mailer Error: " . $mail->ErrorInfo;
                 }
 
-                $msg = "<div class='alert alert-success alert-dismissible fade show' role='alert' style='font-size:16px;' id='goldmessage'>
-                <strong><i class='feather icon-check'></i>Thanks!</strong>Your request sent successfully.We will contact you soon.
-                </div>
-                ";
+                // $msg = "<div class='alert alert-success alert-dismissible fade show' role='alert' style='font-size:16px;' id='goldmessage'>
+                // <strong><i class='feather icon-check'></i>Thanks!</strong>Your request sent successfully.We will contact you soon.
+                // </div>
+                // ";
+
+                $_SESSION['success'] = "Your request sent successfully.We will contact you soon.";
 
             }
         } else {
-            $msg = "
-            <div class='alert alert-danger alert-dismissible fade show' role='alert' style='font-size:16px;' id='goldmessage'>
-            <strong><i class='feather icon-check'></i>Error !</strong>You have reached the maximum allowed requests. Please try again later.
-            </div>
-            ";
+            // $msg = "
+            // <div class='alert alert-danger alert-dismissible fade show' role='alert' style='font-size:16px;' id='goldmessage'>
+            // <strong><i class='feather icon-check'></i>Error !</strong>You have reached the maximum allowed requests. Please try again later.
+            // </div>
+            // ";
+
+            $_SESSION['error'] = "Error ! You have reached the maximum allowed requests. Please try again later.";
+
+
         }
     }
 }
@@ -406,6 +417,9 @@ $q = mysqli_query($db, $q);
     <script src="https://www.google.com/recaptcha/api.js" async defer>
     </script>
 
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.js"></script>
+
     <style>
         /* Custom CSS styles for Datepicker */
         .ui-datepicker {
@@ -472,11 +486,53 @@ $q = mysqli_query($db, $q);
                                 Tender
                             </h1>
                             <div class="row">
-                                <?php
-                                if (isset($msg)) {
-                                    echo $msg;
-                                }
-                                ?>
+                                <?php if (isset($_SESSION['success'])) { ?>
+                                    <script>
+                                        const notyf = new Notyf({
+                                            position: {
+                                                x: 'center',
+                                                y: 'top'
+                                            },
+                                            types: [
+                                                {
+                                                    type: 'success',
+                                                    background: '#26c975', // Change background color
+                                                    textColor: '#FFFFFF',  // Change text color
+                                                    dismissible: true,
+                                                    duration: 10000
+                                                }
+                                            ]
+                                        });
+                                        notyf.success("<?php echo $_SESSION['success']; ?>");
+                                    </script>
+                                    <?php
+                                    unset($_SESSION['success']);
+                                    ?>
+                                <?php } ?>
+
+                                <?php if (isset($_SESSION['error'])) { ?>
+                                    <script>
+                                        const notyf = new Notyf({
+                                            position: {
+                                                x: 'center',
+                                                y: 'top'
+                                            },
+                                            types: [
+                                                {
+                                                    type: 'error',
+                                                    background: '#ff1916',
+                                                    textColor: '#FFFFFF',
+                                                    dismissible: true,
+                                                    duration: 10000
+                                                }
+                                            ]
+                                        });
+                                        notyf.error("<?php echo $_SESSION['error']; ?>");
+                                    </script>
+                                    <?php
+                                    unset($_SESSION['error']);
+                                    ?>
+                                <?php } ?>
 
                                 <br />
                                 <form action="" method="post" autocomplete="off" enctype="multipart/form-data"

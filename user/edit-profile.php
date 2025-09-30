@@ -1,41 +1,113 @@
 <?php
 session_start();
+include("../login/db/config.php");
 
-error_reporting(0);
 if (!isset($_SESSION["login_register"])) {
     header("location: ../index.php");
 }
 
-include("../login/db/config.php");
-// Register user
 
 
+// Register use
+$email = $_SESSION['login_register'];
 $name = $_SESSION['login_register'];
 
-$query = "SELECT * FROM members WHERE email_id='" . $_SESSION["login_register"] . "'";
+try {
+    $db->begin_transaction();
+    //code...
 
-$result = mysqli_query($db, $query);
-$row = mysqli_fetch_row($result);
-$e = $row[4];
-if (isset($_POST['submit'])) {
+    $stmtFetchMembers = $db->prepare("SELECT * 
+        FROM members m
+        LEFT JOIN state s
+            ON m.state_code = s.state_code
+        LEFT JOIN cities c
+            ON m.city_state = c.city_id   
+        WHERE m.email_id = ? 
+        ");
+    $stmtFetchMembers->bind_param("s", $email);
+    $stmtFetchMembers->execute();
+
+    $result = $stmtFetchMembers->get_result()->fetch_array(MYSQLI_ASSOC);
+    // print_r($result);
+    // exit;
+
+    // Fetch unique, non-empty cities only
+    $stmtFetchStates = $db->prepare("SELECT * FROM state ");
+    $stmtFetchStates->execute();
+    $states = $stmtFetchStates->get_result()->fetch_all(MYSQLI_ASSOC);
+
+    // Fetch unique, non-empty cities only
+    $stmtFetchCities = $db->prepare("SELECT * FROM cities");
+    $stmtFetchCities->execute();
+    $cities = $stmtFetchCities->get_result()->fetch_all(MYSQLI_ASSOC);
+
+    $db->commit();
+
+} catch (\Throwable $th) {
+    //throw $th;
+}
+
+$e = $result["email_id"];
+
+if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['firmName'])) {
+
+
     $name = $_POST['name'];
-    $fname = $_POST['fname'];
+    $fname = $_POST['firmName'];
     $mobile = $_POST['mobile'];
     $state = $_POST['state'];
-    $query1 = mysqli_query($db, "UPDATE  members set name='$name', firm_name ='$fname' , mobile ='$mobile', city_state ='$state' WHERE email_id ='"  . $e . "'");
-    $query2 = mysqli_query($db, "UPDATE  tender set user='$name', firm_name ='$fname' , mobile ='$mobile' WHERE email ='"  . $e . "'");
+    $city = $_POST['city'];
+    $query1 = mysqli_query($db, "UPDATE  members set name='$name', firm_name ='$fname' , mobile ='$mobile', city_state ='$city',state_code='$state' WHERE email_id ='" . $e . "'");
+    $query2 = mysqli_query($db, "UPDATE  tender set user='$name', firm_name ='$fname' , mobile ='$mobile' WHERE email ='" . $e . "'");
 
     if ($query1 && $query2 > 0) {
-        $msg = "
-        <div class='alert alert-success alert-dismissible fade show' role='alert' style='font-size:16px;' id='goldmessage'>
-        <strong><i class='feather icon-check'></i>Thanks!</strong>Profile has been updated
-        <button type='button' class='close' data-dismiss='alert' aria-label='Close'>
-          <span aria-hidden='true'>&times;</span>
-        </button>
-      </div>
-        ";
+        echo json_encode([
+            "status" => 200,
+            "message" => "Updated User Successfully !Password",
+        ]);
+        exit;
     }
 }
+
+// fetch city by state code with ajax
+if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
+    try {
+
+        $stateCode = $_POST['stateCode'];
+
+        if (empty($stateCode)) {
+            echo json_encode([
+                "status" => 400,
+                "error" => "Invalid state",
+            ]);
+            exit;
+        }
+
+        $db->begin_transaction();
+
+        // Fetch unique, non-empty cities only
+        $stmtFetchCities = $db->prepare("SELECT * FROM cities WHERE state_code = ?");
+        $stmtFetchCities->bind_param("s", $stateCode);
+        $stmtFetchCities->execute();
+        $cities = $stmtFetchCities->get_result()->fetch_all(MYSQLI_ASSOC);
+
+
+        echo json_encode([
+            "status" => 200,
+            "data" => $cities,
+        ]);
+        exit;
+
+    } catch (\Throwable $th) {
+        //throw $th;
+        echo json_encode([
+            "status" => 500,
+            "error" => $th->getMessage(),
+        ]);
+        exit;
+    }
+}
+
 $memberQuery1 = "SELECT name FROM members WHERE email_id='" . $_SESSION["login_register"] . "'";
 $memberData1 = mysqli_query($db, $memberQuery1);
 $member1 = mysqli_fetch_row($memberData1);
@@ -63,6 +135,8 @@ $member1 = mysqli_fetch_row($memberData1);
     <link rel="stylesheet" href="assets/css/plugins/dataTables.bootstrap4.min.css">
 
     <link rel="stylesheet" href="assets/css/style.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 
 <body class="">
@@ -219,13 +293,14 @@ $member1 = mysqli_fetch_row($memberData1);
                         <div class="card-header table-card-header">
 
                             <?php
-                            echo $msg;
+                            if (isset($msg)) {
+                                echo $msg;
+                            }
                             ?>
 
                             <br />
 
-                            <form class="contact-us" method="post" action="" enctype="multipart/form-data"
-                                autocomplete="off">
+                            <form class="contact-us">
                                 <div class=" ">
                                     <!-- Text input-->
                                     <div class="row">
@@ -237,7 +312,8 @@ $member1 = mysqli_fetch_row($memberData1);
                                                     placeholder=" Enter the Mobile No" class="form-control input-md"
                                                     required
                                                     oninvalid="this.setCustomValidity('Please Enter Mobile No')"
-                                                    oninput="setCustomValidity('')" value="<?php echo $row[1]; ?>">
+                                                    oninput="setCustomValidity('')"
+                                                    value="<?php echo $result["name"]; ?>">
                                             </div>
                                         </div>
                                         <div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 col-12">
@@ -247,7 +323,8 @@ $member1 = mysqli_fetch_row($memberData1);
                                                 <input id="fname" name="fname" type="text" placeholder=" Enter Email"
                                                     class="form-control input-md" required
                                                     oninvalid="this.setCustomValidity('Please Enter Email Id')"
-                                                    oninput="setCustomValidity('')" value="<?php echo $row[2]; ?>">
+                                                    oninput="setCustomValidity('')"
+                                                    value="<?php echo $result["firm_name"]; ?>">
                                             </div>
                                         </div>
 
@@ -263,7 +340,8 @@ $member1 = mysqli_fetch_row($memberData1);
                                                 <input id="mobile" name="mobile" type="number"
                                                     placeholder=" Enter the title " class="form-control input-md"
                                                     required oninvalid="this.setCustomValidity('Enter the title')"
-                                                    oninput="setCustomValidity('')" value="<?php echo $row[3]; ?>">
+                                                    oninput="setCustomValidity('')"
+                                                    value="<?php echo $result["mobile"]; ?>">
                                             </div>
 
 
@@ -277,23 +355,37 @@ $member1 = mysqli_fetch_row($memberData1);
                                                     placeholder=" Enter the title " class="form-control input-md"
                                                     required oninvalid="this.setCustomValidity('Enter the title')"
                                                     oninput="setCustomValidity('')" readonly
-                                                    value="<?php echo $row[4]; ?>">
+                                                    value="<?php echo $result["email_id"]; ?>">
                                             </div>
                                         </div>
 
 
-                                        <div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 col-12">
-                                            <div class="form-group">City /State
-                                                <label class="sr-only control-label" for="name">City /State<span
-                                                        class=" ">
-                                                    </span></label>
-                                                <input id="state" name="state" type="text"
-                                                    placeholder=" Enter the title " class="form-control input-md"
-                                                    required oninvalid="this.setCustomValidity('Enter the title')"
-                                                    oninput="setCustomValidity('')" value="<?php echo $row[5]; ?>">
+                                        <div class="col-xl-6 col-lg-6 col-md-4 col-sm-12 col-12">
+                                            <div class="form-group">State*
+                                                <select class="form-control select-state" name="state">
+                                                    <option value="">State</option>
+                                                    <?php foreach ($states as $state) { ?>
+                                                        <option value="<?= $state['state_code'] ?>"
+                                                            <?= $result["state_code"] == $state['state_code'] ? "Selected" : ""; ?>>
+                                                            <?= $state['state_name'] ?>
+                                                        </option>
+                                                    <?php } ?>
+                                                </select>
                                             </div>
+                                        </div>
 
-
+                                        <div class="col-xl-6 col-lg-6 col-md-4 col-sm-12 col-12">
+                                            <div class="form-group">City*
+                                                <select class="form-control select-city" name="city">
+                                                    <option value="">City</option>
+                                                    <?php foreach ($cities as $city) { ?>
+                                                        <option value="<?= $city['city_id'] ?>"
+                                                            <?= $result["city_id"] == $city['city_id'] ? "Selected" : ""; ?>>
+                                                            <?= $city['city_name'] ?>
+                                                        </option>
+                                                    <?php } ?>
+                                                </select>
+                                            </div>
                                         </div>
 
 
@@ -306,8 +398,6 @@ $member1 = mysqli_fetch_row($memberData1);
 
                                         <!-- Button -->
                                         <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
-
-
                                             <button type="submit" class="btn btn-secondary" name="submit" id="submit">
                                                 <i class="feather icon-save"></i>&nbsp; Update Profile
                                             </button>
@@ -341,6 +431,9 @@ $member1 = mysqli_fetch_row($memberData1);
 
 
 
+    <!-- jQuery first -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
     <script src="assets/js/vendor-all.min.js"></script>
     <script src="assets/js/plugins/bootstrap.min.js"></script>
     <script src="assets/js/pcoded.min.js"></script>
@@ -356,11 +449,128 @@ $member1 = mysqli_fetch_row($memberData1);
     <script src="assets/js/plugins/buttons.html5.min.js"></script>
     <script src="assets/js/plugins/buttons.bootstrap4.min.js"></script>
     <script src="assets/js/pages/data-export-custom.js"></script>
+
+
+    <!-- CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+    <!-- Select2 (must come AFTER jQuery) -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+    <!-- Your custom JS -->
     <script>
-    $(document).ready(function() {
-        $("#goldmessage").delay(5000).slideUp(300);
-    });
+        $(document).ready(function () {
+            $("#goldmessage").delay(5000).slideUp(300);
+
+
+            $('.select-state').select2({
+                placeholder: "Select State"
+            });
+
+
+            $('.select-city').select2({
+                placeholder: "Select City"
+            });
+
+            $(document).on("change", ".select-state", async function (e) {
+                let stateCode = $(this).val();
+                await $.ajax({
+                    url: window.location.href,
+                    type: 'POST',
+                    data: { stateCode: stateCode },
+                    dataType: 'json',
+                    success: function (response) {
+                        if (response.status == 200) {
+                            let citySelect = $(".select-city");
+                            citySelect.empty(); // clear old options
+                            citySelect.append('<option value="">Select City</option>');
+                            $.each(response.data, function (index, city) {
+                                citySelect.append(
+                                    `<option value="${city.city_id}">${city.city_name}</option>`
+                                );
+                            });
+                        } else {
+                            Swal.fire("No Data", "No cities found.", "warning");
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        console.error("AJAX Error:", status, error);
+                        console.error("Raw Response:", xhr.responseText);
+                        Swal.fire("Error", "An error occurred while processing your request. Please try again.", "error");
+                    }
+                });
+            });
+
+
+            $(document).on("submit", ".contact-us", async function (e) {
+                e.preventDefault();
+
+                // Get data from input fields
+                let name = $('input[name="name"]').val().trim();
+                let firmName = $('input[name="fname"]').val().trim();
+                let mobile = $('input[name="mobile"]').val().trim();
+                let state = $('select[name="state"]').val().trim();
+                let city = $('select[name="city"]').val().trim();
+
+                // Mobile validation (assuming 10 digits for India)
+                const mobileRegex = /^[0-9]{10}$/;
+                if (!mobileRegex.test(mobile)) {
+                    Swal.fire("Error", "Please enter a valid 10-digit mobile number", "error");
+                    return;
+                }
+
+                // Store original button text and disable button during processing
+                const $submitBtn = $('#submit');
+                const originalBtnText = $submitBtn.html();
+                $submitBtn.prop('disabled', true).html('<i class="feather icon-loader"></i>&nbsp;Updating...');
+
+
+                let formData = {
+                    name: name,
+                    firmName: firmName,
+                    mobile: mobile,
+                    state: state,
+                    city: city,
+                };
+
+                await $.ajax({
+                    url: window.location.href,
+                    type: 'POST',
+                    data: formData,
+                    dataType: 'json',
+                    success: function (response) {
+                        if (response.status == 200) {
+                            // Restore button state
+                            $submitBtn.prop('disabled', false).val(originalBtnText);
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Success!',
+                                text: response.message,
+                                confirmButtonText: 'OK'
+                            }).then(() => {
+                                // Reload the current page
+                                location.reload();
+                            });
+                        } else {
+                            $submitBtn.prop('disabled', false).html(originalBtnText);
+                            Swal.fire("Error", response.error, "error");
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        $('#submit').prop('disabled', false); // Enable button - user needs to complete new reCAPTCHA
+                        console.error("AJAX Error:", status, error);
+                        console.error("Raw Response:", xhr.responseText);
+                        Swal.fire("Error", "An error occurred while processing your request. Please try again.", "error");
+                    }
+                });
+            });
+
+
+
+        });
     </script>
+
+
 
 
 </body>

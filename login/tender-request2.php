@@ -790,7 +790,13 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
     <script type="text/javascript">
         $(document).ready(function () {
             // Initialize the DataTable with buttons
-            var table = $('#basic-btn2').DataTable();
+            var table = $('#basic-btn2').DataTable({
+                pageLength: 100,
+                lengthMenu: [25, 50, 100, 200, 500, 1000], // Custom dropdown options
+                responsive: true,
+                ordering: true,
+                searching: true
+            });
 
             // Fetch the number of entries
             var info = table.page.info();

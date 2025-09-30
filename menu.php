@@ -2,7 +2,7 @@
 <div class="container">
     <div class="header-wrapper">
         <div class="logo">
-            <a href="index.php"><img src="assets/images/logo/logo.png" width="200px"="logo"  alt="quotetender-logo"/></a>
+            <a href="index.php"><img src="https://dvepl.com/assets/images/logo/dvepl-logo.png" ="logo"  alt="quotetender-logo"/></a>
         </div>
         <div class="menu-area">
             <div class="menu">

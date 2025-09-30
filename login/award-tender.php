@@ -633,6 +633,8 @@ if ($resultSection) {
     </section>
 
 
+ <!-- jQuery first -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
 
 
@@ -654,6 +656,12 @@ if ($resultSection) {
 
         <!-- Excel Generate  -->
         <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script> 
+
+        <!-- CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+    <!-- Select2 (must come AFTER jQuery) -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
     <script type="text/javascript">
         $(".recyclebutton").on('click', function () {
@@ -777,8 +785,28 @@ Swal.fire({
 
     <script type="text/javascript">
         $(document).ready(function () {
+
+               $('#department-search').select2({
+                placeholder: "Select Department"
+            });
+            $('#section-search').select2({
+                placeholder: "Select Section"
+            });
+            $('#division-search').select2({
+                placeholder: "Select Division"
+            });
+            $('#sub-division-search').select2({
+                placeholder: "Select Sub Division"
+            });
+
             // Initialize the DataTable with buttons
-            var table = $('#basic-btn3').DataTable();
+            var table = $('#basic-btn3').DataTable({
+                pageLength: 100,
+                lengthMenu: [25, 50, 100, 200, 500, 1000], // Custom dropdown options
+                responsive: true,
+                ordering: true,
+                searching: true
+            });
 
             // Fetch the number of entries
             var info = table.page.info();

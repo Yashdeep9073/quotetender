@@ -18,7 +18,6 @@ putenv('DB_SERVER=localhost');
 putenv('DB_USERNAME=u141530870_dvepltender');
 putenv('DB_PASSWORD=9qoXBkjm*L');
 putenv('DB_NAME=u141530870_dvepltender');
-
 putenv('BASE_URL=https://dvepl.com/quotetender');
 
 ?>
