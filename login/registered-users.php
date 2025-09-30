@@ -22,7 +22,7 @@ try {
     $stmtFetchMembers->execute();
 
     $result = $stmtFetchMembers->get_result()->fetch_all();
-
+    $db->commit();
 
 } catch (\Throwable $th) {
     //throw $th;
