@@ -331,7 +331,7 @@ if (isset($_SESSION["login_user"])) {
 
             <form class="login-form" action="" method="post">
                 <div class=" auth-content">
-                    <img src="assets/images/admin.png" alt="" class="img-fluid">
+                    <img src="https://dvepl.com/assets/images/logo/dvepl-logo.png" alt="" class="img-fluid">
                     <hr />
 
                     <h3 class="mb-4 f-w-400">Signin</h3>
