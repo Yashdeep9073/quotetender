@@ -292,7 +292,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
 
                 <li class="nav-item">
                     <a href="javascript:void(0);" class="nav-link "><span class="pcoded-micon"><i
-                                class="feather icon-layers"></i></span><span class="">Version 1.2.1</span></a>
+                                class="feather icon-layers"></i></span><span class="">Version 1.2.3</span></a>
                 </li>
 
             </ul>
