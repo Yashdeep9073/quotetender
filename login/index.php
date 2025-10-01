@@ -117,9 +117,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['username'])) {
 
         // otpGenerate otpGenerate(_SESSION['login_user_id'], $db, $mail)
 
-        $otpResponse = otpGenerate($adminData[9], $db, $mail);
-        $otp = $otpResponse['otp'];
-        $otpId = base64_encode($otpResponse['otpId']);
+        // $otpResponse = otpGenerate($adminData[9], $db, $mail);
+        // $otp = $otpResponse['otp'];
+        // $otpId = base64_encode($otpResponse['otpId']);
 
         echo json_encode([
             "success" => true,
