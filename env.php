@@ -10,7 +10,6 @@ putenv('SMTP_PORT=465');
 // putenv('DB_USERNAME=root');
 // putenv('DB_PASSWORD=Yash9073');
 // putenv('DB_NAME=quotetender');
-
 // putenv('BASE_URL=localhost/quotetender');
 
 //Server:

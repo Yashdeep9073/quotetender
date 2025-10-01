@@ -206,6 +206,85 @@ if ($resultSection) {
     }
 }
 
+try {
+    
+     // Fetch unique, non-empty cities only
+    $stmtFetchCities = $db->prepare("SELECT * FROM cities ");
+    $stmtFetchCities->execute();
+    $cities = $stmtFetchCities->get_result()->fetch_all(MYSQLI_ASSOC);
+
+
+
+    // Fetch unique, non-empty cities only
+    $stmtFetchStates = $db->prepare("SELECT * FROM state ");
+    $stmtFetchStates->execute();
+    $states = $stmtFetchStates->get_result()->fetch_all(MYSQLI_ASSOC);
+
+    // firms
+    $stmtFetchFirm = $db->prepare("SELECT firm_name FROM members");
+    $stmtFetchFirm->execute();
+    $firms = $stmtFetchFirm->get_result()->fetch_all(MYSQLI_ASSOC);
+
+    // Remove duplicates and empty firm names
+    $unique_firms = [];
+    $seen_firms = [];
+
+    foreach ($firms as $firm) {
+        $firm_name = trim($firm['firm_name']); // Remove whitespace
+
+        // Check if firm_name is not empty and not already seen
+        if (!empty($firm_name) && !in_array($firm_name, $seen_firms)) {
+            $unique_firms[] = ['firm_name' => $firm_name];
+            $seen_firms[] = $firm_name;
+        }
+    }
+
+    $firms = $unique_firms;
+
+} catch (\Throwable $th) {
+    //throw $th;
+}
+
+// fetch city by state code with ajax
+if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
+    try {
+
+        $stateCode = $_POST['stateCode'];
+
+        if (empty($stateCode)) {
+            echo json_encode([
+                "status" => 400,
+                "error" => "Invalid state",
+            ]);
+            exit;
+        }
+
+        $db->begin_transaction();
+
+        // Fetch unique, non-empty cities only
+        $stmtFetchCities = $db->prepare("SELECT * FROM cities WHERE state_code = ?");
+        $stmtFetchCities->bind_param("s", $stateCode);
+        $stmtFetchCities->execute();
+        $cities = $stmtFetchCities->get_result()->fetch_all(MYSQLI_ASSOC);
+
+
+        echo json_encode([
+            "status" => 200,
+            "data" => $cities,
+        ]);
+        exit;
+
+    } catch (\Throwable $th) {
+        //throw $th;
+        echo json_encode([
+            "status" => 500,
+            "error" => $th->getMessage(),
+        ]);
+        exit;
+    }
+}
+
+
 ?>
 
 <!DOCTYPE html>
@@ -452,6 +531,46 @@ if ($resultSection) {
                                             <div class="invalid-feedback">Please select a semester.</div>
                                         </div>
                                     </div>
+
+
+                                      <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="semester">Firm <span class="text-danger">*</span></label>
+                                            <select class="form-control select-firm" name="firm" required>
+                                                <option value="0">All</option>
+                                                <?php foreach ($firms as $firm) { ?>
+                                                    <option value="<?= $firm['firm_name'] ?>">
+                                                        <?= $firm['firm_name'] ?>
+                                                    </option>
+                                                <?php } ?>
+                                            </select>
+                                            <div class="invalid-feedback">Please select a semester.</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="semester">State <span class="text-danger">*</span></label>
+                                            <select class="form-control select-state" name="state" required>
+                                                <option value="0">All</option>
+                                                <?php foreach ($states as $state) { ?>
+                                                    <option value="<?= $state['state_code'] ?>">
+                                                        <?= $state['state_name'] ?>
+                                                    </option>
+                                                <?php } ?>
+                                            </select>
+                                            <div class="invalid-feedback">Please select a semester.</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="semester">City <span class="text-danger">*</span></label>
+                                            <select class="form-control select-city" name="city" required>
+                                                <option value="0">All</option>
+                                            </select>
+                                            <div class="invalid-feedback">Please select a semester.</div>
+                                        </div>
+                                    </div>
+
                                      <!-- Buttons -->
                                      <div class="col-md-6 col-sm-12 d-flex align-items-center mt-3">
                                         <!-- Submit Button -->
@@ -798,6 +917,47 @@ Swal.fire({
             $('#sub-division-search').select2({
                 placeholder: "Select Sub Division"
             });
+
+            $('.select-firm').select2({
+                placeholder: "Select State"
+            });
+            $('.select-state').select2({
+                placeholder: "Select State"
+            });
+            $('.select-city').select2({
+                placeholder: "Select City"
+            });
+
+            
+            $(document).on("change", ".select-state", async function (e) {
+                let stateCode = $(this).val();
+                await $.ajax({
+                    url: window.location.href,
+                    type: 'POST',
+                    data: { stateCode: stateCode },
+                    dataType: 'json',
+                    success: function (response) {
+                        if (response.status == 200) {
+                            let citySelect = $(".select-city");
+                            citySelect.empty(); // clear old options
+                            citySelect.append('<option value="">Select City</option>');
+                            $.each(response.data, function (index, city) {
+                                citySelect.append(
+                                    `<option value="${city.city_id}">${city.city_name}</option>`
+                                );
+                            });
+                        } else {
+                            Swal.fire("No Data", "No cities found.", "warning");
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        console.error("AJAX Error:", status, error);
+                        console.error("Raw Response:", xhr.responseText);
+                        Swal.fire("Error", "An error occurred while processing your request. Please try again.", "error");
+                    }
+                });
+            });
+
 
             // Initialize the DataTable with buttons
             var table = $('#basic-btn3').DataTable({

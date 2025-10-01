@@ -113,6 +113,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['department-search']) |
     MAX(sm.email_id) AS email_id,
     MAX(sm.firm_name) AS firm_name,
     MAX(sm.mobile) AS mobile,
+    MAX(sm.city_state) AS city_state,
+    MAX(sm.state_code) AS state_code,
     ur.tender_no,
     MAX(department.department_name) AS department_name,
     ur.name_of_work,
@@ -127,8 +129,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['department-search']) |
     MAX(se.section_name) AS section_name,
     MAX(sd.subdivision) AS subdivision,
     ur.tentative_cost,
-    sm.city_state,
-    ur.updated_by
+    ur.updated_by,
+    MAX(st.state_name) AS state_name,  -- Get state_name from state table, not members
+    MAX(ct.city_name) AS city_name    -- Use MAX() for consistency
 FROM
     user_tender_requests ur
 LEFT JOIN
@@ -143,6 +146,10 @@ LEFT JOIN
          division dv ON ur.division_id = dv.division_id
 LEFT JOIN
          sub_division sd ON ur.sub_division_id = sd.id
+LEFT JOIN
+         state st ON CONVERT(sm.state_code USING utf8mb4) = CONVERT(st.state_code USING utf8mb4)  -- Fix collation
+LEFT JOIN
+         cities ct ON CAST(sm.city_state AS UNSIGNED) = ct.city_id  -- Convert string to number
 WHERE
     ur.status = 'Allotted' AND ur.delete_tender = '0'
 GROUP BY
@@ -247,15 +254,38 @@ inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_i
     $stmtFetchCities->execute();
     $cities = $stmtFetchCities->get_result()->fetch_all(MYSQLI_ASSOC);
 
-    // echo "<pre>";
-    // print_r($cities);
-    // exit;
+
 
     // Fetch unique, non-empty cities only
     $stmtFetchStates = $db->prepare("SELECT * FROM state ");
     $stmtFetchStates->execute();
     $states = $stmtFetchStates->get_result()->fetch_all(MYSQLI_ASSOC);
 
+    // firms
+    $stmtFetchFirm = $db->prepare("SELECT firm_name FROM members");
+    $stmtFetchFirm->execute();
+    $firms = $stmtFetchFirm->get_result()->fetch_all(MYSQLI_ASSOC);
+
+    // Remove duplicates and empty firm names
+    $unique_firms = [];
+    $seen_firms = [];
+
+    foreach ($firms as $firm) {
+        $firm_name = trim($firm['firm_name']); // Remove whitespace
+
+        // Check if firm_name is not empty and not already seen
+        if (!empty($firm_name) && !in_array($firm_name, $seen_firms)) {
+            $unique_firms[] = ['firm_name' => $firm_name];
+            $seen_firms[] = $firm_name;
+        }
+    }
+
+    $firms = $unique_firms;
+
+
+    // echo "<pre>";
+    // print_r($firms);
+    // exit;
 
 } catch (\Throwable $th) {
     //throw $th;
@@ -509,6 +539,20 @@ inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_i
                                     </div>
                                     <div class="col-md-4">
                                         <div class="form-group">
+                                            <label for="semester">Firm <span class="text-danger">*</span></label>
+                                            <select class="form-control select-firm" name="firm" required>
+                                                <option value="0">All</option>
+                                                <?php foreach ($firms as $firm) { ?>
+                                                    <option value="<?= $firm['firm_name'] ?>">
+                                                        <?= $firm['firm_name'] ?>
+                                                    </option>
+                                                <?php } ?>
+                                            </select>
+                                            <div class="invalid-feedback">Please select a semester.</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
                                             <label for="semester">State <span class="text-danger">*</span></label>
                                             <select class="form-control select-state" name="state" required>
                                                 <option value="0">All</option>
@@ -530,6 +574,7 @@ inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_i
                                             <div class="invalid-feedback">Please select a semester.</div>
                                         </div>
                                     </div>
+
                                     <!-- Buttons -->
                                     <div class="col-md-6 col-sm-12 d-flex align-items-center mt-3">
                                         <!-- Submit Button -->
@@ -615,6 +660,7 @@ inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_i
                                 echo "<th>User</th>";
                                 echo "<th>Email</th>";
                                 echo "<th>Firm</th>";
+                                echo "<th>State</th>";
                                 echo "<th>City</th>";
                                 echo "<th>Mobile</th>";
                                 echo "<th>Tender ID</th>";
@@ -647,7 +693,8 @@ inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_i
                                     echo "<td><span style='color:red;'> " . $row['name'] . " </span></td>";
                                     echo "<td>  <span style='color:green;'>" . $row['email_id'] . " </span></td>";
                                     echo "<td>" . $row['firm_name'] . "</td>";
-                                    echo "<td>" . $row['city_state'] . "</td>";
+                                    echo "<td>" . $row['state_name'] . "</td>";
+                                    echo "<td>" . $row['city_name'] . "</td>";
                                     echo "<td>" . $row['mobile'] . "</td>";
                                     echo "<td>" . $row['tenderID'] . "</td>";
                                     echo "<td>" . $row['reference_code'] . "</td>";
@@ -861,6 +908,9 @@ inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_i
                 placeholder: "Select Sub Division"
             });
 
+            $('.select-firm').select2({
+                placeholder: "Select State"
+            });
             $('.select-state').select2({
                 placeholder: "Select State"
             });
