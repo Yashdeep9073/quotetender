@@ -43,6 +43,7 @@ $query = "SELECT
     ur.tentative_cost, 
     ur.section_id, 
     ur.division_id,
+    ur.additional_files,
     MAX(s.section_name) AS section_name,
     MAX(dv.division_name) AS division_name,
     MAX(sd.subdivision) AS subdivision,
@@ -456,6 +457,9 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                 // foreach ($tenderRequests as $row) {
                                 echo "<tbody>";
                                 while ($row = mysqli_fetch_assoc($result2)) {
+
+
+
                                     echo "<tr class='record'>";
                                     echo "<td>
                                     <div class='custom-control custom-checkbox'>
@@ -488,16 +492,40 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                     $istTime = date('h:i A', $timestamp + 5.5 * 3600);
                                     echo "<td>" . $istDate . "</td>";
                                     echo "<td>" . $istTime . "</td>";
+                                    ?>
 
-                                    echo "<td>" . date_format(date_create($row['sent_at']), "d-m-Y ") . "<br/>" . '<a href="../login/tender/' . $row['file_name'] . '"  target="_blank"/>View file 1 </a> </br> ';
+                                    <td><?= date_format(date_create($row['sent_at']), "d-m-Y ") ?><br />
+                                        <?php if (isset($row['file_name']) && $row['file_name'] == null) { ?>
+                                            <a href="<?= '../login/tender/' . $row['file_name'] ?>" target="_blank">
+                                                View file 1
+                                            </a> </br>
+                                        <?php } ?>
 
-                                    if (!empty($row['file_name2'])) {
-                                        echo '<a href="../login/tender/' . $row['file_name2'] . '" target="_blank"/>View File 2 </a>' . "</td>";
-                                    } else {
-                                        echo "</td>";
-                                    }
+                                        <?php if (isset($row['file_name2']) && $row['file_name2'] == null) { ?>
+                                            <a href="<?= '../login/tender/' . $row['file_name2'] ?>" target="_blank">View
+                                                File 2
+                                            </a>
+                                        <?php } ?>
 
+                                        <?php if (!empty($row['additional_files'])) {
+                                            $extraFiles = json_decode($row['additional_files'], true);
+                                            ?>
+                                            <?php if (is_array($extraFiles)) {
+                                                $count = 1;
+                                                ?>
+                                                <?php foreach ($extraFiles as $index => $filePath) { ?>
+                                                    <a href="<?= '../login/' . $filePath ?>" target="_blank">View
+                                                        File <?= $count ?>
+                                                    </a><br />
+                                                    <?php
+                                                    $count++;
+                                                } ?>
+                                            <?php } ?>
+                                        <?php } ?>
 
+                                    </td>
+
+                                    <?php
                                     $res = $row["id"];
                                     $res = base64_encode($res);
 

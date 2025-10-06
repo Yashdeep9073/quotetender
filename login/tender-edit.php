@@ -3,6 +3,7 @@
 session_start();
 require_once "../vendor/autoload.php";
 require_once "../env.php";
+require_once __DIR__ . "/./utility/fileUploader.php";
 
 
 use PHPMailer\PHPMailer\PHPMailer;
@@ -22,68 +23,79 @@ $en = $_GET["id"];
 
 $d = base64_decode($en);
 
-if (isset($_POST['submit'])) {
+if ($_SERVER['REQUEST_METHOD'] == "POST") {
 
-    //DEBUG
-    // echo"<pre>";
-    // print_r($_POST);
+    try {
+
+        // echo json_encode([
+        //     "status" => 201,
+        //     "success" => "Success",
+
+        // ]);
+        // exit;
+
+        // DEBUG
+        $multiUploadResult = uploadMedia($_FILES['multi_file'], $upload_directory, [
+            // Images
+            'jpg',
+            'jpeg',
+            'png',
+            'gif',
+            'webp',
+            'bmp',
+            'svg',
+            'tiff',
+            'ico',
+            // Documents
+            'pdf',
+            'doc',
+            'docx',
+            'xls',
+            'xlsx',
+            'ppt',
+            'pptx',
+            'txt',
+            'rtf',
+            // Data
+            'csv',
+            // Archives (optional, be cautious with these)
+            // 'zip', 'rar', 'tar', 'gz',
+        ], 2 * 1024 * 1024);
 
 
-    $tender = $_POST['tenderno'];
-    $code = $_POST['code'];
-    $work = $_POST['work'];
-    $tender1 = $_POST['tender'];
-    $dept = $_POST['department'];
+        $mediaUrls = [];
 
-    $section = $_POST['coutrycode'];
-    $division_id = $_POST['statelist'];
-    $sub_division_id = $_POST['city'];
-    $tentative_cost = $_POST['tentative_cost'];
-    $autoEmail = $_POST['autoEmail'];
-
-    $unique_filename1 = $unique_filename2 = null;
-    if (!empty($_FILES["uploaded_file2"]["tmp_name"])) {
-        $file_size2 = $_FILES["uploaded_file2"]["size"];
-        if (isset($file_size2) && $file_size2 < 8 * 1024 * 1024) {
-            $temp_name2 = $_FILES["uploaded_file2"]["tmp_name"];
-            $original_name2 = $_FILES["uploaded_file2"]["name"];
-            $unique_filename2 = uniqid() . '_' . $original_name2;
-            move_uploaded_file($temp_name2, $upload_directory . $unique_filename2);
-            $fileUploaded2 = true;
-        } else {
-            $fileUploaded2 = false;
+        foreach ($multiUploadResult as $result) {
+            if (isset($result['error'])) {
+                // echo "Upload Error: " . $result['error'] . "\n";
+            } else {
+                $mediaUrls[] = $result['filename'];
+            }
         }
-    }
 
-    if (!empty($_FILES["uploaded_file1"]["tmp_name"])) {
-        $file_size1 = $_FILES["uploaded_file1"]["size"];
-        if (isset($file_size1) && $file_size1 < 8 * 1024 * 1024) {
-            $temp_name1 = $_FILES["uploaded_file1"]["tmp_name"];
-            $original_name1 = $_FILES["uploaded_file1"]["name"];
-            $unique_filename1 = uniqid() . '_' . $original_name1;
-            move_uploaded_file($temp_name1, $upload_directory . $unique_filename1);
-            $fileUploaded1 = true;
-        } else {
-            $fileUploaded1 = false;
-        }
-    }
+        $mediaUrlsJson = json_encode($mediaUrls);
 
-    mysqli_select_db($db, DB_NAME);
-    if ($fileUploaded1 == true || $fileUploaded2 == true) {
+
+        $tender = $_POST['tenderno'];
+        $code = $_POST['code'];
+        $work = $_POST['work'];
+        $tender1 = $_POST['tender'];
+        $dept = $_POST['department'];
+
+        $section = $_POST['coutrycode'];
+        $division_id = $_POST['statelist'];
+        $sub_division_id = $_POST['city'];
+        $tentative_cost = $_POST['tentative_cost'];
+        $autoEmail = $_POST['autoEmail'];
+
+
+        mysqli_select_db($db, DB_NAME);
 
         // Delete the old file
         $query = "SELECT user_tender_requests.file_name , user_tender_requests.file_name2,user_tender_requests.tenderID  FROM user_tender_requests WHERE id='" . $d . "'";
         $result = mysqli_query($db, $query);
         $row = mysqli_fetch_row($result);
-        if (!empty($row['0'])) {
-            $old = "tender/" . $row['0']; // Path to the old file
-            unlink($old);
-        }
 
-        if (!empty($row['1'])) {
-            $old = "tender/" . $row['1']; // Path to the old file
-            unlink($old);
-        }
 
         date_default_timezone_set('Asia/Kolkata');
 
@@ -93,7 +105,12 @@ if (isset($_POST['submit'])) {
 
         mysqli_query($db, "UPDATE user_tender_requests set `tender_no` ='$tender', `reference_code`='$code',`tenderID`='$tender1', 
             `tentative_cost`='$tentative_cost', `department_id`='$dept',`section_id`='$section',`sub_division_id`='$sub_division_id',`division_id`='$division_id',`name_of_work`='$work',
-            `file_name`='$unique_filename1',`file_name2`='$unique_filename2',`status`='Sent', `sent_at`='$sent_at' , `auto_quotation`='$autoEmail' WHERE `tenderID`='" . $tender2 . "' ");
+            `file_name`='null',`file_name2`='null',`status`='Sent', `sent_at`='$sent_at' , `auto_quotation`='$autoEmail' WHERE `tenderID`='" . $tender2 . "' ");
+
+        $stmtUpdateMedia = $db->prepare("UPDATE user_tender_requests SET additional_files = ? WHERE tenderID = ?");
+        $stmtUpdateMedia->bind_param("ss", $mediaUrlsJson, $tender2); // "si" means first param is string (JSON), second is integer (ID)
+        $stmtUpdateMedia->execute();
+
 
         //auto quotation 
         $autoEmailQuery = mysqli_query($db, "SELECT `auto_quotation` FROM user_tender_requests WHERE `id`= '" . $d . "' ");
@@ -104,6 +121,7 @@ if (isset($_POST['submit'])) {
         $re = base64_encode($stat);
 
         if ($autoEmailResponse == 1) {
+
             $mail = new PHPMailer(true);
 
             //Enable SMTP debugging.
@@ -142,28 +160,44 @@ if (isset($_POST['submit'])) {
             $mail->FromName = "Quote Tender  ";
             $adminEmail = getenv('SMTP_USER_NAME');
 
-            $mail->addAddress($adminEmail);
+            // $mail->addAddress($adminEmail);
             $mail->IsHTML(true);
 
             // $membersQuery = "SELECT m.email_id,  m.name, ur.file_name, ur.file_name2, ur.tenderID, ur.id FROM user_tender_requests ur 
             // inner join members m on ur.member_id= m.member_id  WHERE ur.id='"  . $d . "'";
 
-            $membersQuery = "SELECT m.email_id,  m.name, ur.file_name, ur.file_name2, ur.tenderID, ur.id FROM user_tender_requests ur 
+            $membersQuery = "SELECT m.email_id,  m.name, ur.file_name, ur.file_name2, ur.tenderID, ur.id ,ur.additional_files FROM user_tender_requests ur 
                     inner join members m on ur.member_id= m.member_id  WHERE ur.auto_quotation = '1' AND ur.tenderID='" . $tender2 . "' ";
             $membersResult = mysqli_query($db, $membersQuery);
+
+
             while ($memberData = mysqli_fetch_row($membersResult)) {
+
+
                 $mail->addAddress($memberData[0], "Recepient Name");
 
 
                 $mail->Subject = "Tender Request Approved";
 
-                // Adding primary attachment
-                $mail->addAttachment($upload_directory . $memberData[2]);
+                $processedFiles = [];
+                if (!empty($memberData['6'])) {
+                    $extraFiles = json_decode($memberData['6'], true);
+                    if (is_array($extraFiles)) {
+                        foreach ($extraFiles as $filePath) {
+                            $mail->addAttachment($filePath);
+                            $processedFiles[] = $filePath; // Store processed file
+                        }
 
-                // Adding secondary attachment if available
-                if (!empty($memberData[3])) {
-                    $mail->addAttachment($upload_directory . $memberData[3]);
+                        // // Send response after processing all files
+                        // echo json_encode([
+                        //     "status" => 400,
+                        //     "error" => "auto mail",
+                        //     "data" => $processedFiles, // All files in array
+                        // ]);
+                        // exit;
+                    }
                 }
+
 
                 // Email body
                 $mail->Body = "
@@ -193,27 +227,34 @@ if (isset($_POST['submit'])) {
 
             }
             if (!$mail->send()) {
+                echo json_encode([
+                    "status" => 400,
+                    "error" => "Mailer Error: " . $mail->ErrorInfo,
 
-                echo "Mailer Error: " . $mail->ErrorInfo;
+                ]);
             }
-
-            echo ("<SCRIPT LANGUAGE='JavaScript'>
-                    window.location.href='tender-request2.php?status=$re';
-                    </SCRIPT>");
         } else {
-            echo ("<SCRIPT LANGUAGE='JavaScript'>
-                    window.location.href='tender-request2.php?status=$re';
-                    </SCRIPT>");
+            echo json_encode([
+                "status" => 201,
+                "success" => "Success",
+
+            ]);
+            exit;
         }
 
+        echo json_encode([
+            "status" => 201,
+            "success" => "Success",
 
-    } else {
-        $msg = "<div class='alert alert-danger alert-dismissible fade show' role='alert' style='font-size:16px;' id='goldmessage'>
-        <strong><i class='feather icon-check'></i>Error !</strong> File size exceeds the limit of 3MB.
-        <button type='button' class='close' data-dismiss='alert' aria-label='Close'>
-          <span aria-hidden='true'>&times;</span>
-        </button>
-      </div>";
+        ]);
+        exit;
+    } catch (\Throwable $th) {
+        echo json_encode([
+            "status" => 500,
+            "error" => $th->getMessage(),
+
+        ]);
+        exit;
     }
 }
 
@@ -319,6 +360,11 @@ $sections = mysqli_query($db, $sectionQuery);
     <link rel="stylesheet" href="assets/css/style.css">
     <script src="https://code.jquery.com/jquery-3.7.1.js"
         integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.js"></script>
     <script>
         function getstate(val) {
             //alert(val);
@@ -499,12 +545,12 @@ $sections = mysqli_query($db, $sectionQuery);
                         ?>
 
                         <div class="card-header table-card-header">
-                            <form class="contact-us" method="post" action="" enctype="multipart/form-data"
+                            <form class="update-price" action="" method="post" enctype="multipart/form-data"
                                 autocomplete="off">
                                 <div class=" ">
                                     <!-- Text input-->
                                     <div class="row">
-                                        <div class="col-xl-6 col-lg-6 col-md-4 col-sm-12 col-12">
+                                        <!-- <div class="col-xl-6 col-lg-6 col-md-4 col-sm-12 col-12">
                                             <div class="form-group">File1*
                                                 <label class="sr-only control-label" for="name">File1*</label>
                                                 <input name="uploaded_file1" type="file" class="form-control input-md"
@@ -517,15 +563,21 @@ $sections = mysqli_query($db, $sectionQuery);
                                                 <input name="uploaded_file2" type="file" class="form-control input-md"
                                                     accept="application/pdf,application/vnd.ms-excel">
                                             </div>
+                                        </div> -->
+                                        <div class="col-xl-6 col-lg-6 col-md-4 col-sm-12 col-12">
+                                            <div class="form-group">Files <span class="text-danger">*</span>
+                                                <input name="multi_file[]" type="file" class="form-control input-md"
+                                                    multiple
+                                                    accept="application/pdf,application/vnd.ms-excel,.csv,.xlsx,.png,.jpeg,.jpg,.webp,.svg">
+                                            </div>
                                         </div>
                                         <div class="col-xl-6 col-lg-6 col-md-4 col-sm-12 col-12">
-                                            <div class="form-group">CA No*
+                                            <div class="form-group">CA No <span class="text-danger">*</span>
                                                 <label class="sr-only control-label" for="name">Firm Name<span
                                                         class=" ">
                                                     </span></label>
                                                 <input id="tenderno" name="tenderno" type="text"
-                                                    placeholder=" Enter CA No *" class="form-control input-md" required
-                                                    value="">
+                                                    placeholder=" Enter CA No *" class="form-control input-md" value="">
                                             </div>
                                         </div>
 
@@ -536,55 +588,50 @@ $sections = mysqli_query($db, $sectionQuery);
                                                         class="text-danger">*</span></label>
                                                 <div class="input-group">
                                                     <input id="code" name="code" type="text" placeholder="Enter Code *"
-                                                        class="form-control" value="<?php echo $requestData[4]; ?>"
-                                                        required>
+                                                        class="form-control" value="<?php echo $requestData[4]; ?>">
                                                     <!-- <button type="button"
                                                         class="btn btn-primary refNumber">Generate</button> -->
                                                 </div>
                                             </div>
                                         </div>
 
-
-
-
                                         <div class="col-xl-6 col-lg-6 col-md-4 col-sm-12 col-12">
-                                            <div class="form-group">Name of Work*
-                                                <label class="sr-only control-label" for="name">Email<span class=" ">
-                                                    </span></label>
-                                                <input id="work" name="work" type="work" class="form-control input-md"
-                                                    required placeholder="Name of the work" value="">
+                                            <div class="form-group">Name of Work <span class="text-danger">*</span>
+
+                                                <input id="work" name="work" type="text" class="form-control input-md"
+                                                    placeholder="Name of the work" value="">
                                             </div>
                                         </div>
 
                                         <div class="col-xl-6 col-lg-6 col-md-4 col-sm-12 col-12">
-                                            <div class="form-group">Tender ID*
+                                            <div class="form-group">Tender ID <span class="text-danger">*</span>
                                                 <label class="sr-only control-label" for="name">Tender ID<span
                                                         class=" ">
                                                     </span></label>
                                                 <input id="tender" name="tender" type="text"
-                                                    class="form-control input-md" required placeholder="Enter tender id"
+                                                    class="form-control input-md" placeholder="Enter tender id"
                                                     value="<?php echo $requestData[2]; ?>">
                                             </div>
                                         </div>
                                         <div class="col-xl-6 col-lg-6 col-md-4 col-sm-12 col-12">
-                                            <div class="form-group">Tentative Cost*
+                                            <div class="form-group">Tentative Cost <span class="text-danger">*</span>
                                                 <label class="sr-only control-label" for="name">Tentative Cost<span
                                                         class=" ">
                                                     </span></label>
                                                 <input id="tentative_cost" name="tentative_cost" type="number" min="0"
-                                                    class="form-control input-md" required
-                                                    placeholder="Enter Tentative Cost" value="">
+                                                    class="form-control input-md" placeholder="Enter Tentative Cost"
+                                                    value="">
                                             </div>
                                         </div>
 
                                         <div class="col-xl-6 col-lg-6 col-md-4 col-sm-12 col-12">
-                                            <div class="form-group">Departments*
+                                            <div class="form-group">Departments <span class="text-danger">*</span>
                                                 <label class="sr-only control-label" for="name">Departments*<span
                                                         class=" ">
                                                     </span></label>
                                                 <?php
 
-                                                echo "<select class='form-control' name='department' required>";
+                                                echo "<select class='form-control' name='department' >";
                                                 while ($row = mysqli_fetch_row($departments)) {
                                                     $selected = $requestData['0'] == $row['1'] ? "selected=''" : '';
 
@@ -596,11 +643,11 @@ $sections = mysqli_query($db, $sectionQuery);
                                         </div>
 
                                         <div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 col-12">
-                                            <div class="form-group"> Section
+                                            <div class="form-group"> Section <span class="text-danger">*</span>
                                                 <label class="sr-only control-label" for="name">Section<span class=" ">
                                                     </span></label>
                                                 <select onChange="getstate(this.value);" name="coutrycode" id="section"
-                                                    class="form-control" required>
+                                                    class="form-control">
                                                     <option value="">Select Section</option>
                                                     <?php
                                                     while ($row = mysqli_fetch_row($sections)) {
@@ -615,7 +662,7 @@ $sections = mysqli_query($db, $sectionQuery);
 
                                         <div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 col-12">
 
-                                            <div class="form-group"> Division
+                                            <div class="form-group"> Division <span class="text-danger">*</span>
                                                 <label class="sr-only control-label" for="name">Section<span class=" ">
                                                     </span></label>
 
@@ -630,7 +677,7 @@ $sections = mysqli_query($db, $sectionQuery);
 
                                         <div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 col-12">
 
-                                            <div class="form-group"> Sub Division
+                                            <div class="form-group"> Sub Division <span class="text-danger">*</span>
 
                                                 <select name="city" id="city" class="form-control">
                                                     <option value="">Select Sub Division</option>
@@ -640,7 +687,8 @@ $sections = mysqli_query($db, $sectionQuery);
 
                                         <div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 col-12">
 
-                                            <div class="form-group"> Send Quotation Auotmatically
+                                            <div class="form-group"> Send Quotation Automatically <span
+                                                    class="text-danger">*</span>
                                                 <select name="autoEmail" id="auto-email" class="form-control">
 
                                                     <option value="">Select</option>
@@ -695,6 +743,106 @@ $sections = mysqli_query($db, $sectionQuery);
     <script src="assets/js/plugins/buttons.bootstrap4.min.js"></script>
     <script src="assets/js/pages/data-export-custom.js"></script>
 
+
+    <script>
+        $(document).ready(function () {
+            $(document).on("submit", ".update-price", async function (e) {
+                e.preventDefault();
+
+                // Get data from input fields
+                let tenderno = $('input[name="tenderno"]').val().trim();
+                let code = $('input[name="code"]').val().trim();
+                let work = $('input[name="work"]').val().trim();
+                let tender = $('input[name="tender"]').val().trim();
+                let tentative_cost = $('input[name="tentative_cost"]').val().trim();
+                let department = $('select[name="department"]').val().trim();
+                let coutrycode = $('select[name="coutrycode"]').val().trim();
+                let statelist = $('select[name="statelist"]').val().trim();
+                let city = $('select[name="city"]').val().trim();
+                let autoEmail = $('select[name="autoEmail"]').val().trim();
+
+                let multi_files = $('input[name="multi_file[]"]')[0].files;
+
+
+                // Basic validation
+                if (!tenderno || !code || !work || !tender || !tentative_cost || !department || !coutrycode || !statelist || !city || !autoEmail) {
+                    Swal.fire("Error", "All fields are required. Please fill out the form completely.", "error");
+                    return;
+                }
+
+                // Store original button text and disable button during processing
+                const $submitBtn = $('#submit');
+                const originalBtnText = $submitBtn.html();
+                $submitBtn.prop('disabled', true).html('<i class="feather icon-loader"></i>&nbsp;Updating...');
+
+
+                let formData = new FormData();
+
+                // Append form fields
+                formData.append('tenderno', tenderno);
+                formData.append('code', code);
+                formData.append('work', work); // Fixed typo
+                formData.append('tender', tender);
+                formData.append('tentative_cost', tentative_cost);
+                formData.append('department', department);
+                formData.append('coutrycode', coutrycode); // Use the correct name
+                formData.append('statelist', statelist); // Use the correct name
+                formData.append('city', city);
+                formData.append('autoEmail', autoEmail);
+
+                // Append files
+                for (let i = 0; i < multi_files.length; i++) {
+                    formData.append('multi_file[]', multi_files[i]);
+                }
+
+                // // Optional: Log the FormData contents (for debugging)
+                // for (let [key, value] of formData.entries()) {
+                //     console.log(key, value);
+                // };
+                // return;
+
+                await $.ajax({
+                    url: window.location.href,
+                    type: 'POST',
+                    data: formData,
+                    dataType: 'json',
+                    // Important: Set these to false to let the browser handle the content-type
+                    processData: false,  // Don't process the data
+                    contentType: false,  // Don't set content type (browser will set it with boundary)
+                    dataType: 'json',
+                    success: function (response) {
+                        if (response.status == 201) {
+
+                            // Restore button state
+                            $submitBtn.prop('disabled', false).val(originalBtnText);
+
+                            // Show success message
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Success!',
+                                text: 'Tender updated successful!',
+                                confirmButtonText: 'OK'
+                            });
+
+                            window.location.href = "tender-request2.php";
+                        } else {
+
+                            $submitBtn.prop('disabled', false).html(originalBtnText);
+                            Swal.fire("Error", response.error, "error");
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        // Reset reCAPTCHA on error
+                        $('#submitBtn').prop('disabled', false); // Enable button - user needs to complete new reCAPTCHA
+
+                        console.error("AJAX Error:", status, error);
+                        console.error("Raw Response:", xhr.responseText);
+                        Swal.fire("Error", "An error occurred while processing your request. Please try again.", "error");
+                    }
+                });
+            });
+        })
+    </script>
 
 
 

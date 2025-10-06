@@ -18,7 +18,20 @@ inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_i
 $adminPermissionResult = mysqli_query($db, $adminPermissionQuery);
 $allowDelete = mysqli_num_rows($adminPermissionResult) > 0 ? true : false;
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['department-search']) || isset($_POST['section-search']) || isset($_POST['division-search']) || isset($_POST['sub-division-search  '])) {
+if (
+    $_SERVER['REQUEST_METHOD'] == 'POST' &&
+    isset($_POST['department-search']) ||
+    isset($_POST['section-search']) ||
+    isset($_POST['division-search']) ||
+    isset($_POST['sub-division-search']) ||
+    isset($_POST['firm']) ||
+    isset($_POST['state']) ||
+    isset($_POST['city'])
+
+) {
+
+
+
     // Initialize $conditions as an empty array
     $conditions = [];
 
@@ -27,12 +40,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['department-search']) |
     $sectionId = filter_input(INPUT_POST, 'section-search', FILTER_SANITIZE_SPECIAL_CHARS);
     $divisionId = filter_input(INPUT_POST, 'division-search', FILTER_SANITIZE_SPECIAL_CHARS);
     $subDivisionId = filter_input(INPUT_POST, 'sub-division-search', FILTER_SANITIZE_SPECIAL_CHARS);
+    $firm = filter_input(INPUT_POST, 'firm', FILTER_SANITIZE_SPECIAL_CHARS);
+    $state = filter_input(INPUT_POST, 'state', FILTER_SANITIZE_SPECIAL_CHARS);
+    $city = filter_input(INPUT_POST, 'city', FILTER_SANITIZE_SPECIAL_CHARS);
+
 
     // Set the sanitized data in the session
     $_SESSION['departmentIdAlotTender'] = $departmentId;
     $_SESSION['sectionIdAlotTender'] = $sectionId;
     $_SESSION['divisionIdAlotTender'] = $divisionId;
-    $_SESSION['subDivisionIdAlotTender'] = $subDivisionId;
+    $_SESSION['firm'] = $firm;
+    $_SESSION['state'] = $state;
+    $_SESSION['city'] = $city;
 
     // Add conditions only if a valid filter is selected
     if ($departmentId && $departmentId !== '0') {
@@ -47,6 +66,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['department-search']) |
     if ($subDivisionId && $subDivisionId !== '0') {
         $conditions[] = "ur.sub_division_id = '$subDivisionId'";
     }
+
+    if ($firm && $firm !== '0') {
+        $conditions[] = "sm.firm_name = '$firm'";
+    }
+
+    if ($state && $state !== '0') {
+        $conditions[] = "st.state_code = '$state'";
+    }
+
+    if ($city && $city !== '0') {
+        $conditions[] = "ct.city_id = '$city'";
+    }
+
 
     // Ensure static conditions are always present
     $conditions[] = "ur.status = 'Allotted'";
@@ -77,8 +109,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['department-search']) |
             MAX(sd.subdivision) AS subdivision,
             ur.tentative_cost,
             sm.city_state,
-            ur.updated_by
-
+            ur.updated_by,
+            MAX(st.state_name) AS state_name,  -- Get state_name from state table, not members
+            MAX(ct.city_name) AS city_name    -- Use MAX() for consistency
         FROM
             user_tender_requests ur
         LEFT JOIN
@@ -93,6 +126,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['department-search']) |
                 division dv ON ur.division_id = dv.division_id
         LEFT JOIN
                 sub_division sd ON ur.sub_division_id = sd.id
+        LEFT JOIN
+            state st ON CONVERT(sm.state_code USING utf8mb4) = CONVERT(st.state_code USING utf8mb4)  -- Fix collation
+        LEFT JOIN   
+            cities ct ON CAST(sm.city_state AS UNSIGNED) = ct.city_id  -- Convert string to number
         $whereClause
         GROUP BY
             ur.id
@@ -125,6 +162,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['department-search']) |
     ur.reference_code,
     ur.tenderID,
     ur.file_name2,
+    ur.additional_files,
     MAX(dv.division_name) AS division_name,
     MAX(se.section_name) AS section_name,
     MAX(sd.subdivision) AS subdivision,
@@ -705,16 +743,45 @@ inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_i
                                     echo "<td>" . $row['subdivision'] . "</td>";
                                     echo "<td style='white-space:pre-wrap; word-wrap:break-word; max-width:20rem;'>" . $row['name_of_work'] . "</td>";
                                     echo "<td style='white-space:pre-wrap; word-wrap:break-word; max-width:20rem;'>" . $row['tentative_cost'] . " rupees /-</td>";
+                                    ?>
 
-                                    echo "<td>" . "<span class='btn btn-success'>" . $row['reminder_days'] . " days</span>" . "<br/><br/>" .
-                                        "Aloted Date :" . "<br/>" . date_format(date_create($row['allotted_at']), "d-m-Y ") . "<br/>" . '<a href="../login/tender/' . $row['file_name'] .
-                                        '"  target="_blank"/>View file 1</a> </br>';
-                                    if (!empty($row['file_name2'])) {
-                                        echo '<a href="../login/tender/' . $row['file_name2'] . '" target="_blank"/>View File 2 </a>' . "</td>";
-                                    } else {
-                                        echo "</td>";
-                                    }
 
+                                    <td><span class='btn btn-success'><?= $row['reminder_days'] ?>days</span>
+                                        <br /><br />
+
+                                        Alloted Date : <br /> <?= date_format(date_create($row['allotted_at']), "d-m-Y ") ?>
+                                        <br />
+                                        <?php if (isset($row['file_name']) && $row['file_name'] == null) { ?>
+                                            <a href="<?= '../login/tender/' . $row['file_name'] ?>" target="_blank">
+                                                View file 1
+                                            </a> </br>
+                                        <?php } ?>
+
+                                        <?php if (isset($row['file_name2']) && $row['file_name2'] == null) { ?>
+                                            <a href="<?= '../login/tender/' . $row['file_name2'] ?>" target="_blank">View
+                                                File 2
+                                            </a>
+                                        <?php } ?>
+
+                                        <?php if (!empty($row['additional_files'])) {
+                                            $extraFiles = json_decode($row['additional_files'], true);
+                                            ?>
+                                            <?php if (is_array($extraFiles)) {
+                                                $count = 1;
+                                                ?>
+                                                <?php foreach ($extraFiles as $index => $filePath) { ?>
+                                                    <a href="<?= '../login/' . $filePath ?>" target="_blank">View
+                                                        File <?= $count ?>
+                                                    </a><br />
+                                                    <?php
+                                                    $count++;
+                                                } ?>
+                                            <?php } ?>
+                                        <?php } ?>
+                                    </td>
+
+
+                                    <?php
                                     echo "<td>" . $row['updated_by'] . "</td>";
 
 
