@@ -14,7 +14,16 @@ inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_i
 $adminPermissionResult = mysqli_query($db, $adminPermissionQuery);
 $allowDelete = mysqli_num_rows($adminPermissionResult) > 0 ? true : false;
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['department-search']) || isset($_POST['section-search']) || isset($_POST['division-search']) || isset($_POST['sub-division-search  '])) {
+if (
+    $_SERVER['REQUEST_METHOD'] == 'POST' &&
+    isset($_POST['department-search']) ||
+    isset($_POST['section-search']) ||
+    isset($_POST['division-search']) ||
+    isset($_POST['sub-division-search  ']) ||
+    isset($_POST['firm']) ||
+    isset($_POST['state']) ||
+    isset($_POST['city'])
+) {
 
     // Initialize $conditions as an empty array
     $conditions = [];
@@ -24,13 +33,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['department-search']) |
     $sectionId = filter_input(INPUT_POST, 'section-search', FILTER_SANITIZE_SPECIAL_CHARS);
     $divisionId = filter_input(INPUT_POST, 'division-search', FILTER_SANITIZE_SPECIAL_CHARS);
     $subDivisionId = filter_input(INPUT_POST, 'sub-division-search', FILTER_SANITIZE_SPECIAL_CHARS);
+    $firm = filter_input(INPUT_POST, 'firm', FILTER_SANITIZE_SPECIAL_CHARS);
+    $state = filter_input(INPUT_POST, 'state', FILTER_SANITIZE_SPECIAL_CHARS);
+    $city = filter_input(INPUT_POST, 'city', FILTER_SANITIZE_SPECIAL_CHARS);
 
-    
     // Set the sanitized data in the session
     $_SESSION['departmentIdAwardTender'] = $departmentId;
     $_SESSION['sectionIdAwardTender'] = $sectionId;
     $_SESSION['divisionIdAwardTender'] = $divisionId;
     $_SESSION['subDivisionIdAwardTender'] = $subDivisionId;
+    $_SESSION['firm'] = $firm;
+    $_SESSION['state'] = $state;
+    $_SESSION['city'] = $city;
+
 
     // Add conditions only if a valid filter is selected
     if ($departmentId && $departmentId !== '0') {
@@ -44,6 +59,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['department-search']) |
     }
     if ($subDivisionId && $subDivisionId !== '0') {
         $conditions[] = "ur.sub_division_id = '$subDivisionId'";
+    }
+
+    if ($firm && $firm !== '0') {
+        $conditions[] = "sm.firm_name = '$firm'";
+    }
+
+    if ($state && $state !== '0') {
+        $conditions[] = "st.state_code = '$state'";
+    }
+
+    if ($city && $city !== '0') {
+        $conditions[] = "ct.city_id = '$city'";
     }
 
     // Ensure static conditions are always present
@@ -69,9 +96,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['department-search']) |
     sd.subdivision,
     ur.tenderID,
     ur.remark,
-    ur.reference_code
-
-
+    ur.reference_code,
+    MAX(st.state_name) AS state_name,  -- Get state_name from state table, not members
+    MAX(ct.city_name) AS city_name    -- Use MAX() for consistency
 FROM 
     user_tender_requests ur 
 LEFT JOIN
@@ -86,6 +113,10 @@ LEFT JOIN
          division dv ON ur.division_id = dv.division_id
 LEFT JOIN
          sub_division sd ON ur.sub_division_id = sd.id
+LEFT JOIN
+        state st ON CONVERT(sm.state_code USING utf8mb4) = CONVERT(st.state_code USING utf8mb4)  -- Fix collation
+LEFT JOIN   
+        cities ct ON CAST(sm.city_state AS UNSIGNED) = ct.city_id  -- Convert string to number
 $whereClause
 GROUP BY 
     ur.id, 
@@ -131,7 +162,9 @@ ORDER BY
     sd.subdivision,
     ur.tenderID,
     ur.remark,
-    ur.reference_code
+    ur.reference_code,
+    MAX(st.state_name) AS state_name,  -- Get state_name from state table, not members
+    MAX(ct.city_name) AS city_name    -- Use MAX() for consistency
 
 FROM 
     user_tender_requests ur 
@@ -147,6 +180,10 @@ LEFT JOIN
          division dv ON ur.division_id = dv.division_id
 LEFT JOIN
          sub_division sd ON ur.sub_division_id = sd.id
+LEFT JOIN
+        state st ON CONVERT(sm.state_code USING utf8mb4) = CONVERT(st.state_code USING utf8mb4)  -- Fix collation
+LEFT JOIN   
+        cities ct ON CAST(sm.city_state AS UNSIGNED) = ct.city_id  -- Convert string to number
 WHERE 
     ur.remark = 'accepted' AND ur.delete_tender = '0'
 GROUP BY 
@@ -180,7 +217,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
     unset($_SESSION['sectionIdAwardTender']);
     unset($_SESSION['divisionIdAwardTender']);
     unset($_SESSION['subDivisionIdAwardTender']);
-    
+
 }
 
 //fecth Department
@@ -207,8 +244,8 @@ if ($resultSection) {
 }
 
 try {
-    
-     // Fetch unique, non-empty cities only
+
+    // Fetch unique, non-empty cities only
     $stmtFetchCities = $db->prepare("SELECT * FROM cities ");
     $stmtFetchCities->execute();
     $cities = $stmtFetchCities->get_result()->fetch_all(MYSQLI_ASSOC);
@@ -304,7 +341,7 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
     <link rel="shortcut icon" href="../assets/images/x-icon.png" type="image/x-icon">
 
     <link rel="stylesheet" href="assets/css/plugins/dataTables.bootstrap4.min.css">
- <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link rel="stylesheet" href="assets/css/style.css">
     <style>
         .dt-buttons {
@@ -472,13 +509,11 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
                                     <div class="col-md-4">
                                         <div class="form-group">
                                             <label for="faculty">Department <span class="text-danger">*</span></label>
-                                            <select class="form-control" name="department-search" id="department-search">
+                                            <select class="form-control" name="department-search"
+                                                id="department-search">
                                                 <option value="0">All</option>
                                                 <?php foreach ($departments as $department) { ?>
-                                                    <option value="<?php echo $department['department_id']; ?>" 
-                                                        <?php 
-                                                            echo isset($_SESSION['departmentId']) && $_SESSION['departmentId'] == $department['department_id'] ? 'selected' : ''; ?>
-                                                            >
+                                                    <option value="<?php echo $department['department_id']; ?>" <?php echo isset($_SESSION['departmentId']) && $_SESSION['departmentId'] == $department['department_id'] ? 'selected' : ''; ?>>
                                                         <?php echo $department['department_name']; ?>
                                                     </option>
                                                 <?php } ?>
@@ -492,8 +527,7 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
                                             <select class="form-control" name="section-search" id="section-search">
                                                 <option value="0">All</option>
                                                 <?php foreach ($sections as $section) { ?>
-                                                    <option value="<?php echo $section['section_id']; ?>" 
-                                                        <?php echo isset($_SESSION['sectionId']) && $_SESSION['sectionId'] == $section['section_id'] ? 'selected' : ''; ?>>
+                                                    <option value="<?php echo $section['section_id']; ?>" <?php echo isset($_SESSION['sectionId']) && $_SESSION['sectionId'] == $section['section_id'] ? 'selected' : ''; ?>>
                                                         <?php echo $section['section_name']; ?>
                                                     </option>
                                                 <?php } ?>
@@ -507,8 +541,7 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
                                             <select class="form-control" name="division-search" id="division-search">
                                                 <option value="0">All</option>
                                                 <?php foreach ($divisions as $division) { ?>
-                                                    <option value="<?php echo $division['division_id']; ?>" 
-                                                        <?php echo isset($_SESSION['divisionId']) && $_SESSION['divisionId'] == $division['division_id'] ? 'selected' : ''; ?>>
+                                                    <option value="<?php echo $division['division_id']; ?>" <?php echo isset($_SESSION['divisionId']) && $_SESSION['divisionId'] == $division['division_id'] ? 'selected' : ''; ?>>
                                                         <?php echo $division['division_name']; ?>
                                                     </option>
                                                 <?php } ?>
@@ -518,12 +551,13 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
                                     </div>
                                     <div class="col-md-4">
                                         <div class="form-group">
-                                            <label for="semester">Sub Division <span class="text-danger">*</span></label>
-                                            <select class="form-control" name="sub-division-search" id="sub-division-search" required>
+                                            <label for="semester">Sub Division <span
+                                                    class="text-danger">*</span></label>
+                                            <select class="form-control" name="sub-division-search"
+                                                id="sub-division-search" required>
                                                 <option value="0">All</option>
                                                 <?php foreach ($subDivisions as $subDivision) { ?>
-                                                    <option value="<?php echo $subDivision['id']; ?>" 
-                                                        <?php echo isset($_SESSION['subDivisionId']) && $_SESSION['subDivisionId'] == $subDivision['id'] ? 'selected' : ''; ?>>
+                                                    <option value="<?php echo $subDivision['id']; ?>" <?php echo isset($_SESSION['subDivisionId']) && $_SESSION['subDivisionId'] == $subDivision['id'] ? 'selected' : ''; ?>>
                                                         <?php echo $subDivision['name']; ?>
                                                     </option>
                                                 <?php } ?>
@@ -533,7 +567,7 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
                                     </div>
 
 
-                                      <div class="col-md-4">
+                                    <div class="col-md-4">
                                         <div class="form-group">
                                             <label for="semester">Firm <span class="text-danger">*</span></label>
                                             <select class="form-control select-firm" name="firm" required>
@@ -571,15 +605,16 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
                                         </div>
                                     </div>
 
-                                     <!-- Buttons -->
-                                     <div class="col-md-6 col-sm-12 d-flex align-items-center mt-3">
+                                    <!-- Buttons -->
+                                    <div class="col-md-6 col-sm-12 d-flex align-items-center mt-3">
                                         <!-- Submit Button -->
                                         <button type="submit" class="btn btn-primary btn-md d-flex align-items-center">
                                             <i class="fas fa-search" style="margin-right: 8px;"></i> Search
                                         </button>
                                         &nbsp;
                                         <!-- Reset Button -->
-                                        <button type="reset" class="btn btn-primary btn-md d-flex align-items-center" id="filterResetButton">
+                                        <button type="reset" class="btn btn-primary btn-md d-flex align-items-center"
+                                            id="filterResetButton">
                                             <i class="fas fa-undo" style="margin-right: 8px;"></i> Reset
                                         </button>
                                     </div>
@@ -633,16 +668,17 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
                                 <a href='#' id='recycle_records' class='btn btn-danger me-3 rounded-sm'> <i class='feather icon-trash'></i>  &nbsp;
                                 Move to Bin</a>&nbsp&nbsp&nbsp&nbsp
                                 ";
-                                }?>
+                                } ?>
                                 <div class="dt-buttons btn-group">
-                                <button class="btn btn-secondary buttons-excel buttons-html5 btn-primary rounded-sm"
+                                    <button class="btn btn-secondary buttons-excel buttons-html5 btn-primary rounded-sm"
                                         tabindex="0" aria-controls="basic-btn2" type="button"
                                         onclick="exportTableToExcel()" title="Export to Excel"><span><i
                                                 class="fas fa-file-excel"></i>
                                             Excel</span></button>
                                     <button class="btn btn-secondary buttons-csv buttons-html5 btn-primary rounded-sm"
-                                        tabindex="0" aria-controls="basic-btn2" type="button" onclick="exportTableToCSV()"
-                                        title="Export to CSV"><span><i class="fas fa-file-csv"></i> CSV</span></button>
+                                        tabindex="0" aria-controls="basic-btn2" type="button"
+                                        onclick="exportTableToCSV()" title="Export to CSV"><span><i
+                                                class="fas fa-file-csv"></i> CSV</span></button>
                                     <button class="btn btn-secondary buttons-copy buttons-html5 btn-primary rounded-sm"
                                         tabindex="0" aria-controls="basic-btn2" type="button"
                                         title="Copy to clipboard"><span><i class="fas fa-copy"></i> Copy</span></button>
@@ -752,7 +788,7 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
     </section>
 
 
- <!-- jQuery first -->
+    <!-- jQuery first -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
 
@@ -773,10 +809,10 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
     <script src="assets/js/plugins/buttons.bootstrap4.min.js"></script>
     <script src="assets/js/pages/data-export-custom.js"></script>
 
-        <!-- Excel Generate  -->
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script> 
+    <!-- Excel Generate  -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
-        <!-- CSS -->
+    <!-- CSS -->
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 
     <!-- Select2 (must come AFTER jQuery) -->
@@ -791,7 +827,7 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
 
             var info = 'id=' + del_id;
             console.log(`Data : ${info}`);
-Swal.fire({
+            Swal.fire({
                 title: "Are you sure?",
                 text: "You won't be able to revert this Record!",
                 icon: "warning",
@@ -852,7 +888,7 @@ Swal.fire({
             });
             // console.log(`TenderId - ${requestIDs}`);
             if (requestIDs.length <= 0) {
-                   Swal.fire({
+                Swal.fire({
                     icon: "error",
                     title: "Oops...",
                     text: "Please select records!",
@@ -861,7 +897,7 @@ Swal.fire({
                 return;
             } else {
 
-                 Swal.fire({
+                Swal.fire({
                     title: "Are you sure?",
                     text: "You won't be able to revert " + (requestIDs.length > 1 ? "these" : "this") + " Record" + (requestIDs.length > 1 ? "s" : "") + "!",
                     icon: "warning",
@@ -872,28 +908,28 @@ Swal.fire({
                     cancelButtonText: "Cancel"
                 }).then((result) => {
                     if (result.isConfirmed) {
-                         var selected_values = requestIDs.join(",");
-                    $.ajax({
-                        type: "POST",
-                        url: "recycleuser.php",
-                        cache: false,
-                        data: 'award_request_ids=' + selected_values,
-                        success: function () {
-                            $(".request_checkbox:checked").each(function () {
-                                $(this).closest(".record").animate({
-                                    backgroundColor: "#FF3"
-                                }, "fast").animate({
-                                    opacity: "hide"
-                                }, "slow", function () {
-                                    $(this).remove();
+                        var selected_values = requestIDs.join(",");
+                        $.ajax({
+                            type: "POST",
+                            url: "recycleuser.php",
+                            cache: false,
+                            data: 'award_request_ids=' + selected_values,
+                            success: function () {
+                                $(".request_checkbox:checked").each(function () {
+                                    $(this).closest(".record").animate({
+                                        backgroundColor: "#FF3"
+                                    }, "fast").animate({
+                                        opacity: "hide"
+                                    }, "slow", function () {
+                                        $(this).remove();
+                                    });
                                 });
-                            });
-                            setTimeout(function () {
-                                window.location.reload();
-                            },
-                                2000);
-                        }
-                    });
+                                setTimeout(function () {
+                                    window.location.reload();
+                                },
+                                    2000);
+                            }
+                        });
                     }
                 })
 
@@ -905,7 +941,7 @@ Swal.fire({
     <script type="text/javascript">
         $(document).ready(function () {
 
-               $('#department-search').select2({
+            $('#department-search').select2({
                 placeholder: "Select Department"
             });
             $('#section-search').select2({
@@ -928,7 +964,7 @@ Swal.fire({
                 placeholder: "Select City"
             });
 
-            
+
             $(document).on("change", ".select-state", async function (e) {
                 let stateCode = $(this).val();
                 await $.ajax({
@@ -974,11 +1010,11 @@ Swal.fire({
 
             // Display the number of entries
             $('#category').text(totalEntries);
-            
+
         });
     </script>
 
-<script>
+    <script>
         $(document).ready(function () {
             $('#section-search').on('change', function () {
                 let sectionId = $('#section-search').val();
@@ -1060,7 +1096,7 @@ Swal.fire({
             }
 
             if (divisionId) {
-                
+
                 console.log("Division ID:", divisionId);
                 $.ajax({
                     url: 'fetch-division-data-sent-tender.php',
@@ -1078,7 +1114,7 @@ Swal.fire({
                                 let divisionName = response.divisionName[index];
                                 $('#division-search').append(new Option(divisionName, id));
                             });
-                             // Select the fetched division
+                            // Select the fetched division
                             $('#division-search').val(divisionId);
 
                         } else {
@@ -1111,7 +1147,7 @@ Swal.fire({
                                 let subDivisionName = response.subDivisionName[index];
                                 $('#sub-division-search').append(new Option(subDivisionName, id));
                             });
-                             // Select the fetched division
+                            // Select the fetched division
                             $('#sub-division-search').val(subDivisionId);
 
                         } else {
@@ -1125,8 +1161,8 @@ Swal.fire({
                 // $('#sub-division-search').val(subDivisionId);
             }
 
-                // Reset Filter
-                $('#filterResetButton').click(function () {
+            // Reset Filter
+            $('#filterResetButton').click(function () {
                 sessionStorage.clear();
                 location.reload();
             });
@@ -1151,7 +1187,7 @@ Swal.fire({
         }
     </script>
 
-<script>
+    <script>
         function printTable() {
             // Clone the table to avoid altering the original
             const tableClone = document.getElementById("basic-btn3").cloneNode(true);
@@ -1248,7 +1284,7 @@ Swal.fire({
         }
     </script>
 
-<script>
+    <script>
         function exportTableToExcel(tableId, filename = 'table.xlsx') {
             const table = document.getElementById("basic-btn3");
             const wb = XLSX.utils.table_to_book(table, { sheet: "Sheet1" });

@@ -1,5 +1,6 @@
 <?php
 session_start();
+require_once "../env.php";
 
 require_once "../vendor/autoload.php";
 
@@ -22,6 +23,9 @@ $query = "SELECT * FROM tender WHERE email='" . $_SESSION["login_register"] . "'
 
 $result = mysqli_query($db, $query);
 $row = mysqli_fetch_row($result);
+
+// print_r($row['2']);
+// exit;
 $user = $row['2'];
 $en = $_GET["id"];
 $d = base64_decode($en);
@@ -62,7 +66,7 @@ if (isset($_POST['submit'])) {
 
         //Set SMTP host name                      
 
-          $mail->Host = "smtp.hostinger.com";
+          $mail->Host = getenv('SMTP_HOST');
 
                 //Set this to true if SMTP host requires authentication to send email
 
@@ -70,9 +74,10 @@ if (isset($_POST['submit'])) {
 
                 //Provide username and password
 
-                $mail->Username = "info@quotetender.in";
+             
+            $mail->Username = getenv('SMTP_USER_NAME');
 
-                $mail->Password = "Zxcv@123";
+            $mail->Password = getenv('SMTP_PASSCODE');
 
                 //If SMTP requires TLS encryption then set it
 
@@ -80,9 +85,9 @@ if (isset($_POST['submit'])) {
 
                 //Set TCP port to connect to
 
-                $mail->Port = 465;
+                   $mail->Port = getenv('SMTP_PORT');
 
-                $mail->From = "info@quotetender.in";
+            $mail->From = getenv('SMTP_USER_NAME');
 
         $mail->FromName = "Award Tender  ";
         $email = "vibrantick@gmail.com";
