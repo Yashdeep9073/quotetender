@@ -28,8 +28,10 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
     try {
 
         // echo json_encode([
-        //     "status" => 201,
-        //     "success" => "Success",
+        //     "status" => 400,
+        //     "error" => "Success",
+        //     "data" => $_POST,
+        //     "files" => $_FILES,
 
         // ]);
         // exit;
@@ -430,6 +432,24 @@ $sections = mysqli_query($db, $sectionQuery);
 
     </script>
 
+    <style>
+        .file-input-wrapper {
+            position: relative;
+            margin-bottom: 10px;
+        }
+
+        .remove-file-btn {
+            position: absolute;
+            right: 5px;
+            top: 5px;
+            padding: 2px 8px;
+            font-size: 0.8rem;
+        }
+
+        .add-file-btn {
+            margin-top: 10px;
+        }
+    </style>
 
 </head>
 
@@ -565,10 +585,22 @@ $sections = mysqli_query($db, $sectionQuery);
                                             </div>
                                         </div> -->
                                         <div class="col-xl-6 col-lg-6 col-md-4 col-sm-12 col-12">
-                                            <div class="form-group">Files <span class="text-danger">*</span>
-                                                <input name="multi_file[]" type="file" class="form-control input-md"
-                                                    multiple
-                                                    accept="application/pdf,application/vnd.ms-excel,.csv,.xlsx,.png,.jpeg,.jpg,.webp,.svg">
+                                            <div class="form-group">
+                                                <label>Files <span class="text-danger">*</span></label>
+
+                                                <div id="files-container">
+                                                    <!-- First file input -->
+                                                    <div class="file-input-wrapper">
+                                                        <input name="multi_file[]" type="file"
+                                                            class="form-control input-md file-input"
+                                                            accept="application/pdf,application/vnd.ms-excel,.csv,.xlsx,.png,.jpeg,.jpg,.webp,.svg">
+                                                    </div>
+                                                </div>
+
+                                                <!-- Add file button -->
+                                                <button type="button" class="btn btn-sm btn-success mt-2 add-file-btn">
+                                                    <i class="fas fa-plus"></i> Add File
+                                                </button>
                                             </div>
                                         </div>
                                         <div class="col-xl-6 col-lg-6 col-md-4 col-sm-12 col-12">
@@ -746,6 +778,58 @@ $sections = mysqli_query($db, $sectionQuery);
 
     <script>
         $(document).ready(function () {
+
+            let fileInputCount = 1;
+            const maxFiles = 10;
+
+            $('.add-file-btn').click(function () {
+                if (fileInputCount < maxFiles) {
+                    fileInputCount++;
+
+                    const newFileInput = `
+            <div class="file-input-wrapper mt-2">
+                <input name="multi_file[]" type="file" class="form-control input-md file-input"
+                    accept="application/pdf,application/vnd.ms-excel,.csv,.xlsx,.png,.jpeg,.jpg,.webp,.svg">
+                <button type="button" class="btn btn-sm btn-danger remove-file-btn mt-1 ms-1">
+                    <i class="fas fa-times"></i> Remove
+                </button>
+            </div>
+        `;
+
+                    $('#files-container').append(newFileInput);
+                } else {
+                    Swal.fire("Error", `Maximum ${maxFiles} files allowed!`, "error");
+                }
+            });
+
+            $(document).on('click', '.remove-file-btn', function () {
+                $(this).closest('.file-input-wrapper').remove();
+                fileInputCount--;
+            });
+
+            // File type validation
+            $(document).on('change', '.file-input', function () {
+                const file = this.files[0];
+                if (file) {
+                    const allowedTypes = [
+                        'application/pdf',
+                        'application/vnd.ms-excel',
+                        'text/csv',
+                        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                        'image/png',
+                        'image/jpeg',
+                        'image/jpg',
+                        'image/webp',
+                        'image/svg+xml'
+                    ];
+
+                    if (!allowedTypes.includes(file.type)) {
+                        Swal.fire("Error", `Invalid file type. Please select a valid file.`, "error");
+                        $(this).val(''); // Clear the input
+                    }
+                }
+            });
+
             $(document).on("submit", ".update-price", async function (e) {
                 e.preventDefault();
 
@@ -761,8 +845,19 @@ $sections = mysqli_query($db, $sectionQuery);
                 let city = $('select[name="city"]').val().trim();
                 let autoEmail = $('select[name="autoEmail"]').val().trim();
 
-                let multi_files = $('input[name="multi_file[]"]')[0].files;
+                // Get all file inputs
+                let allFileInputs = $('input[name="multi_file[]"]');
+                let filesArray = [];
 
+
+                // Collect all files from all file inputs
+                allFileInputs.each(function () {
+                    if (this.files.length > 0) {
+                        for (let j = 0; j < this.files.length; j++) {
+                            filesArray.push(this.files[j]);
+                        }
+                    }
+                });
 
                 // Basic validation
                 if (!tenderno || !code || !work || !tender || !tentative_cost || !department || !coutrycode || !statelist || !city || !autoEmail) {
@@ -790,16 +885,15 @@ $sections = mysqli_query($db, $sectionQuery);
                 formData.append('city', city);
                 formData.append('autoEmail', autoEmail);
 
-                // Append files
-                for (let i = 0; i < multi_files.length; i++) {
-                    formData.append('multi_file[]', multi_files[i]);
+                // Append all files
+                for (let i = 0; i < filesArray.length; i++) {
+                    formData.append('multi_file[]', filesArray[i]);
                 }
 
-                // // Optional: Log the FormData contents (for debugging)
+                // Optional: Log the FormData contents (for debugging)
                 // for (let [key, value] of formData.entries()) {
                 //     console.log(key, value);
                 // };
-                // return;
 
                 await $.ajax({
                     url: window.location.href,

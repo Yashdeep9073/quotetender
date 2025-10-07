@@ -1,0 +1,42 @@
+{
+  "status": 400,
+  "error": "Success",
+  "data": {
+    "tenderno": "CA123123",
+    "code": "REF-20250917-00012",
+    "work": "Yashdeep",
+    "tender": "2027_1",
+    "tentative_cost": "78",
+    "department": "38",
+    "coutrycode": "51",
+    "statelist": "15",
+    "city": "5",
+    "autoEmail": "1"
+  },
+  "files": {
+    "multi_file": {
+      "name": [
+        "bulk_product_upload_template__5__68e3c46295687_68e4ae7fd83ce.xlsx",
+        "google.png",
+        "product-two-img3 (1).png"
+      ],
+      "full_path": [
+        "bulk_product_upload_template__5__68e3c46295687_68e4ae7fd83ce.xlsx",
+        "google.png",
+        "product-two-img3 (1).png"
+      ],
+      "type": [
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "image/png",
+        "image/png"
+      ],
+      "tmp_name": [
+        "C:\\Users\\LENOVO INDIA\\AppData\\Local\\Temp\\phpD3E5.tmp",
+        "C:\\Users\\LENOVO INDIA\\AppData\\Local\\Temp\\phpD3E6.tmp",
+        "C:\\Users\\LENOVO INDIA\\AppData\\Local\\Temp\\phpD3E7.tmp"
+      ],
+      "error": [0, 0, 0],
+      "size": [13739, 946, 3887]
+    }
+  }
+}
