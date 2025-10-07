@@ -32,21 +32,29 @@ $allowedAction = !in_array('All', $userPermissions2) && in_array('Update Tenders
     (!in_array('All', $userPermissions2) && in_array('View Tenders', $userPermissions2) ? 'view' : 'all');
 
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['department-search']) || isset($_POST['section-search']) || isset($_POST['division-search']) || isset($_POST['sub-division-search  '])) {
-    // Initialize $conditions as an empty array
+if (
+    $_SERVER['REQUEST_METHOD'] == 'GET' &&
+    isset($_GET['department-search']) ||
+    isset($_GET['section-search']) ||
+    isset($_GET['division-search']) ||
+    isset($_GET['sub-division-search']) ||
+    isset($_GET['firm']) ||
+    isset($_GET['state']) ||
+    isset($_GET['city'])
+
+) {    // Initialize $conditions as an empty array
     $conditions = [];
 
     // Sanitize inputs
-    $departmentId = filter_input(INPUT_POST, 'department-search', FILTER_SANITIZE_SPECIAL_CHARS);
-    $sectionId = filter_input(INPUT_POST, 'section-search', FILTER_SANITIZE_SPECIAL_CHARS);
-    $divisionId = filter_input(INPUT_POST, 'division-search', FILTER_SANITIZE_SPECIAL_CHARS);
-    $subDivisionId = filter_input(INPUT_POST, 'sub-division-search', FILTER_SANITIZE_SPECIAL_CHARS);
+    $departmentId = filter_input(INPUT_GET, 'department-search', FILTER_SANITIZE_SPECIAL_CHARS);
+    $sectionId = filter_input(INPUT_GET, 'section-search', FILTER_SANITIZE_SPECIAL_CHARS);
+    $divisionId = filter_input(INPUT_GET, 'division-search', FILTER_SANITIZE_SPECIAL_CHARS);
+    $subDivisionId = filter_input(INPUT_GET, 'sub-division-search', FILTER_SANITIZE_SPECIAL_CHARS);
+    $firm = filter_input(INPUT_GET, 'firm', FILTER_SANITIZE_SPECIAL_CHARS);
+    $state = filter_input(INPUT_GET, 'state', FILTER_SANITIZE_SPECIAL_CHARS);
+    $city = filter_input(INPUT_GET, 'city', FILTER_SANITIZE_SPECIAL_CHARS);
 
-    // Set the sanitized data in the session
-    $_SESSION['departmentIdSentTender'] = $departmentId;
-    $_SESSION['sectionIdSentTender'] = $sectionId;
-    $_SESSION['divisionIdSentTender'] = $divisionId;
-    $_SESSION['subDivisionIdSentTender'] = $subDivisionId;
+
 
     // Add conditions only if a valid filter is selected
     if ($departmentId && $departmentId !== '0') {
@@ -60,6 +68,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['department-search']) |
     }
     if ($subDivisionId && $subDivisionId !== '0') {
         $conditions[] = "ur.sub_division_id = '$subDivisionId'";
+    }
+
+    if ($firm && $firm !== '0') {
+        $conditions[] = "m.firm_name = '$firm'";
+    }
+
+    if ($state && $state !== '0') {
+        $conditions[] = "st.state_code = '$state'";
+    }
+
+    if ($city && $city !== '0') {
+        $conditions[] = "ct.city_id = '$city'";
     }
 
     // Construct the WHERE clause
@@ -85,7 +105,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['department-search']) |
         ur.tender_no, 
         s.*, 
         dv.*, 
-        sd.*
+        sd.*,
+         st.*, 
+        ct.*  
     FROM 
         user_tender_requests ur
     INNER JOIN 
@@ -98,7 +120,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['department-search']) |
         division dv ON ur.division_id = dv.division_id
     LEFT JOIN
         sub_division sd ON ur.sub_division_id = sd.id
-    INNER JOIN 
+ LEFT JOIN
+        state st ON CONVERT(m.state_code USING utf8mb4) = CONVERT(st.state_code USING utf8mb4)
+    LEFT JOIN   
+        cities ct ON CAST(m.city_state AS UNSIGNED) = ct.city_id    INNER JOIN 
         (
             SELECT MIN(id) AS min_id
             FROM user_tender_requests sent
@@ -122,7 +147,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['department-search']) |
 } else {
     // Initialize the row number variable
     mysqli_query($db, "SET @row_number = 0;");
-    $queryMain = "
+   $queryMain = "
     SELECT 
         ROW_NUMBER() OVER (ORDER BY ur.created_at) AS sno,
         ur.id as t_id, 
@@ -131,6 +156,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['department-search']) |
         m.firm_name, 
         m.mobile, 
         m.email_id, 
+        m.state_code,  -- Include state code from members table
+        m.city_state,  -- Include city state from members table
         department.department_name, 
         ur.due_date, 
         ur.file_name, 
@@ -142,7 +169,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['department-search']) |
         ur.tender_no, 
         s.*, 
         dv.*, 
-        sd.*
+        sd.*,
+        st.*,  -- Select state name
+        ct.*   -- Select city name
     FROM 
         user_tender_requests ur
     INNER JOIN 
@@ -155,6 +184,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['department-search']) |
         division dv ON ur.division_id = dv.division_id
     LEFT JOIN
         sub_division sd ON ur.sub_division_id = sd.id
+    LEFT JOIN
+        state st ON CONVERT(m.state_code USING utf8mb4) = CONVERT(st.state_code USING utf8mb4)
+    LEFT JOIN   
+        cities ct ON CAST(m.city_state AS UNSIGNED) = ct.city_id
     INNER JOIN 
         (
             SELECT MIN(id) AS min_id
@@ -169,24 +202,46 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['department-search']) |
             GROUP BY sent.tenderID
         ) AS unique_sent_only ON ur.id = unique_sent_only.min_id
     $whereClause
-    ORDER BY ur.created_at ASC;
+    ORDER BY ur.created_at ASC
 ";
 
     $resultMain = mysqli_query($db, $queryMain);
 }
 
-// Check if the page reload condition is met
-if ($_SERVER['REQUEST_METHOD'] == 'GET') {
-    // Remove specific session variables
-    unset($_SESSION['departmentIdSentTender']);
-    unset($_SESSION['sectionIdSentTender']);
-    unset($_SESSION['divisionIdSentTender']);
-    unset($_SESSION['subDivisionIdSentTender']);
 
+
+// Fetch unique, non-empty cities only
+$stmtFetchCities = $db->prepare("SELECT * FROM cities ");
+$stmtFetchCities->execute();
+$cities = $stmtFetchCities->get_result()->fetch_all(MYSQLI_ASSOC);
+
+
+
+// Fetch unique, non-empty cities only
+$stmtFetchStates = $db->prepare("SELECT * FROM state ");
+$stmtFetchStates->execute();
+$states = $stmtFetchStates->get_result()->fetch_all(MYSQLI_ASSOC);
+
+// firms
+$stmtFetchFirm = $db->prepare("SELECT firm_name FROM members");
+$stmtFetchFirm->execute();
+$firms = $stmtFetchFirm->get_result()->fetch_all(MYSQLI_ASSOC);
+
+// Remove duplicates and empty firm names
+$unique_firms = [];
+$seen_firms = [];
+
+foreach ($firms as $firm) {
+    $firm_name = trim($firm['firm_name']); // Remove whitespace
+
+    // Check if firm_name is not empty and not already seen
+    if (!empty($firm_name) && !in_array($firm_name, $seen_firms)) {
+        $unique_firms[] = ['firm_name' => $firm_name];
+        $seen_firms[] = $firm_name;
+    }
 }
 
-
-
+$firms = $unique_firms;
 
 
 $adminID = $_SESSION['login_user_id'];
@@ -230,6 +285,46 @@ $query = "SELECT sc.section_name, dv.division_name, sdv.subdivision
           ORDER BY sc.section_name, dv.division_name";
 
 $result = mysqli_query($db, $query);
+
+
+// fetch city by state code with ajax
+if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
+    try {
+
+        $stateCode = $_POST['stateCode'];
+
+        if (empty($stateCode)) {
+            echo json_encode([
+                "status" => 400,
+                "error" => "Invalid state",
+            ]);
+            exit;
+        }
+
+        $db->begin_transaction();
+
+        // Fetch unique, non-empty cities only
+        $stmtFetchCities = $db->prepare("SELECT * FROM cities WHERE state_code = ?");
+        $stmtFetchCities->bind_param("s", $stateCode);
+        $stmtFetchCities->execute();
+        $cities = $stmtFetchCities->get_result()->fetch_all(MYSQLI_ASSOC);
+
+
+        echo json_encode([
+            "status" => 200,
+            "data" => $cities,
+        ]);
+        exit;
+
+    } catch (\Throwable $th) {
+        //throw $th;
+        echo json_encode([
+            "status" => 500,
+            "error" => $th->getMessage(),
+        ]);
+        exit;
+    }
+}
 
 ?>
 
@@ -418,7 +513,7 @@ $result = mysqli_query($db, $query);
                     <div class="row align-items-center">
                         <div class="col-md-12">
                             <!-- Filters Section -->
-                            <form method="post" id="filterForm">
+                            <form method="get" id="filterForm">
                                 <div class="row">
                                     <div class="col-md-4">
                                         <div class="form-group">
@@ -427,7 +522,7 @@ $result = mysqli_query($db, $query);
                                                 id="department-search">
                                                 <option value="0">All</option>
                                                 <?php foreach ($departments as $department) { ?>
-                                                    <option value="<?php echo $department['department_id']; ?>" <?php echo isset($_SESSION['departmentIdSentTender']) && $_SESSION['departmentIdSentTender'] == $department['department_id'] ? 'selected' : ''; ?>>
+                                                    <option value="<?php echo $department['department_id']; ?>" <?php echo isset($_GET['department-search']) && $_GET['department-search'] == $department['department_id'] ? 'selected' : ''; ?>>
                                                         <?php echo $department['department_name']; ?>
                                                     </option>
                                                 <?php } ?>
@@ -440,8 +535,12 @@ $result = mysqli_query($db, $query);
                                             <label for="program">Section <span class="text-danger">*</span></label>
                                             <select class="form-control" name="section-search" id="section-search">
                                                 <option value="0">All</option>
-                                                <?php foreach ($sections as $section) { ?>
-                                                    <option value="<?php echo $section['section_id']; ?>" <?php echo isset($_SESSION['sectionIdSentTender']) && $_SESSION['sectionIdSentTender'] == $section['section_id'] ? 'selected' : ''; ?>>
+                                                <?php foreach ($sections as $section) {
+                                                    $selectedSection = (isset($_GET['section-search']) && urldecode($_GET['section-search']) == $section['section_id']) ? 'selected' : '';
+
+                                                    ?>
+                                                    <option <?= $selectedSection ?>
+                                                        value="<?php echo $section['section_id']; ?>">
                                                         <?php echo $section['section_name']; ?>
                                                     </option>
                                                 <?php } ?>
@@ -454,10 +553,11 @@ $result = mysqli_query($db, $query);
                                             <label for="session">Division <span class="text-danger">*</span></label>
                                             <select class="form-control" name="division-search" id="division-search">
                                                 <option value="0">All</option>
-                                                <option
-                                                    value="<?php echo isset($_SESSION['divisionIdSentTender']) && $_SESSION['divisionIdSentTender'] ? $_SESSION['divisionIdSentTender'] : ''; ?>"
-                                                    <?php echo isset($_SESSION['divisionIdSentTender']) ? 'selected' : ''; ?>>
-                                                </option>
+                                                <?php foreach ($divisions as $division) { ?>
+                                                    <option value="<?php echo $division['division_id']; ?>" <?php echo isset($_GET['division-search']) && $_GET['division-search'] == $division['division_id'] ? 'selected' : ''; ?>>
+                                                        <?php echo $division['division_name']; ?>
+                                                    </option>
+                                                <?php } ?>
                                             </select>
                                             <div class="invalid-feedback">Please select a session.</div>
                                         </div>
@@ -469,10 +569,49 @@ $result = mysqli_query($db, $query);
                                             <select class="form-control" name="sub-division-search"
                                                 id="sub-division-search" required>
                                                 <option value="0">All</option>
-                                                <option
-                                                    value="<?php echo isset($_SESSION['subDivisionIdSentTender']) && $_SESSION['subDivisionIdSentTender'] == $_SESSION['subDivisionIdSentTender'] ? 'selected' : ''; ?> ?>"
-                                                    <?php echo isset($_SESSION['subDivisionIdSentTender']) ? 'selected' : ''; ?>>
-                                                </option>
+
+                                            </select>
+                                            <div class="invalid-feedback">Please select a semester.</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="semester">Firm <span class="text-danger">*</span></label>
+                                            <select class="form-control select-firm" name="firm" required>
+                                                <option value="0">All</option>
+                                                <?php foreach ($firms as $firm) {
+                                                    $selectedFirm = (isset($_GET['firm']) && urldecode($_GET['firm']) == $firm['firm_name']) ? 'selected' : '';
+                                                    ?>
+                                                    <option value="<?= htmlspecialchars($firm['firm_name']) ?>"
+                                                        <?= $selectedFirm ?>>
+                                                        <?= htmlspecialchars($firm['firm_name']) ?>
+                                                    </option>
+                                                <?php } ?>
+                                            </select>
+                                            <div class="invalid-feedback">Please select a semester.</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="semester">State <span class="text-danger">*</span></label>
+                                            <select class="form-control select-state" name="state" required>
+                                                <option value="0">All</option>
+                                                <?php foreach ($states as $state) {
+                                                    $selectedState = (isset($_GET['state']) && urldecode($_GET['state']) == $state['state_code']) ? 'selected' : '';
+                                                    ?>
+                                                    <option value="<?= $state['state_code'] ?>" <?= $selectedState ?>>
+                                                        <?= $state['state_name'] ?>
+                                                    </option>
+                                                <?php } ?>
+                                            </select>
+                                            <div class="invalid-feedback">Please select a semester.</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="semester">City <span class="text-danger">*</span></label>
+                                            <select class="form-control select-city" name="city">
+                                                <option value="0">All</option>
                                             </select>
                                             <div class="invalid-feedback">Please select a semester.</div>
                                         </div>
@@ -486,10 +625,12 @@ $result = mysqli_query($db, $query);
                                         </button>
                                         &nbsp;
                                         <!-- Reset Button -->
-                                        <button type="reset" class="btn btn-primary btn-md d-flex align-items-center"
+                                        <a href="sent-tender2.php"
+                                            class="btn btn-primary btn-md d-flex align-items-center"
                                             id="filterResetButton">
-                                            <i class="fas fa-undo" style="margin-right: 8px;"></i> Reset
-                                        </button>
+                                            <i class="fas fa-undo" style="margin-right: 8px;"></i>
+                                            Reset
+                                        </a>
                                     </div>
                                 </div>
                             </form>
@@ -640,6 +781,10 @@ $result = mysqli_query($db, $query);
         </div>
     </section>
 
+
+    <!-- jQuery first -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
     <script src="assets/js/vendor-all.min.js"></script>
     <script src="assets/js/plugins/bootstrap.min.js"></script>
     <script src="assets/js/pcoded.min.js"></script>
@@ -659,8 +804,67 @@ $result = mysqli_query($db, $query);
     <!-- Excel Generate  -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
+
+    <!-- CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+    <!-- Select2 (must come AFTER jQuery) -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
     <script>
         $(document).ready(function () {
+
+            $('#department-search').select2({
+                placeholder: "Select Department"
+            });
+            $('#section-search').select2({
+                placeholder: "Select Section"
+            });
+            $('#division-search').select2({
+                placeholder: "Select Division"
+            });
+            $('#sub-division-search').select2({
+                placeholder: "Select Sub Division"
+            });
+
+            $('.select-firm').select2({
+                placeholder: "Select State"
+            });
+            $('.select-state').select2({
+                placeholder: "Select State"
+            });
+            $('.select-city').select2({
+                placeholder: "Select City"
+            });
+
+             $(document).on("change", ".select-state", async function (e) {
+                let stateCode = $(this).val();
+                await $.ajax({
+                    url: window.location.href,
+                    type: 'POST',
+                    data: { stateCode: stateCode },
+                    dataType: 'json',
+                    success: function (response) {
+                        if (response.status == 200) {
+                            let citySelect = $(".select-city");
+                            citySelect.empty(); // clear old options
+                            citySelect.append('<option value="">Select City</option>');
+                            $.each(response.data, function (index, city) {
+                                citySelect.append(
+                                    `<option value="${city.city_id}">${city.city_name}</option>`
+                                );
+                            });
+                        } else {
+                            Swal.fire("No Data", "No cities found.", "warning");
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        console.error("AJAX Error:", status, error);
+                        console.error("Raw Response:", xhr.responseText);
+                        Swal.fire("Error", "An error occurred while processing your request. Please try again.", "error");
+                    }
+                });
+            });
 
             $(".recyclebutton").on('click', function (e) {
 
@@ -871,46 +1075,37 @@ $result = mysqli_query($db, $query);
 
 
 
-            // Fetch session values from the `sessionData` variable
-            var departmentId = sessionData.departmentId;
-            var sectionId = sessionData.sectionId;
-            var divisionId = sessionData.divisionId;
-            var subDivisionId = sessionData.subDivisionId;
+            const urlParams = new URLSearchParams(window.location.search);
+            const sectionSearch = urlParams.get('section-search');
+            const divisionSearch = urlParams.get('division-search');
+            const subDivisionSearch = urlParams.get('sub-division-search');
+            const state = urlParams.get('state');
+            const city = urlParams.get('city');
 
-            // Check if the values are available and handle them as needed
-            if (departmentId) {
-                console.log("Department ID:", departmentId);
-                // Example: Set the value of a dropdown or input
-                $('#department-search').val(departmentId);
-            }
 
-            if (sectionId) {
-                console.log("Section ID:", sectionId);
-                $('#section-search').val(sectionId);
-            }
-
-            if (divisionId) {
-
-                console.log("Division ID:", divisionId);
+            if (sectionSearch) {
                 $.ajax({
-                    url: 'fetch-division-data-sent-tender.php',
+                    url: 'fetch-section-data.php',
                     type: 'POST',
-                    data: { divisionIdSentTender: divisionId },
+                    data: { sectionId: sectionSearch },
                     success: function (response) {
                         if (response.success) {
-                            console.log(response.success);
                             // console.log(response.divisionName);
 
                             // Clear existing options except the default "All" option
-                            $('#division-search').empty();
+                            // $('#division-search').find('option').not(':first').remove();
 
                             // Add new options based on the response.divisionId and response.divisionName arrays
                             response.divisionId.forEach((id, index) => {
                                 let divisionName = response.divisionName[index];
                                 $('#division-search').append(new Option(divisionName, id));
                             });
-                            // Select the fetched division
-                            $('#division-search').val(divisionId);
+
+                            if (divisionSearch) {
+                                $('#division-search').val(divisionSearch).trigger('change');
+                            }
+
+
 
                         } else {
                             console.error(response.error);
@@ -920,30 +1115,31 @@ $result = mysqli_query($db, $query);
                         console.error('AJAX Error:', status, error);
                     }
                 });
-                // $('#division-search').val(divisionId);
-
             }
 
-            if (subDivisionId) {
-                console.log("Sub-Division ID:", subDivisionId);
+            if (divisionSearch) {
                 $.ajax({
-                    url: 'fetch-sub-division-data-sent-tender.php',
+                    url: 'fetch-division-data.php',
                     type: 'POST',
-                    data: { subDivisionIdSentTender: subDivisionId },
+                    data: { divisionId: divisionSearch },
                     success: function (response) {
                         if (response.success) {
-                            console.log(response.subDivisionName);
 
                             // Clear existing options except the default "All" option
-                            $('#sub-division-search').empty();
+                            $('#sub-division-search').find('option').not(':first').remove();
 
                             // Add new options based on the response.divisionId and response.divisionName arrays
                             response.subDivisionId.forEach((id, index) => {
                                 let subDivisionName = response.subDivisionName[index];
                                 $('#sub-division-search').append(new Option(subDivisionName, id));
                             });
-                            // Select the fetched division
-                            $('#sub-division-search').val(subDivisionId);
+
+                            setTimeout(() => {
+                                if (subDivisionSearch) {
+                                    $('#sub-division-search').val(subDivisionSearch).trigger('change');
+                                }
+                            }, 1000);
+
 
                         } else {
                             console.error(response.error);
@@ -953,28 +1149,45 @@ $result = mysqli_query($db, $query);
                         console.error('AJAX Error:', status, error);
                     }
                 });
-                // $('#sub-division-search').val(subDivisionId);
             }
 
-            // Reset Filter
-            $('#filterResetButton').click(function () {
-                sessionStorage.clear();
-                location.reload();
-            });
+
+            if (state) {
+                $.ajax({
+                    url: window.location.href,
+                    type: 'POST',
+                    data: { stateCode: state },
+                    dataType: 'json',
+                    success: function (response) {
+                        if (response.status == 200) {
+                            let citySelect = $(".select-city");
+                            citySelect.empty(); // clear old options
+                            citySelect.append('<option value="">Select City</option>');
+                            $.each(response.data, function (index, city) {
+                                citySelect.append(
+                                    `<option value="${city.city_id}">${city.city_name}</option>`
+                                );
+                            });
+
+                            setTimeout(() => {
+                                if (city) {
+                                    citySelect.val(city).trigger('change');
+                                }
+                            }, 1000);
+
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        console.error("AJAX Error:", status, error);
+                        Swal.fire("Error", "An error occurred while processing your request. Please try again.", "error");
+                    }
+                });
+            }
 
         });
     </script>
 
-    <script>
-        // PHP exposes session values to JavaScript
-        let sessionData = <?php echo json_encode([
-            'departmentId' => $_SESSION['departmentIdSentTender'] ?? null,
-            'sectionId' => $_SESSION['sectionIdSentTender'] ?? null,
-            'divisionId' => $_SESSION['divisionIdSentTender'] ?? null,
-            'subDivisionId' => $_SESSION['subDivisionIdSentTender'] ?? null
-        ]); ?>;
 
-    </script>
 
     <script>
         function printTable() {

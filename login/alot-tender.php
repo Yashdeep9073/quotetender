@@ -202,15 +202,7 @@ ORDER BY
 
 }
 
-// Check if the page reload condition is met
-if ($_SERVER['REQUEST_METHOD'] == 'GET') {
-    // Remove specific session variables
-    unset($_SESSION['departmentIdAlotTender']);
-    unset($_SESSION['sectionIdAlotTender']);
-    unset($_SESSION['divisionIdAlotTender']);
-    unset($_SESSION['subDivisionIdAlotTender']);
 
-}
 
 
 // fetch city by state code with ajax
@@ -1160,7 +1152,7 @@ inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_i
                                 if (subDivisionSearch) {
                                     $('#sub-division-search').val(subDivisionSearch).trigger('change');
                                 }
-                            }, 700);
+                            }, 1000);
 
 
                         } else {

@@ -1138,7 +1138,7 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
                                 if (subDivisionSearch) {
                                     $('#sub-division-search').val(subDivisionSearch).trigger('change');
                                 }
-                            }, 700);
+                            }, 1000);
 
 
                         } else {
