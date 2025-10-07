@@ -125,7 +125,7 @@ if (isset($_POST['firmName']) && $_SERVER['REQUEST_METHOD'] == "POST") {
                 $mail->Body = "
                 <div style='font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;'>
                     <div style='text-align: center; margin-bottom: 30px;'>
-                        <img src='https://dvepl.com/quotetender/assets/images/logo/logo.png' alt='Quote Tender Logo' style='max-width: 200px; height: auto; display: block; margin: 0 auto;'>
+                        <img src='https://dvepl.com/assets/images/logo/dvepl-logo.png' alt='Quote Tender Logo' style='max-width: 200px; height: auto; display: block; margin: 0 auto;'>
                     </div>
                     
                     <div style='background-color: #f9f9f9; border-radius: 10px; padding: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border: 1px solid #eee;'>

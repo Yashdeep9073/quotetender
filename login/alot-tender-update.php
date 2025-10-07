@@ -121,7 +121,7 @@ $qty= mysqli_query($db, $qt1);
     $mail->Body = "
 <div style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
     <div style='text-align: center; margin-bottom: 20px;'>
-        <img src='https://dvepl.com/quotetender/assets/images/logo/logo.png' alt='Quote Tender Logo' style='max-width: 200px; height: auto;'>
+        <img src='https://dvepl.com/assets/images/logo/dvepl-logo.png' alt='Quote Tender Logo' style='max-width: 200px; height: auto;'>
     </div>
     <p style='font-size: 18px; color: #555;'>Dear <strong>". $qty[1] ."</strong>,</p>
     <p>We are pleased to inform you that the <strong>Tender ID:</strong> " . htmlspecialchars($uname) . " has been allotted to you. For any further assistance or queries regarding the process, please feel free to contact us. We are here to help!</p>
@@ -136,7 +136,7 @@ $qty= mysqli_query($db, $qt1);
     <hr style='border: none; border-top: 1px solid #ddd; margin: 20px 0;'>
 
     <p style='text-align: center; font-size: 12px; color: #888;'>
-        © 2024 Quote Tender. All Rights Reserved.
+        © 2025 DVEPL. All Rights Reserved.
     </p>
 </div>";
 

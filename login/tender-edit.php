@@ -203,7 +203,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
                 $mail->Body = "
 <div style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
     <div style='text-align: center; margin-bottom: 20px;'>
-        <img src='https://www.quotetender.in/assets/images/logo/logo.png' alt='Quote Tender Logo' style='max-width: 200px; height: auto;'>
+        <img src='https://dvepl.com/assets/images/logo/dvepl-logo.png' alt='Quote Tender Logo' style='max-width: 200px; height: auto;'>
     </div>
     <p style='font-size: 18px; color: #555;'>Dear <strong>" . htmlspecialchars($memberData[1]) . "</strong>,</p>
     <p>We are pleased to inform you that the <strong>Tender ID:</strong> " . htmlspecialchars($memberData[4]) . " has been approved for you. The quotation file is attached below for your reference.</p>
@@ -220,7 +220,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
     <hr style='border: none; border-top: 1px solid #ddd; margin: 20px 0;'>
 
     <p style='text-align: center; font-size: 12px; color: #888;'>
-        © 2024 Quote Tender. All Rights Reserved.
+        © 2025 DVEPL. All Rights Reserved.
     </p>
 </div>";
 

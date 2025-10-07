@@ -258,7 +258,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['submit'])) {
                     $mail->Body = "
 <div style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
     <div style='text-align: center; margin-bottom: 20px;'>
-        <img src='https://dvepl.com/quotetender/assets/images/logo/logo.png' alt='Quote Tender Logo' style='max-width: 200px; height: auto;'>
+        <img src='https://dvepl.com/assets/images/logo/dvepl-logo.png' alt='Quote Tender Logo' style='max-width: 200px; height: auto;'>
     </div>
     <p style='font-size: 18px; color: #555;'>Dear <strong>" . $memberData[1] . "</strong>,</p>
     <p>Thank you for your valuable enquiry! We truly appreciate your interest. We will provide the pricing details within 3-5 working days for the following tender:</p>
@@ -280,7 +280,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['submit'])) {
     <hr style='border: none; border-top: 1px solid #ddd; margin: 20px 0;'>
 
     <p style='text-align: center; font-size: 12px; color: #888;'>
-        © 2024 Quote Tender. All Rights Reserved.
+        © 2025 DVEPL. All Rights Reserved.
     </p>
 </div>";
 
