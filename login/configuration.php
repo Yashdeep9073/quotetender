@@ -25,10 +25,10 @@ $dc = $row22[0];
 if (isset($_POST['submit123'])) {
     $name = $_POST['name'];
     $mobile = $_POST['mobile'];
-     $email = $_POST['email'];
+    $email = $_POST['email'];
     $staff = $_POST['staff'];
-$password = $_POST['password'];
-    $query11 = mysqli_query($db, "UPDATE  admin set username ='$name', email ='$email' , Staff_Email='$staff', mobile='$mobile' WHERE username='"  . $dc . "'");
+    $password = $_POST['password'];
+    $query11 = mysqli_query($db, "UPDATE  admin set username ='$name', email ='$email' , Staff_Email='$staff', mobile='$mobile' WHERE username='" . $dc . "'");
 
     if ($query11 > 0) {
         $msg = "
@@ -49,7 +49,7 @@ if (isset($_POST['submit'])) {
     $key = $_POST['key'];
     $secret_key = $_POST['secret'];
 
-    $query = mysqli_query($db, "UPDATE  google_captcha set site_key ='$key', secret_key ='$secret_key' WHERE captcha_id='"  . $d . "'");
+    $query = mysqli_query($db, "UPDATE  google_captcha set site_key ='$key', secret_key ='$secret_key' WHERE captcha_id='" . $d . "'");
 
     if ($query > 0) {
         $msg = "
@@ -67,7 +67,7 @@ if (isset($_POST['submit1'])) {
     $password = $_POST['password'];
     $host = $_POST['host'];
     $port = $_POST['port'];
-    $query1 = mysqli_query($db, "UPDATE  smtp_email set from_email	 ='$email', password ='$password' , hosts ='$host',  ports ='$port' WHERE smtp_id ='"  . $e . "'");
+    $query1 = mysqli_query($db, "UPDATE  smtp_email set from_email	 ='$email', password ='$password' , hosts ='$host',  ports ='$port' WHERE smtp_id ='" . $e . "'");
     if ($query1 > 0) {
         $msg = "
         <div class='alert alert-success alert-dismissible fade show' role='alert' style='font-size:16px;' id='goldmessage'>
@@ -79,6 +79,35 @@ if (isset($_POST['submit1'])) {
         ";
     }
 }
+
+
+if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['referenceSettingSave'])) {
+
+    try {
+
+        $id = $_POST['referenceSettingId'];
+        $code = (int) $_POST['code'];
+        // Update sequence
+        $stmt = $db->prepare("UPDATE reference_sequence SET last_sequence = ? WHERE id = ?");
+        $stmt->bind_param("ii", $code, $id);
+        $stmt->execute();
+
+        $_SESSION['success'] = "Reference Settings Updated";
+
+    } catch (\Throwable $th) {
+        $_SESSION['error'] = $th->getMessage();
+
+    }
+
+}
+
+try {
+    $stmtReferenceCodeSettings = $db->prepare("SELECT * FROM reference_sequence");
+    $stmtReferenceCodeSettings->execute();
+    $referenceCodeSettings = $stmtReferenceCodeSettings->get_result()->fetch_array(MYSQLI_ASSOC);
+} catch (\Throwable $th) {
+    //throw $th;
+}
 ?>
 
 
@@ -88,7 +117,7 @@ if (isset($_POST['submit1'])) {
 <meta http-equiv="content-type" content="text/html;charset=UTF-8" />
 
 <head>
-    <title>Admin Setting </title>
+    <title>Admin Settings </title>
 
 
 
@@ -104,9 +133,62 @@ if (isset($_POST['submit1'])) {
     <link rel="stylesheet" href="assets/css/plugins/dataTables.bootstrap4.min.css">
 
     <link rel="stylesheet" href="assets/css/style.css">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.js"></script>
+
 </head>
 
 <body class="">
+
+    <?php if (isset($_SESSION['success'])) { ?>
+        <script>
+            const notyf = new Notyf({
+                position: {
+                    x: 'center',
+                    y: 'top'
+                },
+                types: [
+                    {
+                        type: 'success',
+                        background: '#26c975', // Change background color
+                        textColor: '#FFFFFF',  // Change text color
+                        dismissible: true,
+                        duration: 10000
+                    }
+                ]
+            });
+            notyf.success("<?php echo $_SESSION['success']; ?>");
+        </script>
+        <?php
+        unset($_SESSION['success']);
+        ?>
+    <?php } ?>
+
+    <?php if (isset($_SESSION['error'])) { ?>
+        <script>
+            const notyf = new Notyf({
+                position: {
+                    x: 'center',
+                    y: 'top'
+                },
+                types: [
+                    {
+                        type: 'error',
+                        background: '#ff1916',
+                        textColor: '#FFFFFF',
+                        dismissible: true,
+                        duration: 10000
+                    }
+                ]
+            });
+            notyf.error("<?php echo $_SESSION['error']; ?>");
+        </script>
+        <?php
+        unset($_SESSION['error']);
+        ?>
+    <?php } ?>
+
 
     <div class="loader-bg">
         <div class="loader-track">
@@ -206,7 +288,7 @@ if (isset($_POST['submit1'])) {
 
 
 
- <div class="row">
+            <div class="row">
 
 
                 <div class="col-sm-12">
@@ -251,7 +333,7 @@ if (isset($_POST['submit1'])) {
                                     </div>
 
 
-<div class="col-xl-4 col-lg-4 col-md-6 col-sm-12 col-4">
+                                    <div class="col-xl-4 col-lg-4 col-md-6 col-sm-12 col-4">
                                         <div class="form-group">Admin Email
                                             <label class="sr-only control-label" for="name">Admin Email
                                                 *<span class=" ">
@@ -263,8 +345,8 @@ if (isset($_POST['submit1'])) {
                                                 oninput="setCustomValidity('')" value="<?php echo $row22[2]; ?>">
                                         </div>
                                     </div>
-                                    
-                                    
+
+
                                     <div class="col-xl-8 col-lg-8 col-md-8 col-sm-12 col-8">
                                         <div class="form-group">Staff Email
                                             <label class="sr-only control-label" for="name">Staff Email
@@ -277,12 +359,12 @@ if (isset($_POST['submit1'])) {
                                                 oninput="setCustomValidity('')" value="<?php echo $row22[7]; ?>">
                                         </div>
                                     </div>
-                                    
-                                    
-                                    
-                                    
+
+
+
+
                                     <div class="col-xl-4 col-lg-4 col-md-4 col-sm-12 col-4">
-                                        <div class="form-group">New Password 
+                                        <div class="form-group">New Password
                                             <label class="sr-only control-label" for="name">Google Rechaptcha Secret Key
                                                 *<span class=" ">
                                                 </span></label>
@@ -290,11 +372,11 @@ if (isset($_POST['submit1'])) {
                                                 placeholder="Enter your new password if you want to change.."
                                                 class="form-control input-md"
                                                 oninvalid="this.setCustomValidity('Please Enter Google Rechaptcha Secret Key *')"
-                                                oninput="setCustomValidity('')" >
+                                                oninput="setCustomValidity('')">
                                         </div>
                                     </div>
-                                    
-                                    
+
+
                                     <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
 
                                         <button type="submit" class="btn btn-secondary" name="submit123" id="submit">
@@ -310,7 +392,7 @@ if (isset($_POST['submit1'])) {
                 </div>
             </div>
 
- </div>
+        </div>
 
 
 
@@ -332,144 +414,183 @@ if (isset($_POST['submit1'])) {
 
 
 
-            <div class="row">
+        <div class="row">
 
 
-                <div class="col-sm-12">
-                    <div class="card">
-                        <div class="card-header table-card-header">
+            <div class="col-sm-12">
+                <div class="card">
+                    <div class="card-header table-card-header">
 
 
-                            
 
-                            <h4>Display Google Recaptcha</h4>
-                            <hr />
-                            <form method="post" action="">
-                                <div class="row">
-                                    <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-6">
-                                        <div class="form-group">Google Rechaptcha Site Key *
-                                            <label class="sr-only control-label" for="name">Google Rechaptcha Site Key
-                                                *<span class=" ">
-                                                </span></label>
-                                            <input id="name" name="key" type="text"
-                                                placeholder=" Enter Google Rechaptcha Site Key  *"
-                                                class="form-control input-md" required
-                                                oninvalid="this.setCustomValidity('Please Enter Google Rechaptcha Site Key *')"
-                                                oninput="setCustomValidity('')" value="<?php echo $row[1]; ?>">
-                                        </div>
+
+                        <h4>Display Google Recaptcha</h4>
+                        <hr />
+                        <form method="post" action="">
+                            <div class="row">
+                                <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-6">
+                                    <div class="form-group">Google Rechaptcha Site Key *
+                                        <label class="sr-only control-label" for="name">Google Rechaptcha Site Key
+                                            *<span class=" ">
+                                            </span></label>
+                                        <input id="name" name="key" type="text"
+                                            placeholder=" Enter Google Rechaptcha Site Key  *"
+                                            class="form-control input-md" required
+                                            oninvalid="this.setCustomValidity('Please Enter Google Rechaptcha Site Key *')"
+                                            oninput="setCustomValidity('')" value="<?php echo $row[1]; ?>">
                                     </div>
+                                </div>
 
-                                    <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-6">
-                                        <div class="form-group">Google Rechaptcha Secret Key *
-                                            <label class="sr-only control-label" for="name">Google Rechaptcha Secret Key
-                                                *<span class=" ">
-                                                </span></label>
-                                            <input id="name" name="secret" type="text"
-                                                placeholder=" Enter Google Rechaptcha Secret Key * *"
-                                                class="form-control input-md" required
-                                                oninvalid="this.setCustomValidity('Please Enter Google Rechaptcha Secret Key *')"
-                                                oninput="setCustomValidity('')" value="<?php echo $row[2]; ?>">
-                                        </div>
+                                <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-6">
+                                    <div class="form-group">Google Rechaptcha Secret Key *
+                                        <label class="sr-only control-label" for="name">Google Rechaptcha Secret Key
+                                            *<span class=" ">
+                                            </span></label>
+                                        <input id="name" name="secret" type="text"
+                                            placeholder=" Enter Google Rechaptcha Secret Key * *"
+                                            class="form-control input-md" required
+                                            oninvalid="this.setCustomValidity('Please Enter Google Rechaptcha Secret Key *')"
+                                            oninput="setCustomValidity('')" value="<?php echo $row[2]; ?>">
                                     </div>
+                                </div>
 
-                                    <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
+                                <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
 
-                                        <button type="submit" class="btn btn-secondary" name="submit" id="submit">
-                                            <i class="feather icon-save lg"></i>&nbsp; Save
-                                        </button>
+                                    <button type="submit" class="btn btn-secondary" name="submit" id="submit">
+                                        <i class="feather icon-save lg"></i>&nbsp; Save
+                                    </button>
 
 
-                                    </div>
+                                </div>
 
-                            </form>
-                        </div>
+                        </form>
                     </div>
                 </div>
             </div>
-
- </div>
-
-            <div class="row">
-
-
-                <div class="col-sm-12">
-                    <div class="card">
-                        <div class="card-header table-card-header">
-
-                            <h4>SMTP</h4>
-                            <hr />
-                            <form action="" method="post">
-                                <div class="row">
-                                    <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-6">
-                                        <div class="form-group">Email From Address *
-                                            <label class="sr-only control-label" for="name">Email From Address *
-                                                *<span class=" ">
-                                                </span></label>
-                                            <input id="name" name="email" type="email"
-                                                placeholder=" EnterEmail From Address   *" class="form-control input-md"
-                                                required
-                                                oninvalid="this.setCustomValidity('Please Enter Email From Address *')"
-                                                oninput="setCustomValidity('')" value="<?php echo $row1[1]; ?>">
-                                        </div>
-                                    </div>
-
-                                    <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-6">
-                                        <div class="form-group">Email Password *
-                                            <label class="sr-only control-label" for="name">Email Password *
-                                                *<span class=" ">
-                                                </span></label>
-                                            <input id="name" name="password" type="text"
-                                                placeholder=" Enter Email Password  *" class="form-control input-md"
-                                                required
-                                                oninvalid="this.setCustomValidity('Please EnterEmail Password *')"
-                                                oninput="setCustomValidity('')" value="<?php echo $row1[2]; ?>">
-                                        </div>
-                                    </div>
-
-                                    <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-6">
-                                        <div class="form-group">Email Hosts*
-                                            <label class="sr-only control-label" for="name">Email Hosts *
-                                                *<span class=" ">
-                                                </span></label>
-                                            <input id="name" name="host" type="text" placeholder=" Enter Email Hosts  *"
-                                                class="form-control input-md" required
-                                                oninvalid="this.setCustomValidity('Please Enter Email Hosts *')"
-                                                oninput="setCustomValidity('')" value="<?php echo $row1[3]; ?>">
-                                        </div>
-                                    </div>
-
-                                    <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-6">
-                                        <div class="form-group">Email Ports*
-                                            <label class="sr-only control-label" for="name">Email Ports *
-                                                *<span class=" ">
-                                                </span></label>
-                                            <input id="name" name="port" type="text" placeholder=" Enter Email Ports  *"
-                                                class="form-control input-md" required
-                                                oninvalid="this.setCustomValidity('Please Enter Email Ports *')"
-                                                oninput="setCustomValidity('')" value="<?php echo $row1[4]; ?>">
-                                        </div>
-                                    </div>
-
-                                    <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
-
-                                        <button type="submit" class="btn btn-secondary" name="submit1" id="submit">
-                                            <i class="feather icon-save lg"></i>&nbsp; Save
-                                        </button>
-
-
-                                    </div>
-
-                            </form>
-                        </div>
-                        
-                    </div>
-                </div>
+        </div>
 
         </div>
-            </div>
-          
 
-  </section>
+        <div class="row">
+
+
+            <div class="col-sm-12">
+                <div class="card">
+                    <div class="card-header table-card-header">
+
+                        <h4>SMTP</h4>
+                        <hr />
+                        <form action="" method="post">
+                            <div class="row">
+                                <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-6">
+                                    <div class="form-group">Email From Address *
+                                        <label class="sr-only control-label" for="name">Email From Address *
+                                            *<span class=" ">
+                                            </span></label>
+                                        <input id="name" name="email" type="email"
+                                            placeholder=" EnterEmail From Address   *" class="form-control input-md"
+                                            required
+                                            oninvalid="this.setCustomValidity('Please Enter Email From Address *')"
+                                            oninput="setCustomValidity('')" value="<?php echo $row1[1]; ?>">
+                                    </div>
+                                </div>
+
+                                <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-6">
+                                    <div class="form-group">Email Password *
+                                        <label class="sr-only control-label" for="name">Email Password *
+                                            *<span class=" ">
+                                            </span></label>
+                                        <input id="name" name="password" type="text"
+                                            placeholder=" Enter Email Password  *" class="form-control input-md"
+                                            required oninvalid="this.setCustomValidity('Please EnterEmail Password *')"
+                                            oninput="setCustomValidity('')" value="<?php echo $row1[2]; ?>">
+                                    </div>
+                                </div>
+
+                                <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-6">
+                                    <div class="form-group">Email Hosts*
+                                        <label class="sr-only control-label" for="name">Email Hosts *
+                                            *<span class=" ">
+                                            </span></label>
+                                        <input id="name" name="host" type="text" placeholder=" Enter Email Hosts  *"
+                                            class="form-control input-md" required
+                                            oninvalid="this.setCustomValidity('Please Enter Email Hosts *')"
+                                            oninput="setCustomValidity('')" value="<?php echo $row1[3]; ?>">
+                                    </div>
+                                </div>
+
+                                <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-6">
+                                    <div class="form-group">Email Ports*
+                                        <label class="sr-only control-label" for="name">Email Ports *
+                                            *<span class=" ">
+                                            </span></label>
+                                        <input id="name" name="port" type="text" placeholder=" Enter Email Ports  *"
+                                            class="form-control input-md" required
+                                            oninvalid="this.setCustomValidity('Please Enter Email Ports *')"
+                                            oninput="setCustomValidity('')" value="<?php echo $row1[4]; ?>">
+                                    </div>
+                                </div>
+
+                                <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
+
+                                    <button type="submit" class="btn btn-secondary" name="submit1" id="submit">
+                                        <i class="feather icon-save lg"></i>&nbsp; Save
+                                    </button>
+
+
+                                </div>
+
+                        </form>
+                    </div>
+
+                </div>
+            </div>
+            <div class="col-sm-12">
+                <div class="card">
+                    <div class="card-header table-card-header">
+
+                        <h4>Reference Code</h4>
+                        <hr />
+                        <form action="" method="post">
+                            <div class="row">
+                                <input type="hidden" name="referenceSettingId"
+                                    value="<?= isset($referenceCodeSettings['id']) ? $referenceCodeSettings['id'] : "" ?>"
+                                    id="">
+
+                                <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
+                                    <div class="form-group">Code *
+                                        <label class="sr-only control-label" for="name">Code Start *
+                                            *<span class=" ">
+                                            </span></label>
+                                        <input id="code" name="code" type="number"
+                                            value="<?= isset($referenceCodeSettings['last_sequence']) ? (int) $referenceCodeSettings['last_sequence'] : "" ?>"
+                                            class="form-control input-md" required pattern="[0-9]*" inputmode="numeric"
+                                            oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                                    </div>
+                                </div>
+                                <div class=" col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
+
+                                    <button type="submit" class="btn btn-secondary" name="referenceSettingSave"
+                                        id="submit">
+                                        <i class="feather icon-save lg"></i>&nbsp; Save Changes
+                                    </button>
+
+
+                                </div>
+
+                        </form>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+
+
+        </div>
+
+
+    </section>
 
 
 
@@ -493,16 +614,15 @@ if (isset($_POST['submit1'])) {
     <script src="assets/js/pages/data-export-custom.js"></script>
 
     <script>
-    $(document).ready(function() {
-        $("#goldmessage").delay(5000).slideUp(300);
-    });
+        $(document).ready(function () {
+            $("#goldmessage").delay(5000).slideUp(300);
+        });
     </script>
     <script>
-  if ( window.history.replaceState ) 
-  {
-    window.history.replaceState( null, null, window.location.href );
-  }
-</script>
+        if (window.history.replaceState) {
+            window.history.replaceState(null, null, window.location.href);
+        }
+    </script>
 </body>
 
 </html>

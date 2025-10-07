@@ -1,8 +1,8 @@
 <?php
 session_start();
 require_once "../env.php";
-
 require_once "../vendor/autoload.php";
+include("../login/db/config.php");
 
 
 use PHPMailer\PHPMailer\PHPMailer;
@@ -13,22 +13,27 @@ if (!isset($_SESSION["login_register"])) {
     header("location: ../index.php");
 }
 
-include("../login/db/config.php");
-// Register user
-
-
 $name = $_SESSION['login_register'];
 
-$query = "SELECT * FROM tender WHERE email='" . $_SESSION["login_register"] . "'";
 
-$result = mysqli_query($db, $query);
-$row = mysqli_fetch_row($result);
+try {
 
-// print_r($row['2']);
-// exit;
-$user = $row['2'];
+    //code...
+    $stmtFetchUser = $db->prepare("SELECT * FROM members WHERE status = 1 AND email_id = ?");
+    $stmtFetchUser->bind_param("s",$name);
+    $stmtFetchUser->execute();
+    $user = $stmtFetchUser->get_result()->fetch_array(MYSQLI_ASSOC);
+    
+   $userName= $user['name'];
+    
+
+} catch (\Throwable $th) {
+    //throw $th;
+}
+
 $en = $_GET["id"];
 $d = base64_decode($en);
+
 
 $userRequestQuery="SELECT department.department_name,  ur.tenderID,ur.created_at,
 ur.due_date, ur.file_name,  ur.status, ur.id FROM user_tender_requests ur 
@@ -38,6 +43,7 @@ $userRequest = mysqli_fetch_row($userRequestData);
 
 
 if (isset($_POST['submit'])) {
+
     $award = $_POST['remark'];
     date_default_timezone_set('Asia/Kolkata');
 
@@ -53,62 +59,57 @@ if (isset($_POST['submit'])) {
         </button>
       </div>
         ";
-        $mail = new PHPMailer(true);
+//         $mail = new PHPMailer(true);
 
-        //Enable SMTP debugging.
+// // Enable SMTP debugging (0 = off, 2 = client/server messages)
+// $mail->SMTPDebug = 0;
 
-        $mail->SMTPDebug = 0;
+// // Set PHPMailer to use SMTP
+// $mail->isSMTP();
 
+// // Set SMTP host name                      
+// $mail->Host = getenv('SMTP_HOST');
 
-        //Set PHPMailer to use SMTP.
+// // Set this to true if SMTP host requires authentication to send email
+// $mail->SMTPAuth = true;
 
-        $mail->isSMTP();
+// // Provide username and password
+// $mail->Username = getenv('SMTP_USER_NAME');
+// $mail->Password = getenv('SMTP_PASSCODE');
 
-        //Set SMTP host name                      
+// // Set encryption - use 'tls' instead of 'ssl' for most modern SMTP servers
+// $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS; // or 'tls'
 
-          $mail->Host = getenv('SMTP_HOST');
+// // Set TCP port to connect to (587 for TLS, 465 for SSL)
+// $mail->Port = (int) getenv('SMTP_PORT'); // Convert to integer
 
-                //Set this to true if SMTP host requires authentication to send email
+// // Set sender
+// $mail->From = getenv('SMTP_USER_NAME');
+// $mail->FromName = "Award Tender";
 
-                $mail->SMTPAuth = true;
+// // Add recipient
+// $email = $user['email_id'];
+// $mail->addAddress($email, "Recipient Name");
 
-                //Provide username and password
+// // Set email format to HTML
+// $mail->isHTML(true);
 
-             
-            $mail->Username = getenv('SMTP_USER_NAME');
+// // Set subject and body
+// $mail->Subject = "Award Tender";
+// $mail->Body = "<p>Dear Admin,<br/>" .
+//               "The Tender has been accepted by " . htmlspecialchars($userName) . ". Kindly follow up the same.<br/><br/>" .
+//               "<strong>Quote Tender</strong><br/>" .
+//               "Mobile: +91-9870443528 | Email: info@quotender.com</p>";
 
-            $mail->Password = getenv('SMTP_PASSCODE');
+// try {
+//     $mail->send();
+//     echo "Email sent successfully!";
+// } catch (Exception $e) {
+//     echo "Mailer Error: " . $mail->ErrorInfo;
+//     die();
+// }
 
-                //If SMTP requires TLS encryption then set it
-
-                $mail->SMTPSecure = "ssl";
-
-                //Set TCP port to connect to
-
-                   $mail->Port = getenv('SMTP_PORT');
-
-            $mail->From = getenv('SMTP_USER_NAME');
-
-        $mail->FromName = "Award Tender  ";
-        $email = "vibrantick@gmail.com";
-        $mail->addAddress($email, "Recepient Name");
-
-        $mail->isHTML(true);
-
-        $mail->Subject = "Award Tender";
-
-        $mail->Body =  "<p> Dear Admin, <br/>" .
-            "The Tender has been accept by" . " $user " . " Kindly follow up the same<br/><br/>
-            <strong>Quote Tender</strong> <br/>
-        Mobile: +91-9870443528 | Email: info@quotender.com ";
-
-
-        if (!$mail->send()) {
-
-            echo "Mailer Error: " . $mail->ErrorInfo;
-        }
-
-
+$_SESSION['success'] = "Tender  has been awarded";
 
 
 

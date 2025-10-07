@@ -15,26 +15,26 @@ $re = base64_encode($stat);
 
 $upload_directory = "tender/";
 
-if (isset($en)){
+if (isset($en)) {
 
-    foreach($tenderIDs as $id){
+    foreach ($tenderIDs as $id) {
         $id = trim($id);
-    
+
         $stmt = $db->prepare("SELECT m.email_id,  m.name, ur.file_name, ur.file_name2, ur.tenderID, ur.id FROM user_tender_requests ur 
         inner join members m on ur.member_id= m.member_id  WHERE ur.id= ?");
-        $stmt->bind_param("i",$id);
+        $stmt->bind_param("i", $id);
         $stmt->execute();
         $memberData = $stmt->get_result()->fetch_assoc();
 
-        if($memberData){
+        if ($memberData) {
             $result[] = $memberData;
         }
     }
 
-    foreach($result as $data){
+    foreach ($result as $data) {
 
         $mail = new PHPMailer(true);
-        
+
         //Enable SMTP debugging.
         $mail->SMTPDebug = 0;
 
@@ -91,11 +91,11 @@ if (isset($en)){
 
 
         // Add attachments
-        $mail->addAttachment($upload_directory.$data["file_name"]);
-        if(!empty($data["file_name2"])){
-            $mail->addAttachment($upload_directory.$data["file_name2"]);
+        $mail->addAttachment($upload_directory . $data["file_name"]);
+        if (!empty($data["file_name2"])) {
+            $mail->addAttachment($upload_directory . $data["file_name2"]);
         }
-        
+
         if (!$mail->send()) {
             echo "Mailer Error: " . $mail->ErrorInfo;
         } else {
@@ -118,10 +118,10 @@ if (isset($en)){
     </SCRIPT>");
 }
 
-if(isset($_GET['id'])){
+if (isset($_GET['id'])) {
     $id = $_GET['id'];
     $mail = new PHPMailer(true);
-    
+
     //Enable SMTP debugging.
 
     $mail->SMTPDebug = 0;
@@ -161,25 +161,41 @@ if(isset($_GET['id'])){
     $mail->addAddress($adminEmail);
     $mail->IsHTML(true);
 
-    $membersQuery = "SELECT m.email_id,  m.name, ur.file_name, ur.file_name2, ur.tenderID, ur.id FROM user_tender_requests ur 
-    inner join members m on ur.member_id= m.member_id  WHERE ur.id='"  . $id . "'";
+    $membersQuery = "SELECT m.email_id,  m.name, ur.file_name, ur.file_name2, ur.tenderID, ur.id,ur.additional_files FROM user_tender_requests ur 
+    inner join members m on ur.member_id= m.member_id  WHERE ur.id='" . $id . "'";
     $membersResult = mysqli_query($db, $membersQuery);
     $memberData = mysqli_fetch_row($membersResult);
 
     $mail->addAddress($memberData[0], "Recepient Name");
-    
+
     $mail->Subject = "Tender Request Approved";
-    
-    $mail->addAttachment($upload_directory.$memberData[2]);
-    if(!empty($memberData[3])){
-    $mail->addAttachment($upload_directory.$memberData[3]);
+
+
+    $processedFiles = [];
+    if (!empty($memberData['6'])) {
+        $extraFiles = json_decode($memberData['6'], true);
+        if (is_array($extraFiles)) {
+            foreach ($extraFiles as $filePath) {
+                $mail->addAttachment($filePath);
+                $processedFiles[] = $filePath; // Store processed file
+            }
+
+            // // Send response after processing all files
+            // echo json_encode([
+            //     "status" => 400,
+            //     "error" => "auto mail",
+            //     "data" => $processedFiles, // All files in array
+            // ]);
+            // exit;
+        }
     }
+
     $mail->Body = "
 <div style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
     <div style='text-align: center; margin-bottom: 20px;'>
         <img src='https://dvepl.com/quotetender/assets/images/logo/logo.png' alt='Quote Tender Logo' style='max-width: 200px; height: auto;'>
     </div>
-    <p style='font-size: 18px; color: #555;'>Dear <strong>". $memberData[1] ."</strong>,</p>
+    <p style='font-size: 18px; color: #555;'>Dear <strong>" . $memberData[1] . "</strong>,</p>
     <p>We are pleased to inform you that the <strong>Tender ID:</strong> " . htmlspecialchars($memberData[4]) . " has been approved for you. The quotation file is attached below for your reference.</p>
     
     <p>If you have any questions or need further assistance regarding the process, please don’t hesitate to contact us. We’re here to help!</p>
@@ -198,22 +214,21 @@ if(isset($_GET['id'])){
     </p>
 </div>";
 
-    
+
     if (!$mail->send()) {
 
         echo "Mailer Error: " . $mail->ErrorInfo;
-    }
-    else{
+    } else {
         date_default_timezone_set("Asia/Calcutta");
         $emailSentDate = date("Y-m-d h:i A");
-    
+
         // Assuming you want to update an existing record with a specific id
         $stmt = $db->prepare("UPDATE user_tender_requests SET email_sent_date = ? WHERE id = ?");
         $stmt->bind_param("ss", $emailSentDate, $id); // Assuming both email_sent_date and id are strings
         $stmt->execute();
-    
-            
-        }
+
+
+    }
 
     echo ("<SCRIPT LANGUAGE='JavaScript'>
     window.location.href='tender-request.php?status=$re';

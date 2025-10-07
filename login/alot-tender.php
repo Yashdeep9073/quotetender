@@ -19,14 +19,14 @@ $adminPermissionResult = mysqli_query($db, $adminPermissionQuery);
 $allowDelete = mysqli_num_rows($adminPermissionResult) > 0 ? true : false;
 
 if (
-    $_SERVER['REQUEST_METHOD'] == 'POST' &&
-    isset($_POST['department-search']) ||
-    isset($_POST['section-search']) ||
-    isset($_POST['division-search']) ||
-    isset($_POST['sub-division-search']) ||
-    isset($_POST['firm']) ||
-    isset($_POST['state']) ||
-    isset($_POST['city'])
+    $_SERVER['REQUEST_METHOD'] == 'GET' &&
+    isset($_GET['department-search']) ||
+    isset($_GET['section-search']) ||
+    isset($_GET['division-search']) ||
+    isset($_GET['sub-division-search']) ||
+    isset($_GET['firm']) ||
+    isset($_GET['state']) ||
+    isset($_GET['city'])
 
 ) {
 
@@ -36,22 +36,23 @@ if (
     $conditions = [];
 
     // Sanitize inputs
-    $departmentId = filter_input(INPUT_POST, 'department-search', FILTER_SANITIZE_SPECIAL_CHARS);
-    $sectionId = filter_input(INPUT_POST, 'section-search', FILTER_SANITIZE_SPECIAL_CHARS);
-    $divisionId = filter_input(INPUT_POST, 'division-search', FILTER_SANITIZE_SPECIAL_CHARS);
-    $subDivisionId = filter_input(INPUT_POST, 'sub-division-search', FILTER_SANITIZE_SPECIAL_CHARS);
-    $firm = filter_input(INPUT_POST, 'firm', FILTER_SANITIZE_SPECIAL_CHARS);
-    $state = filter_input(INPUT_POST, 'state', FILTER_SANITIZE_SPECIAL_CHARS);
-    $city = filter_input(INPUT_POST, 'city', FILTER_SANITIZE_SPECIAL_CHARS);
+    $departmentId = filter_input(INPUT_GET, 'department-search', FILTER_SANITIZE_SPECIAL_CHARS);
+    $sectionId = filter_input(INPUT_GET, 'section-search', FILTER_SANITIZE_SPECIAL_CHARS);
+    $divisionId = filter_input(INPUT_GET, 'division-search', FILTER_SANITIZE_SPECIAL_CHARS);
+    $subDivisionId = filter_input(INPUT_GET, 'sub-division-search', FILTER_SANITIZE_SPECIAL_CHARS);
+    $firm = filter_input(INPUT_GET, 'firm', FILTER_SANITIZE_SPECIAL_CHARS);
+    $state = filter_input(INPUT_GET, 'state', FILTER_SANITIZE_SPECIAL_CHARS);
+    $city = filter_input(INPUT_GET, 'city', FILTER_SANITIZE_SPECIAL_CHARS);
 
 
-    // Set the sanitized data in the session
-    $_SESSION['departmentIdAlotTender'] = $departmentId;
-    $_SESSION['sectionIdAlotTender'] = $sectionId;
-    $_SESSION['divisionIdAlotTender'] = $divisionId;
-    $_SESSION['firm'] = $firm;
-    $_SESSION['state'] = $state;
-    $_SESSION['city'] = $city;
+
+    // // Set the sanitized data in the session
+    // $_SESSION['departmentIdAlotTender'] = $departmentId;
+    // $_SESSION['sectionIdAlotTender'] = $sectionId;
+    // $_SESSION['divisionIdAlotTender'] = $divisionId;
+    // $_SESSION['firm'] = $firm;
+    // $_SESSION['state'] = $state;
+    // $_SESSION['city'] = $city;
 
     // Add conditions only if a valid filter is selected
     if ($departmentId && $departmentId !== '0') {
@@ -513,7 +514,7 @@ inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_i
                     <div class="row align-items-center">
                         <div class="col-md-12">
                             <!-- Filters Section -->
-                            <form method="post" id="filterForm">
+                            <form method="get" id="filterForm">
                                 <div class="row">
                                     <div class="col-md-4">
                                         <div class="form-group">
@@ -522,7 +523,7 @@ inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_i
                                                 id="department-search">
                                                 <option value="0">All</option>
                                                 <?php foreach ($departments as $department) { ?>
-                                                    <option value="<?php echo $department['department_id']; ?>" <?php echo isset($_SESSION['departmentId']) && $_SESSION['departmentId'] == $department['department_id'] ? 'selected' : ''; ?>>
+                                                    <option value="<?php echo $department['department_id']; ?>" <?php echo isset($_GET['department-search']) && $_GET['department-search'] == $department['department_id'] ? 'selected' : ''; ?>>
                                                         <?php echo $department['department_name']; ?>
                                                     </option>
                                                 <?php } ?>
@@ -535,8 +536,11 @@ inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_i
                                             <label for="program">Section <span class="text-danger">*</span></label>
                                             <select class="form-control" name="section-search" id="section-search">
                                                 <option value="0">All</option>
-                                                <?php foreach ($sections as $section) { ?>
-                                                    <option <?php echo isset($_SESSION['sectionId']) && $_SESSION['sectionId'] == $section['section_id'] ? 'selected' : ''; ?>
+                                                <?php foreach ($sections as $section) {
+                                                    $selectedSection = (isset($_GET['section-search']) && urldecode($_GET['section-search']) == $section['section_id']) ? 'selected' : '';
+
+                                                    ?>
+                                                    <option <?= $selectedSection ?>
                                                         value="<?php echo $section['section_id']; ?>">
                                                         <?php echo $section['section_name']; ?>
                                                     </option>
@@ -551,7 +555,7 @@ inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_i
                                             <select class="form-control" name="division-search" id="division-search">
                                                 <option value="0">All</option>
                                                 <?php foreach ($divisions as $division) { ?>
-                                                    <option value="<?php echo $division['division_id']; ?>" <?php echo isset($_SESSION['divisionId']) && $_SESSION['divisionId'] == $division['division_id'] ? 'selected' : ''; ?>>
+                                                    <option value="<?php echo $division['division_id']; ?>" <?php echo isset($_GET['division-search']) && $_GET['division-search'] == $division['division_id'] ? 'selected' : ''; ?>>
                                                         <?php echo $division['division_name']; ?>
                                                     </option>
                                                 <?php } ?>
@@ -566,11 +570,7 @@ inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_i
                                             <select class="form-control" name="sub-division-search"
                                                 id="sub-division-search" required>
                                                 <option value="0">All</option>
-                                                <?php foreach ($subDivisions as $subDivision) { ?>
-                                                    <option value="<?php echo $subDivision['id']; ?>" <?php echo isset($_SESSION['subDivisionId']) && $_SESSION['subDivisionId'] == $subDivision['id'] ? 'selected' : ''; ?>>
-                                                        <?php echo $subDivision['name']; ?>
-                                                    </option>
-                                                <?php } ?>
+
                                             </select>
                                             <div class="invalid-feedback">Please select a semester.</div>
                                         </div>
@@ -580,9 +580,12 @@ inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_i
                                             <label for="semester">Firm <span class="text-danger">*</span></label>
                                             <select class="form-control select-firm" name="firm" required>
                                                 <option value="0">All</option>
-                                                <?php foreach ($firms as $firm) { ?>
-                                                    <option value="<?= $firm['firm_name'] ?>">
-                                                        <?= $firm['firm_name'] ?>
+                                                <?php foreach ($firms as $firm) {
+                                                    $selectedFirm = (isset($_GET['firm']) && urldecode($_GET['firm']) == $firm['firm_name']) ? 'selected' : '';
+                                                    ?>
+                                                    <option value="<?= htmlspecialchars($firm['firm_name']) ?>"
+                                                        <?= $selectedFirm ?>>
+                                                        <?= htmlspecialchars($firm['firm_name']) ?>
                                                     </option>
                                                 <?php } ?>
                                             </select>
@@ -594,8 +597,10 @@ inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_i
                                             <label for="semester">State <span class="text-danger">*</span></label>
                                             <select class="form-control select-state" name="state" required>
                                                 <option value="0">All</option>
-                                                <?php foreach ($states as $state) { ?>
-                                                    <option value="<?= $state['state_code'] ?>">
+                                                <?php foreach ($states as $state) {
+                                                    $selectedState = (isset($_GET['state']) && urldecode($_GET['state']) == $state['state_code']) ? 'selected' : '';
+                                                    ?>
+                                                    <option value="<?= $state['state_code'] ?>" <?= $selectedState ?>>
                                                         <?= $state['state_name'] ?>
                                                     </option>
                                                 <?php } ?>
@@ -606,7 +611,7 @@ inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_i
                                     <div class="col-md-4">
                                         <div class="form-group">
                                             <label for="semester">City <span class="text-danger">*</span></label>
-                                            <select class="form-control select-city" name="city" required>
+                                            <select class="form-control select-city" name="city">
                                                 <option value="0">All</option>
                                             </select>
                                             <div class="invalid-feedback">Please select a semester.</div>
@@ -621,10 +626,12 @@ inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_i
                                         </button>
                                         &nbsp;
                                         <!-- Reset Button -->
-                                        <button type="reset" class="btn btn-primary btn-md d-flex align-items-center"
+                                        <a href="alot-tender.php"
+                                            class="btn btn-primary btn-md d-flex align-items-center"
                                             id="filterResetButton">
-                                            <i class="fas fa-undo" style="margin-right: 8px;"></i> Reset
-                                        </button>
+                                            <i class="fas fa-undo" style="margin-right: 8px;"></i>
+                                            Reset
+                                        </a>
                                     </div>
                                 </div>
                             </form>
@@ -846,7 +853,6 @@ inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_i
             var del_id = element.attr("id");
 
             var info = 'id=' + del_id;
-            console.log(`Data : ${info}`);
 
             Swal.fire({
                 title: "Are you sure?",
@@ -958,8 +964,7 @@ inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_i
 
     </script>
 
-
-    <script type="text/javascript">
+    <script>
         $(document).ready(function () {
 
             $('#department-search').select2({
@@ -984,6 +989,22 @@ inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_i
             $('.select-city').select2({
                 placeholder: "Select City"
             });
+
+            // Initialize the DataTable with buttons
+            var table = $('#basic-btn2').DataTable({
+                pageLength: 100,
+                lengthMenu: [25, 50, 100, 200, 500, 1000], // Custom dropdown options
+                responsive: true,
+                ordering: true,
+                searching: true
+            });
+
+            // Fetch the number of entries
+            var info = table.page.info();
+            var totalEntries = info.recordsTotal;
+
+            // Display the number of entries
+            $('#category').text(totalEntries);
 
 
             $(document).on("change", ".select-state", async function (e) {
@@ -1016,25 +1037,8 @@ inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_i
             });
 
 
-            // Initialize the DataTable with buttons
-            var table = $('#basic-btn2').DataTable({
-                pageLength: 100,
-                lengthMenu: [25, 50, 100, 200, 500, 1000], // Custom dropdown options
-                responsive: true,
-                ordering: true,
-                searching: true
-            });
 
-            // Fetch the number of entries
-            var info = table.page.info();
-            var totalEntries = info.recordsTotal;
 
-            // Display the number of entries
-            $('#category').text(totalEntries);
-        });
-    </script>
-    <script>
-        $(document).ready(function () {
             $('#section-search').on('change', function () {
                 let sectionId = $('#section-search').val();
 
@@ -1044,7 +1048,6 @@ inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_i
                     data: { sectionId: sectionId },
                     success: function (response) {
                         if (response.success) {
-                            // console.log(response.divisionName);
 
                             // Clear existing options except the default "All" option
                             $('#division-search').find('option').not(':first').remove();
@@ -1067,7 +1070,6 @@ inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_i
 
             $('#division-search').on('change', function () {
                 let divisionId = $('#division-search').val();
-                console.log(`divisionId: ${divisionId}`);
 
                 $.ajax({
                     url: 'fetch-division-data.php',
@@ -1075,7 +1077,6 @@ inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_i
                     data: { divisionId: divisionId },
                     success: function (response) {
                         if (response.success) {
-                            console.log(response.subDivisionName);
 
                             // Clear existing options except the default "All" option
                             $('#sub-division-search').find('option').not(':first').remove();
@@ -1096,45 +1097,37 @@ inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_i
                 });
             });
 
-            // Fetch session values from the `sessionData` variable
-            var departmentId = sessionData.departmentId;
-            var sectionId = sessionData.sectionId;
-            var divisionId = sessionData.divisionId;
-            var subDivisionId = sessionData.subDivisionId;
+            const urlParams = new URLSearchParams(window.location.search);
+            const sectionSearch = urlParams.get('section-search');
+            const divisionSearch = urlParams.get('division-search');
+            const subDivisionSearch = urlParams.get('sub-division-search');
+            const state = urlParams.get('state');
+            const city = urlParams.get('city');
 
-            // Check if the values are available and handle them as needed
-            if (departmentId) {
-                console.log("Department ID:", departmentId);
-                // Example: Set the value of a dropdown or input
-                $('#department-search').val(departmentId);
-            }
 
-            if (sectionId) {
-                console.log("Section ID:", sectionId);
-                $('#section-search').val(sectionId);
-            }
-
-            if (divisionId) {
-
-                console.log("Division ID:", divisionId);
+            if (sectionSearch) {
                 $.ajax({
-                    url: 'fetch-division-data-sent-tender.php',
+                    url: 'fetch-section-data.php',
                     type: 'POST',
-                    data: { divisionIdSentTender: divisionId },
+                    data: { sectionId: sectionSearch },
                     success: function (response) {
                         if (response.success) {
-                            // console.log(response.success);
+                            // console.log(response.divisionName);
 
                             // Clear existing options except the default "All" option
-                            $('#division-search').empty();
+                            // $('#division-search').find('option').not(':first').remove();
 
                             // Add new options based on the response.divisionId and response.divisionName arrays
                             response.divisionId.forEach((id, index) => {
                                 let divisionName = response.divisionName[index];
                                 $('#division-search').append(new Option(divisionName, id));
                             });
-                            // Select the fetched division
-                            $('#division-search').val(divisionId);
+
+                            if (divisionSearch) {
+                                $('#division-search').val(divisionSearch).trigger('change');
+                            }
+
+
 
                         } else {
                             console.error(response.error);
@@ -1144,30 +1137,31 @@ inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_i
                         console.error('AJAX Error:', status, error);
                     }
                 });
-                // $('#division-search').val(divisionId);
-
             }
 
-            if (subDivisionId) {
-                console.log("Sub-Division ID:", subDivisionId);
+            if (divisionSearch) {
                 $.ajax({
-                    url: 'fetch-sub-division-data-sent-tender.php',
+                    url: 'fetch-division-data.php',
                     type: 'POST',
-                    data: { subDivisionIdSentTender: subDivisionId },
+                    data: { divisionId: divisionSearch },
                     success: function (response) {
                         if (response.success) {
-                            console.log(response.subDivisionName);
 
                             // Clear existing options except the default "All" option
-                            $('#sub-division-search').empty();
+                            $('#sub-division-search').find('option').not(':first').remove();
 
                             // Add new options based on the response.divisionId and response.divisionName arrays
                             response.subDivisionId.forEach((id, index) => {
                                 let subDivisionName = response.subDivisionName[index];
                                 $('#sub-division-search').append(new Option(subDivisionName, id));
                             });
-                            // Select the fetched division
-                            $('#sub-division-search').val(subDivisionId);
+
+                            setTimeout(() => {
+                                if (subDivisionSearch) {
+                                    $('#sub-division-search').val(subDivisionSearch).trigger('change');
+                                }
+                            }, 700);
+
 
                         } else {
                             console.error(response.error);
@@ -1177,28 +1171,47 @@ inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_i
                         console.error('AJAX Error:', status, error);
                     }
                 });
-                // $('#sub-division-search').val(subDivisionId);
             }
 
-            // Reset Filter
-            $('#filterResetButton').click(function () {
-                sessionStorage.clear();
-                location.reload();
-            });
 
+            if (state) {
+                $.ajax({
+                    url: window.location.href,
+                    type: 'POST',
+                    data: { stateCode: state },
+                    dataType: 'json',
+                    success: function (response) {
+                        if (response.status == 200) {
+                            let citySelect = $(".select-city");
+                            citySelect.empty(); // clear old options
+                            citySelect.append('<option value="">Select City</option>');
+                            $.each(response.data, function (index, city) {
+                                citySelect.append(
+                                    `<option value="${city.city_id}">${city.city_name}</option>`
+                                );
+                            });
 
+                            setTimeout(() => {
+                                if (city) {
+                                    citySelect.val(city).trigger('change');
+                                }
+                            }, 1000);
+
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        console.error("AJAX Error:", status, error);
+                        console.error("Raw Response:", xhr.responseText);
+                        Swal.fire("Error", "An error occurred while processing your request. Please try again.", "error");
+                    }
+                });
+            }
         });
+
+
     </script>
 
-    <script>
-        // PHP exposes session values to JavaScript
-        var sessionData = <?php echo json_encode([
-            'departmentId' => $_SESSION['departmentIdAlotTender'] ?? null,
-            'sectionId' => $_SESSION['sectionIdAlotTender'] ?? null,
-            'divisionId' => $_SESSION['divisionIdAlotTender'] ?? null,
-            'subDivisionId' => $_SESSION['subDivisionIdAlotTender'] ?? null
-        ]); ?>;
-    </script>
+
     <script>
         if (window.history.replaceState) {
             window.history.replaceState(null, null, window.location.href);

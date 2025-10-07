@@ -14,7 +14,7 @@ $memberData = mysqli_query($db, $memberQuery);
 $member = mysqli_fetch_row($memberData);
 
 $query = "SELECT department.department_name,  ur.tenderID, ur.created_at,
-ur.due_date, ur.file_name,  ur.status, ur.id, ur.remark, ur.project_status, ur.file_name2 , ur.tentative_cost FROM user_tender_requests ur 
+ur.due_date, ur.file_name,  ur.status, ur.id, ur.remark, ur.project_status, ur.file_name2 , ur.tentative_cost,ur.additional_files FROM user_tender_requests ur 
 inner join department on ur.department_id = department.department_id WHERE ur.member_id='" . $member[0] . "'";
 
 $result = mysqli_query($db, $query);
@@ -46,9 +46,61 @@ $member1 = mysqli_fetch_row($memberData1);
     <link rel="stylesheet" href="assets/css/plugins/dataTables.bootstrap4.min.css">
 
     <link rel="stylesheet" href="assets/css/style.css">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.js"></script>
 </head>
 
 <body class="">
+
+    <?php if (isset($_SESSION['success'])) { ?>
+        <script>
+            const notyf = new Notyf({
+                position: {
+                    x: 'center',
+                    y: 'top'
+                },
+                types: [
+                    {
+                        type: 'success',
+                        background: '#26c975', // Change background color
+                        textColor: '#FFFFFF',  // Change text color
+                        dismissible: true,
+                        duration: 10000
+                    }
+                ]
+            });
+            notyf.success("<?php echo $_SESSION['success']; ?>");
+        </script>
+        <?php
+        unset($_SESSION['success']);
+        ?>
+    <?php } ?>
+
+    <?php if (isset($_SESSION['error'])) { ?>
+        <script>
+            const notyf = new Notyf({
+                position: {
+                    x: 'center',
+                    y: 'top'
+                },
+                types: [
+                    {
+                        type: 'error',
+                        background: '#ff1916',
+                        textColor: '#FFFFFF',
+                        dismissible: true,
+                        duration: 10000
+                    }
+                ]
+            });
+            notyf.error("<?php echo $_SESSION['error']; ?>");
+        </script>
+        <?php
+        unset($_SESSION['error']);
+        ?>
+    <?php } ?>
+
 
     <div class="loader-bg">
         <div class="loader-track">
@@ -202,83 +254,147 @@ $member1 = mysqli_fetch_row($memberData1);
                         <div class="card-body">
                             <div class="dt-responsive table-responsive">
                                 <?php
-                                echo '<table id="basic-btn" class="table table-striped table-bordered nowrap">';
-                                echo "<thead>";
-                                echo "<tr>";
-                                echo "<th>SNO</th>";
-                                echo "<th>Department</th>";
-                                echo "<th>Tender No</th>";
-                                echo "<th>Tentative Cost</th>";
-                                echo "<th>Date Add</th>";
-                                echo "<th>Start Date</th>";
-                                echo "<th>File</th>";
-                                echo "<th>Award Status</th>";
-                                echo "<th>Status</th>";
-
-                                echo "</tr>";
-                                echo "</thead>";
                                 $count = 1;
-
-                                echo "<tbody>";
-                                while ($row = mysqli_fetch_row($result)) {
-
-                                    echo "<tr class='record'>";
-                                    echo "<td> $count</td>";
-
-                                    echo "<td>" . $row['0'] . "</td>";
-                                    echo "<td>" . $row['1'] . "</td>";
-                                    echo "<td>" . $row['6'] . "</td>";
-                                    echo "<td>" . date_format(date_create($row[2]), "Y-m-d ") . "</td>";
-                                    echo "<td>" . date_format(date_create($row[3]), "Y-m-d ") . "</td>";
-                                    $res = $row[6];
-                                    $res = base64_encode($res);
-
-                                    if ($row[5] == 'Requested') {
-
-                                        echo "<td>  - </td>";
-                                        echo "<td> -</td>";
-                                        echo "<td> <button type='button' class='btn btn-warning'><i class='feather icon-edit'></i> &nbsp;Pending</button>  </td>";
-                                    } else {
-
-                                        if ($row[5] == 'Allotted' && (empty($row[7])) || $row[5] == 'Sent') {
-                                            echo "<td>" . '<a href="../login/tender/' . $row[4] . '"  target="_blank" style="padding:6px 15.2px;"/>View File 1 </a>' . "</br>";
-                                            if (!empty($row[9])) {
-                                                echo '<a href="../login/tender/' . $row[9] . '" target="_blank" style="padding:6px 15.2px;" />View File 2</a>' . "</td>";
-                                            } else {
-                                                echo '<a href="../login/tender/' . $row[9] . '" class="btn disabled" target="_blank"/>No file </a>' . "</td>";
-                                            }
-
-                                            echo "<td>  <a href='reward-tender-edit.php?id=$res'><button type='button' class='btn btn-warning'><i class='feather icon-edit'></i> &nbsp; Make Award</button></a>  </td>";
-                                            echo "<td> <button type='button' class='btn btn-success'><i class='feather icon-edit'></i> &nbsp;Apporved</button>  </td>";
-
-                                        }
-
-                                        if ($row[7] == 'accepted' || $row[7] == 'denied') {
-                                            $projectStatus = !empty($row[8]) ? $row[8] : $row[7] . " by you";
-                                            echo "<td>" . '<a href="../login/tender/' . $row[4] . '"  target="_blank" style="padding:6px 15.2px;"/>View File 1 </a>' . "</br>";
-                                            if (!empty($row[9])) {
-                                                echo '<a href="../login/tender/' . $row[9] . '" target="_blank" style="padding:6px 15.2px;" />View File 2</a>' . "</td>";
-                                            } else {
-                                                echo '<a href="../login/tender/' . $row[9] . '" class="btn disabled" target="_blank"/>No file </a>' . "</td>";
-                                            }
-                                            echo "<td>" . $projectStatus . " </td>";
-                                            echo "<td>  <a href='#'><button type='button' class='btn btn-danger'><i class='feather icon-edit'></i> &nbsp; Closed</button></a>  </td>";
-
-                                        }
-
-                                    }
-
-
-
-                                    echo "</tr>";
-                                    $count++;
-                                }
-
-
-                                echo "</tfoot>";
-                                echo "</table>";
-
                                 ?>
+
+                                <table id="basic-btn" class="table table-striped table-bordered nowrap">
+                                    <thead>
+                                        <tr>
+                                            <th>SNO</th>
+                                            <th>Department</th>
+                                            <th>Tender No</th>
+                                            <th>Tentative Cost</th>
+                                            <th>Date Add</th>
+                                            <th>Start Date</th>
+                                            <th>File</th>
+                                            <th>Award Status</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php while ($row = mysqli_fetch_row($result)): ?>
+                                            <tr class='record'>
+                                                <td><?php echo $count; ?></td>
+                                                <td><?php echo htmlspecialchars($row[0]); ?></td>
+                                                <td><?php echo htmlspecialchars($row[1]); ?></td>
+                                                <td><?php echo htmlspecialchars($row[6]); ?></td>
+                                                <td><?php echo date_format(date_create($row[2]), "Y-m-d"); ?></td>
+                                                <td><?php echo date_format(date_create($row[3]), "Y-m-d"); ?></td>
+
+                                                <?php
+                                                $res = base64_encode($row[6]);
+
+                                                if ($row[5] == 'Requested') {
+                                                    ?>
+                                                    <td>-</td>
+                                                    <td>-</td>
+                                                    <td>
+                                                        <button type='button' class='btn btn-warning'>
+                                                            <i class='feather icon-edit'></i> &nbsp;Pending
+                                                        </button>
+                                                    </td>
+                                                    <?php
+                                                } else {
+                                                    if ($row[5] == 'Allotted' && (empty($row[7])) || $row[5] == 'Sent') {
+                                                        ?>
+                                                        <td>
+
+                                                            <?php if (isset($row[4]) && $row[4] == null) { ?>
+                                                                <a href="<?= '../login/tender/' . $row[4] ?>" target="_blank" style="padding:6px 15.2px;">
+                                                                    View file 1
+                                                                </a> </br>
+                                                            <?php } ?>
+
+                                                             <?php if (isset($row[9]) && $row[9] == null) { ?>
+                                                                <a href="<?= '../login/tender/' . $row[9] ?>" target="_blank" style="padding:6px 15.2px;">
+                                                                    View file 2
+                                                                </a> </br>
+                                                            <?php } ?>
+
+                                                             <?php if (!empty($row[11])) {
+                                            $extraFiles = json_decode($row[11], true);
+                                            ?>
+                                            <?php if (is_array($extraFiles)) {
+                                                $count = 1;
+                                                ?>
+                                                <?php foreach ($extraFiles as $index => $filePath) { ?>
+                                                    <a href="<?= '../login/' . $filePath ?>" target="_blank">View
+                                                        File <?= $count ?>
+                                                    </a><br />
+                                                    <?php
+                                                    $count++;
+                                                } ?>
+                                            <?php } ?>
+                                        <?php } ?>
+
+                                                            
+
+                                                        </td>
+                                                        <td>
+                                                            <a href='reward-tender-edit.php?id=<?php echo $res; ?>'>
+                                                                <button type='button' class='btn btn-warning'>
+                                                                    <i class='feather icon-edit'></i> &nbsp; Make Award
+                                                                </button>
+                                                            </a>
+                                                        </td>
+                                                        <td>
+                                                            <button type='button' class='btn btn-success'>
+                                                                <i class='feather icon-edit'></i> &nbsp;Approved
+                                                            </button>
+                                                        </td>
+                                                        <?php
+                                                    }
+
+                                                    if ($row[7] == 'accepted' || $row[7] == 'denied') {
+                                                        $projectStatus = !empty($row[8]) ? $row[8] : $row[7] . " by you";
+                                                        ?>
+                                                        <td>
+                                                            <?php if (isset($row[4]) && $row[4] == null) { ?>
+                                                                <a href="<?= '../login/tender/' . $row[4] ?>" target="_blank" style="padding:6px 15.2px;">
+                                                                    View file 1
+                                                                </a> </br>
+                                                            <?php } ?>
+
+                                                             <?php if (isset($row[9]) && $row[9] == null) { ?>
+                                                                <a href="<?= '../login/tender/' . $row[9] ?>" target="_blank" style="padding:6px 15.2px;">
+                                                                    View file 2
+                                                                </a> </br>
+                                                            <?php } ?>
+
+                                                             <?php if (!empty($row[11])) {
+                                                                    $extraFiles = json_decode($row[11], true);
+                                                                    ?>
+                                                                    <?php if (is_array($extraFiles)) {
+                                                                        $count = 1;
+                                                                        ?>
+                                                                        <?php foreach ($extraFiles as $index => $filePath) { ?>
+                                                                            <a href="<?= '../login/' . $filePath ?>" target="_blank">View
+                                                                                File <?= $count ?>
+                                                                            </a><br />
+                                                                            <?php
+                                                                            $count++;
+                                                                        } ?>
+                                                                    <?php } ?>
+                                                                <?php } ?>
+                                                        </td>
+                                                        <td><?php echo htmlspecialchars($projectStatus); ?></td>
+                                                        <td>
+                                                            <a href='#'>
+                                                                <button type='button' class='btn btn-danger'>
+                                                                    <i class='feather icon-edit'></i> &nbsp; Closed
+                                                                </button>
+                                                            </a>
+                                                        </td>
+                                                        <?php
+                                                    }
+                                                }
+                                                ?>
+                                            </tr>
+                                            <?php $count++; ?>
+                                        <?php endwhile; ?>
+                                    </tbody>
+                                    <tfoot></tfoot>
+                                </table>
 
                             </div>
                         </div>

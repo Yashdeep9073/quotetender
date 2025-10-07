@@ -15,37 +15,28 @@ $adminPermissionResult = mysqli_query($db, $adminPermissionQuery);
 $allowDelete = mysqli_num_rows($adminPermissionResult) > 0 ? true : false;
 
 if (
-    $_SERVER['REQUEST_METHOD'] == 'POST' &&
-    isset($_POST['department-search']) ||
-    isset($_POST['section-search']) ||
-    isset($_POST['division-search']) ||
-    isset($_POST['sub-division-search  ']) ||
-    isset($_POST['firm']) ||
-    isset($_POST['state']) ||
-    isset($_POST['city'])
+    $_SERVER['REQUEST_METHOD'] == 'GET' &&
+    isset($_GET['department-search']) ||
+    isset($_GET['section-search']) ||
+    isset($_GET['division-search']) ||
+    isset($_GET['sub-division-search']) ||
+    isset($_GET['firm']) ||
+    isset($_GET['state']) ||
+    isset($_GET['city'])
+
 ) {
 
     // Initialize $conditions as an empty array
     $conditions = [];
 
     // Sanitize inputs
-    $departmentId = filter_input(INPUT_POST, 'department-search', FILTER_SANITIZE_SPECIAL_CHARS);
-    $sectionId = filter_input(INPUT_POST, 'section-search', FILTER_SANITIZE_SPECIAL_CHARS);
-    $divisionId = filter_input(INPUT_POST, 'division-search', FILTER_SANITIZE_SPECIAL_CHARS);
-    $subDivisionId = filter_input(INPUT_POST, 'sub-division-search', FILTER_SANITIZE_SPECIAL_CHARS);
-    $firm = filter_input(INPUT_POST, 'firm', FILTER_SANITIZE_SPECIAL_CHARS);
-    $state = filter_input(INPUT_POST, 'state', FILTER_SANITIZE_SPECIAL_CHARS);
-    $city = filter_input(INPUT_POST, 'city', FILTER_SANITIZE_SPECIAL_CHARS);
-
-    // Set the sanitized data in the session
-    $_SESSION['departmentIdAwardTender'] = $departmentId;
-    $_SESSION['sectionIdAwardTender'] = $sectionId;
-    $_SESSION['divisionIdAwardTender'] = $divisionId;
-    $_SESSION['subDivisionIdAwardTender'] = $subDivisionId;
-    $_SESSION['firm'] = $firm;
-    $_SESSION['state'] = $state;
-    $_SESSION['city'] = $city;
-
+    $departmentId = filter_input(INPUT_GET, 'department-search', FILTER_SANITIZE_SPECIAL_CHARS);
+    $sectionId = filter_input(INPUT_GET, 'section-search', FILTER_SANITIZE_SPECIAL_CHARS);
+    $divisionId = filter_input(INPUT_GET, 'division-search', FILTER_SANITIZE_SPECIAL_CHARS);
+    $subDivisionId = filter_input(INPUT_GET, 'sub-division-search', FILTER_SANITIZE_SPECIAL_CHARS);
+    $firm = filter_input(INPUT_GET, 'firm', FILTER_SANITIZE_SPECIAL_CHARS);
+    $state = filter_input(INPUT_GET, 'state', FILTER_SANITIZE_SPECIAL_CHARS);
+    $city = filter_input(INPUT_GET, 'city', FILTER_SANITIZE_SPECIAL_CHARS);
 
     // Add conditions only if a valid filter is selected
     if ($departmentId && $departmentId !== '0') {
@@ -504,7 +495,7 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
                     <div class="row align-items-center">
                         <div class="col-md-12">
                             <!-- Filters Section -->
-                            <form method="post" id="filterForm">
+                            <form method="get" id="filterForm">
                                 <div class="row">
                                     <div class="col-md-4">
                                         <div class="form-group">
@@ -513,7 +504,7 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
                                                 id="department-search">
                                                 <option value="0">All</option>
                                                 <?php foreach ($departments as $department) { ?>
-                                                    <option value="<?php echo $department['department_id']; ?>" <?php echo isset($_SESSION['departmentId']) && $_SESSION['departmentId'] == $department['department_id'] ? 'selected' : ''; ?>>
+                                                    <option value="<?php echo $department['department_id']; ?>" <?php echo isset($_GET['department-search']) && $_GET['department-search'] == $department['department_id'] ? 'selected' : ''; ?>>
                                                         <?php echo $department['department_name']; ?>
                                                     </option>
                                                 <?php } ?>
@@ -526,8 +517,12 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
                                             <label for="program">Section <span class="text-danger">*</span></label>
                                             <select class="form-control" name="section-search" id="section-search">
                                                 <option value="0">All</option>
-                                                <?php foreach ($sections as $section) { ?>
-                                                    <option value="<?php echo $section['section_id']; ?>" <?php echo isset($_SESSION['sectionId']) && $_SESSION['sectionId'] == $section['section_id'] ? 'selected' : ''; ?>>
+                                                <?php foreach ($sections as $section) {
+                                                    $selectedSection = (isset($_GET['section-search']) && urldecode($_GET['section-search']) == $section['section_id']) ? 'selected' : '';
+
+                                                    ?>
+                                                    <option <?= $selectedSection ?>
+                                                        value="<?php echo $section['section_id']; ?>">
                                                         <?php echo $section['section_name']; ?>
                                                     </option>
                                                 <?php } ?>
@@ -541,7 +536,7 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
                                             <select class="form-control" name="division-search" id="division-search">
                                                 <option value="0">All</option>
                                                 <?php foreach ($divisions as $division) { ?>
-                                                    <option value="<?php echo $division['division_id']; ?>" <?php echo isset($_SESSION['divisionId']) && $_SESSION['divisionId'] == $division['division_id'] ? 'selected' : ''; ?>>
+                                                    <option value="<?php echo $division['division_id']; ?>" <?php echo isset($_GET['division-search']) && $_GET['division-search'] == $division['division_id'] ? 'selected' : ''; ?>>
                                                         <?php echo $division['division_name']; ?>
                                                     </option>
                                                 <?php } ?>
@@ -556,25 +551,22 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
                                             <select class="form-control" name="sub-division-search"
                                                 id="sub-division-search" required>
                                                 <option value="0">All</option>
-                                                <?php foreach ($subDivisions as $subDivision) { ?>
-                                                    <option value="<?php echo $subDivision['id']; ?>" <?php echo isset($_SESSION['subDivisionId']) && $_SESSION['subDivisionId'] == $subDivision['id'] ? 'selected' : ''; ?>>
-                                                        <?php echo $subDivision['name']; ?>
-                                                    </option>
-                                                <?php } ?>
+
                                             </select>
                                             <div class="invalid-feedback">Please select a semester.</div>
                                         </div>
                                     </div>
-
-
                                     <div class="col-md-4">
                                         <div class="form-group">
                                             <label for="semester">Firm <span class="text-danger">*</span></label>
                                             <select class="form-control select-firm" name="firm" required>
                                                 <option value="0">All</option>
-                                                <?php foreach ($firms as $firm) { ?>
-                                                    <option value="<?= $firm['firm_name'] ?>">
-                                                        <?= $firm['firm_name'] ?>
+                                                <?php foreach ($firms as $firm) {
+                                                    $selectedFirm = (isset($_GET['firm']) && urldecode($_GET['firm']) == $firm['firm_name']) ? 'selected' : '';
+                                                    ?>
+                                                    <option value="<?= htmlspecialchars($firm['firm_name']) ?>"
+                                                        <?= $selectedFirm ?>>
+                                                        <?= htmlspecialchars($firm['firm_name']) ?>
                                                     </option>
                                                 <?php } ?>
                                             </select>
@@ -586,8 +578,10 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
                                             <label for="semester">State <span class="text-danger">*</span></label>
                                             <select class="form-control select-state" name="state" required>
                                                 <option value="0">All</option>
-                                                <?php foreach ($states as $state) { ?>
-                                                    <option value="<?= $state['state_code'] ?>">
+                                                <?php foreach ($states as $state) {
+                                                    $selectedState = (isset($_GET['state']) && urldecode($_GET['state']) == $state['state_code']) ? 'selected' : '';
+                                                    ?>
+                                                    <option value="<?= $state['state_code'] ?>" <?= $selectedState ?>>
                                                         <?= $state['state_name'] ?>
                                                     </option>
                                                 <?php } ?>
@@ -598,7 +592,7 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
                                     <div class="col-md-4">
                                         <div class="form-group">
                                             <label for="semester">City <span class="text-danger">*</span></label>
-                                            <select class="form-control select-city" name="city" required>
+                                            <select class="form-control select-city" name="city">
                                                 <option value="0">All</option>
                                             </select>
                                             <div class="invalid-feedback">Please select a semester.</div>
@@ -613,10 +607,12 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
                                         </button>
                                         &nbsp;
                                         <!-- Reset Button -->
-                                        <button type="reset" class="btn btn-primary btn-md d-flex align-items-center"
+                                        <a href="award-tender.php"
+                                            class="btn btn-primary btn-md d-flex align-items-center"
                                             id="filterResetButton">
-                                            <i class="fas fa-undo" style="margin-right: 8px;"></i> Reset
-                                        </button>
+                                            <i class="fas fa-undo" style="margin-right: 8px;"></i>
+                                            Reset
+                                        </a>
                                     </div>
                                 </div>
                             </form>
@@ -696,7 +692,7 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
                                     <span class="checkmarks"></span>
                                 </label>  SNO</th>';
                                 echo "<th>User</th>";
-                                echo "<th>User</th>";
+                                echo "<th>State & City</th>";
                                 echo "<th>Tender No</th>";
                                 echo "<th>Tender ID</th>";
                                 echo "<th>Reference No</th>";
@@ -710,6 +706,7 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
 
 
                                 echo "<th>Status</th>";
+                                echo "<th>Action</th>";
 
 
                                 echo "</tr>";
@@ -734,9 +731,10 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
                                     </div>
                                     </td>";
 
-                                    echo "<td>" . $row['0'] . "<br/> " . "<span style='color:red;'> " . $row['1'] . "</span>" . "<br/>"
-                                        . "<span style='color:green;'> " . $row['2'] . "</span>" . "<br/>" . "<span style='color:orange;'> "
+                                    echo "<td>Name -" . $row['0'] . "<br/> " . "<span style=''>Mail - " . $row['1'] . "</span>" . "<br/>"
+                                        . "<span style=''>M.No - " . $row['2'] . "</span>" . "<br/>" . "<span style=''>Firm - "
                                         . $row['3'] . "</span>" . "</td>";
+                                    echo "<td>State - " . $row['16'] . "<br/> " . "<span style=''>City -  " . $row['17'] . "</span>" . "<br/>" . "</td>";
                                     echo "<td>" . $row['4'] . "</td>";
                                     echo "<td>" . $row['13'] . "</td>";
                                     echo "<td>" . $row['15'] . "</td>";
@@ -750,14 +748,14 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
 
                                     echo "<td>" . "Award Date :" . "<br/>" . date_format(date_create($row['7']), "d-m-Y h:i A") . "<br/>" . '<a href="../login/tender/' . $row['8'] . '"  target="_blank"/>View file </a>' . "</td>";
 
-
+                                    echo "<td>" . $row['14'] . "</td>";
                                     $res = $row[9];
                                     $res = base64_encode($res);
                                     echo "<td>  <a href='award-edit.php?award=$res'><button type='button' class='btn btn-warning'>
                                     <i class='feather icon-edit'></i> &nbsp;Edit Status</button></a><br/></br/> <a href='#'>
                                     <button type='button' class='btn btn-success'><i class='feather icon-edit'></i> &nbsp;Awarded
                                     </button></a> </td>";
-                                    echo "<td>" . $row['14'] . "</td>";
+
 
 
 
@@ -1077,45 +1075,37 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
                 });
             });
 
-            // Fetch session values from the `sessionData` variable
-            var departmentId = sessionData.departmentId;
-            var sectionId = sessionData.sectionId;
-            var divisionId = sessionData.divisionId;
-            var subDivisionId = sessionData.subDivisionId;
+            const urlParams = new URLSearchParams(window.location.search);
+            const sectionSearch = urlParams.get('section-search');
+            const divisionSearch = urlParams.get('division-search');
+            const subDivisionSearch = urlParams.get('sub-division-search');
+            const state = urlParams.get('state');
+            const city = urlParams.get('city');
 
-            // Check if the values are available and handle them as needed
-            if (departmentId) {
-                console.log("Department ID:", departmentId);
-                // Example: Set the value of a dropdown or input
-                $('#department-search').val(departmentId);
-            }
 
-            if (sectionId) {
-                console.log("Section ID:", sectionId);
-                $('#section-search').val(sectionId);
-            }
-
-            if (divisionId) {
-
-                console.log("Division ID:", divisionId);
+            if (sectionSearch) {
                 $.ajax({
-                    url: 'fetch-division-data-sent-tender.php',
+                    url: 'fetch-section-data.php',
                     type: 'POST',
-                    data: { divisionIdSentTender: divisionId },
+                    data: { sectionId: sectionSearch },
                     success: function (response) {
                         if (response.success) {
-                            // console.log(response.success);
+                            // console.log(response.divisionName);
 
                             // Clear existing options except the default "All" option
-                            $('#division-search').empty();
+                            // $('#division-search').find('option').not(':first').remove();
 
                             // Add new options based on the response.divisionId and response.divisionName arrays
                             response.divisionId.forEach((id, index) => {
                                 let divisionName = response.divisionName[index];
                                 $('#division-search').append(new Option(divisionName, id));
                             });
-                            // Select the fetched division
-                            $('#division-search').val(divisionId);
+
+                            if (divisionSearch) {
+                                $('#division-search').val(divisionSearch).trigger('change');
+                            }
+
+
 
                         } else {
                             console.error(response.error);
@@ -1125,30 +1115,31 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
                         console.error('AJAX Error:', status, error);
                     }
                 });
-                // $('#division-search').val(divisionId);
-
             }
 
-            if (subDivisionId) {
-                console.log("Sub-Division ID:", subDivisionId);
+            if (divisionSearch) {
                 $.ajax({
-                    url: 'fetch-sub-division-data-sent-tender.php',
+                    url: 'fetch-division-data.php',
                     type: 'POST',
-                    data: { subDivisionIdSentTender: subDivisionId },
+                    data: { divisionId: divisionSearch },
                     success: function (response) {
                         if (response.success) {
-                            console.log(response.subDivisionName);
 
                             // Clear existing options except the default "All" option
-                            $('#sub-division-search').empty();
+                            $('#sub-division-search').find('option').not(':first').remove();
 
                             // Add new options based on the response.divisionId and response.divisionName arrays
                             response.subDivisionId.forEach((id, index) => {
                                 let subDivisionName = response.subDivisionName[index];
                                 $('#sub-division-search').append(new Option(subDivisionName, id));
                             });
-                            // Select the fetched division
-                            $('#sub-division-search').val(subDivisionId);
+
+                            setTimeout(() => {
+                                if (subDivisionSearch) {
+                                    $('#sub-division-search').val(subDivisionSearch).trigger('change');
+                                }
+                            }, 700);
+
 
                         } else {
                             console.error(response.error);
@@ -1158,28 +1149,49 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
                         console.error('AJAX Error:', status, error);
                     }
                 });
-                // $('#sub-division-search').val(subDivisionId);
             }
 
-            // Reset Filter
-            $('#filterResetButton').click(function () {
-                sessionStorage.clear();
-                location.reload();
-            });
+
+            if (state) {
+                $.ajax({
+                    url: window.location.href,
+                    type: 'POST',
+                    data: { stateCode: state },
+                    dataType: 'json',
+                    success: function (response) {
+                        if (response.status == 200) {
+                            let citySelect = $(".select-city");
+                            citySelect.empty(); // clear old options
+                            citySelect.append('<option value="">Select City</option>');
+                            $.each(response.data, function (index, city) {
+                                citySelect.append(
+                                    `<option value="${city.city_id}">${city.city_name}</option>`
+                                );
+                            });
+
+                            setTimeout(() => {
+                                if (city) {
+                                    citySelect.val(city).trigger('change');
+                                }
+                            }, 1000);
+
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        console.error("AJAX Error:", status, error);
+                        console.error("Raw Response:", xhr.responseText);
+                        Swal.fire("Error", "An error occurred while processing your request. Please try again.", "error");
+                    }
+                });
+            }
+
+
 
         });
     </script>
 
 
-    <script>
-        // PHP exposes session values to JavaScript
-        var sessionData = <?php echo json_encode([
-            'departmentId' => $_SESSION['departmentIdAwardTender'] ?? null,
-            'sectionId' => $_SESSION['sectionIdAwardTender'] ?? null,
-            'divisionId' => $_SESSION['divisionIdAwardTender'] ?? null,
-            'subDivisionId' => $_SESSION['subDivisionIdAwardTender'] ?? null
-        ]); ?>;
-    </script>
+
 
     <script>
         if (window.history.replaceState) {
