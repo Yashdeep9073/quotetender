@@ -10,7 +10,7 @@ if (isset($_GET['id'])) {
     $del = "DELETE from admin where username = '$id'";
 
     $result = mysqli_query($db, $del);
-	
+
     $sql9 = "DELETE from members where member_id= '$id'";
     $result9 = mysqli_query($db, $sql9);
 
@@ -33,29 +33,65 @@ if (isset($_GET['id'])) {
 // }
 
 // tender request
-if(isset($_POST['tender_request_ids'])) {
-    $tender_request_ids = trim($_POST['tender_request_ids']);	
+if (isset($_POST['tender_request_ids'])) {
+    $tender_request_ids = trim($_POST['tender_request_ids']);
     $sql = "UPDATE user_tender_requests set delete_tender = '1' WHERE id in ($tender_request_ids)";
     $resultset = mysqli_query($db, $sql);
-    
+
 }
 
 // tender sent 
-if(isset($_POST['tender_sent_ids'])) {
-    $tender_sent_ids = trim($_POST['tender_sent_ids']);	
+if (isset($_POST['tender_sent_ids'])) {
+    $tender_sent_ids = trim($_POST['tender_sent_ids']);
     $sql = "UPDATE user_tender_requests set delete_tender = '1' WHERE id in ($tender_sent_ids)";
     $resultset = mysqli_query($db, $sql);
 }
 
 
 
-if(isset($_POST['alot_request_ids'])) {
-	$alot_request_ids = trim($_POST['alot_request_ids']);	
-	$sql = "UPDATE user_tender_requests set delete_tender = '1' WHERE id in ($alot_request_ids)";
-	$resultset = mysqli_query($db, $sql);
+if (isset($_POST['alot_request_ids'])) {
+    $alot_request_ids = trim($_POST['alot_request_ids']);
+    $sql = "UPDATE user_tender_requests set delete_tender = '1' WHERE id in ($alot_request_ids)";
+    $resultset = mysqli_query($db, $sql);
 }
-if(isset($_POST['award_request_ids'])) {
-	$award_request_ids = trim($_POST['award_request_ids']);	
-	$sql = "UPDATE user_tender_requests set delete_tender = '1' WHERE id in ($award_request_ids)";
-	$resultset = mysqli_query($db, $sql);
+
+if (isset($_POST['alot_request_ids_bulk'])) {
+    try {
+        $ids = explode(',', trim($_POST['alot_request_ids_bulk'])); // convert "100,104,155" to [100,104,155]
+        $ids = array_filter($ids, 'is_numeric'); // keep only numeric IDs for safety
+
+        if (empty($ids)) {
+            echo json_encode(["status" => 400, "error" => "No valid IDs provided"]);
+            exit;
+        }
+
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+
+        $sql = "UPDATE user_tender_requests SET delete_tender = '1' WHERE id IN ($placeholders)";
+        $stmt = $db->prepare($sql);
+
+        // Create dynamic bind_param string (e.g. 'iii' for 3 integers)
+        $types = str_repeat('i', count($ids));
+
+        $stmt->bind_param($types, ...$ids);
+        $stmt->execute();
+
+        echo json_encode([
+            "status" => 200,
+            "message" => "Deleted successfully",
+            "affected_rows" => $stmt->affected_rows,
+        ]);
+    } catch (Throwable $th) {
+        echo json_encode([
+            "status" => 500,
+            "error" => $th->getMessage(),
+        ]);
+    }
+}
+
+
+if (isset($_POST['award_request_ids'])) {
+    $award_request_ids = trim($_POST['award_request_ids']);
+    $sql = "UPDATE user_tender_requests set delete_tender = '1' WHERE id in ($award_request_ids)";
+    $resultset = mysqli_query($db, $sql);
 }

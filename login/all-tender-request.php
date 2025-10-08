@@ -41,7 +41,8 @@ $queryMain = "
     department.*, 
     s.*,
     dv.*,
-    sd.* 
+    sd.* ,
+     ur.id as userTenderId
 FROM 
     user_tender_requests ur
 LEFT JOIN 
@@ -60,6 +61,7 @@ LEFT JOIN
         FROM user_tender_requests
         GROUP BY tenderID
     ) AS unique_tenders ON ur.id = unique_tenders.min_id
+WHERE ur.delete_tender = 0
 ORDER BY 
     ur.created_at ASC;
 
@@ -361,7 +363,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
 
                                     echo "<tr class='record'>";
                                     echo "<td><div class='custom-control custom-checkbox'>
-                                    <input type='checkbox' class='custom-control-input request_checkbox' id='customCheck" . $row['sno'] . "' data-request-id='" . $row['id'] . "'>
+                                    <input type='checkbox' class='custom-control-input request_checkbox' id='customCheck" . $row['sno'] . "' data-request-id='" . $row['userTenderId'] . "'>
                                     <label class='custom-control-label' for='customCheck" . $row['sno'] . "'>" . $row['sno'] . "</label>
                                     </div>
                                     </td>";
@@ -619,7 +621,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                 type: "POST",
                                 url: "recycleuser.php",
                                 cache: false,
-                                data: 'alot_request_ids=' + selected_values,
+                                data: 'alot_request_ids_bulk=' + selected_values,
                                 success: function () {
                                     $(".request_checkbox:checked").each(function () {
                                         $(this).closest(".record").animate({
