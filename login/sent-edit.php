@@ -113,7 +113,7 @@ if (isset($_POST['submit'])) {
 
 
     $mail->FromName = "Quote Tender  ";
-    $adminEmail = getenv('SMTP_USER_NAME');
+    $adminEmail = "quotetenderindia@gmail.com";
 
     $mail->addAddress($email, "Recepient Name");
     $mail->addAddress($adminEmail);
