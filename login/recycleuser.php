@@ -23,7 +23,6 @@ if (isset($_GET['makeaward_id'])) {
         $id = $_GET['makeaward_id'];
         $remark = "accepted";
         $updatedAt = (new DateTime())->format('Y-m-d H:i:s'); // ✅ Convert to string
-
         $stmtUpdate = $db->prepare("UPDATE user_tender_requests set  remark=?, remarked_at=? WHERE id = ?");
         $stmtUpdate->bind_param(
             "ssi",
@@ -41,7 +40,7 @@ if (isset($_GET['makeaward_id'])) {
             "data" => $_GET,
 
         ]);
-        exit;
+        exit;   
     } catch (\Throwable $th) {
         echo json_encode([
             "status" => 500,
