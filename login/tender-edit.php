@@ -177,6 +177,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
 
 
                 $mail->addAddress($memberData[0], "Recepient Name");
+                $mail->addAddress('quotetenderindia@gmail.com');
 
 
                 $mail->Subject = "Tender Request Approved";

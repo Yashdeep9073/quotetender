@@ -202,14 +202,7 @@ ORDER BY
     $result = mysqli_query($db, $query);
 }
 
-if ($_SERVER['REQUEST_METHOD'] == 'GET') {
-    // Remove specific session variables
-    unset($_SESSION['departmentIdAwardTender']);
-    unset($_SESSION['sectionIdAwardTender']);
-    unset($_SESSION['divisionIdAwardTender']);
-    unset($_SESSION['subDivisionIdAwardTender']);
 
-}
 
 //fecth Department
 $queryDepartment = "SELECT * FROM department WHERE status = 1";

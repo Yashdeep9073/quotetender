@@ -30,9 +30,9 @@ if (isset($_POST['submit'])) {
     $user = $_POST['user'];
     $days = $_POST['day'];
 
-   
 
-    if($user=='other'){
+
+    if ($user == 'other') {
         $name = $_POST['name'];
         $firmname = $_POST['company'];
         $newUserEmail = $_POST['email'];
@@ -44,28 +44,28 @@ if (isset($_POST['submit'])) {
 
         mysqli_query($db, $addMember);
 
-        $newMemberQuery = "SELECT member_id FROM members where email_id='"  . $newUserEmail . "' order by member_id desc limit 1";
+        $newMemberQuery = "SELECT member_id FROM members where email_id='" . $newUserEmail . "' order by member_id desc limit 1";
         $newMemberQueryResult = mysqli_query($db, $newMemberQuery);
 
-         $addedUser = mysqli_fetch_row($newMemberQueryResult);
-         $user=$addedUser[0];
+        $addedUser = mysqli_fetch_row($newMemberQueryResult);
+        $user = $addedUser[0];
     }
 
     $status = 2;
     date_default_timezone_set('Asia/Kolkata');
     $allotted_at = date('Y-m-d H:i:s');
- 
+
     mysqli_query($db, "UPDATE user_tender_requests set `status`='Allotted',`selected_user_id`='$user',
-    `reminder_days`='$days', `allotted_at`='$allotted_at'  WHERE id='"  . $d . "'");
-    
+    `reminder_days`='$days', `allotted_at`='$allotted_at'  WHERE id='" . $d . "'");
+
     $query = "SELECT email_id FROM members WHERE member_id='" . $user . "'";
-    
+
     $result = mysqli_query($db, $query);
 
     $row = mysqli_fetch_row($result);
 
     $email = $row[0];
-    
+
     $mail = new PHPMailer(true);
 
     //Enable SMTP debugging.
@@ -79,51 +79,52 @@ if (isset($_POST['submit'])) {
 
     //Set SMTP host name                      
 
-     $mail->Host = getenv('SMTP_HOST');
+    $mail->Host = getenv('SMTP_HOST');
 
-                //Set this to true if SMTP host requires authentication to send email
+    //Set this to true if SMTP host requires authentication to send email
 
-                $mail->SMTPAuth = true;
+    $mail->SMTPAuth = true;
 
-                //Provide username and password
+    //Provide username and password
 
-                $mail->Username = getenv('SMTP_USER_NAME');
+    $mail->Username = getenv('SMTP_USER_NAME');
 
-                $mail->Password = getenv('SMTP_PASSCODE');
+    $mail->Password = getenv('SMTP_PASSCODE');
 
-                //If SMTP requires TLS encryption then set it
+    //If SMTP requires TLS encryption then set it
 
-                $mail->SMTPSecure = "ssl";
+    $mail->SMTPSecure = "ssl";
 
-                //Set TCP port to connect to
+    //Set TCP port to connect to
 
-                $mail->Port = getenv('SMTP_PORT');
+    $mail->Port = getenv('SMTP_PORT');
 
-                $mail->From = getenv('SMTP_USER_NAME');
+    $mail->From = getenv('SMTP_USER_NAME');
 
 
     $mail->FromName = "Quote Tender  ";
 
-  $adminEmail=getenv('SMTP_USER_NAME');
+    $adminEmail = getenv('SMTP_USER_NAME');
 
     $mail->addAddress($email, "Recepient Name");
-$mail->addAddress($adminEmail);
+    $mail->addAddress('quotetenderindia@gmail.com');
+    $mail->addAddress($adminEmail);
     $mail->isHTML(true);
 
     $mail->Subject = "Alot Tender";
-  $qt1="SELECT user_tender_requests.tenderID,members.name
+    $qt1 = "SELECT user_tender_requests.tenderID,members.name
 FROM user_tender_requests
 INNER JOIN members ON user_tender_requests.member_id =members.member_id WHERE id='" . $d . "'";
-$qty= mysqli_query($db, $qt1);
-        $qty = mysqli_fetch_row($qty);
-        $uname=$qty[0];
+    $qty = mysqli_query($db, $qt1);
+    $qty = mysqli_fetch_row($qty);
+    $uname = $qty[0];
 
     $mail->Body = "
 <div style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
     <div style='text-align: center; margin-bottom: 20px;'>
         <img src='https://dvepl.com/assets/images/logo/dvepl-logo.png' alt='Quote Tender Logo' style='max-width: 200px; height: auto;'>
     </div>
-    <p style='font-size: 18px; color: #555;'>Dear <strong>". $qty[1] ."</strong>,</p>
+    <p style='font-size: 18px; color: #555;'>Dear <strong>" . $qty[1] . "</strong>,</p>
     <p>We are pleased to inform you that the <strong>Tender ID:</strong> " . htmlspecialchars($uname) . " has been allotted to you. For any further assistance or queries regarding the process, please feel free to contact us. We are here to help!</p>
     
     <p style='margin-top: 20px;'>
@@ -161,7 +162,7 @@ department.department_name, s.section_name, ur.selected_user_id , ur.reminder_da
 FROM user_tender_requests ur 
 inner join members sm on ur.selected_user_id= sm.member_id
 inner join section s on ur.section_id=s.section_id
-inner join department on ur.department_id = department.department_id where ur.id='"  . $d . "'");
+inner join department on ur.department_id = department.department_id where ur.id='" . $d . "'");
 
 $requestData = mysqli_fetch_row($requestQuery);
 
@@ -213,7 +214,7 @@ $members = mysqli_query($db, $memberQuery);
 
     <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/selectize.js/0.12.6/js/standalone/selectize.min.js" integrity="sha256-+C0A5Ilqmu4QcSPxrlGpaZxJ04VjsRjKu+G82kl5UJk=" crossorigin="anonymous"></script> -->
     <!-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/selectize.js/0.12.6/css/selectize.bootstrap3.min.css" integrity="sha256-ze/OEYGcFbPRmvCnrSeKbRTtjG4vGLHXgOqsyLFTRjg=" crossorigin="anonymous" /> -->
-    
+
     <!-- Include Select2 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <!-- Include Select2 JS -->
@@ -221,33 +222,33 @@ $members = mysqli_query($db, $memberQuery);
 
 
     <script>
-  $(document).ready(function() {
-        //     $('#myDropdown').selectize({
-        //     sortField: 'text'
-        // });
+        $(document).ready(function () {
+            //     $('#myDropdown').selectize({
+            //     sortField: 'text'
+            // });
 
-        $('#myDropdown').select2({
-        placeholder: "Select User",
-        allowClear: true
+            $('#myDropdown').select2({
+                placeholder: "Select User",
+                allowClear: true
+            });
+
+            // Select the dropdown and the other fields
+            var $dropdown = $('#myDropdown');
+            var $otherFields = $('#otherFields');
+
+            // Listen for changes in the dropdown selection
+            $dropdown.on('change', function () {
+                var selectedValue = $dropdown.val();
+
+                // If "Other" is selected, show the text boxes; otherwise, hide them
+                if (selectedValue === 'other') {
+                    $otherFields.show();
+                } else {
+                    $otherFields.hide();
+                }
+            });
         });
-    
-    // Select the dropdown and the other fields
-    var $dropdown = $('#myDropdown');
-    var $otherFields = $('#otherFields');
-
-    // Listen for changes in the dropdown selection
-    $dropdown.on('change', function() {
-      var selectedValue = $dropdown.val();
-
-      // If "Other" is selected, show the text boxes; otherwise, hide them
-      if (selectedValue === 'other') {
-        $otherFields.show();
-      } else {
-        $otherFields.hide();
-      }
-    });
-  });
-</script>
+    </script>
 </head>
 
 <body class="">
@@ -413,12 +414,13 @@ $members = mysqli_query($db, $memberQuery);
                                         </div>
                                         <div class="col-xl-6 col-lg-6 col-md-4 col-sm-12 col-12">
                                             <div class="form-group">Selected User*
-                                            <input id="name" name="tender" type="text" class="form-control input-md"
+                                                <input id="name" name="tender" type="text" class="form-control input-md"
                                                     required placeholder="Enter tender id"
-                                                    value="<?php echo $requestData[8] . "-" . $requestData[9] . "-" . $requestData[10]; ?>" readonly="">
+                                                    value="<?php echo $requestData[8] . "-" . $requestData[9] . "-" . $requestData[10]; ?>"
+                                                    readonly="">
                                             </div>
                                         </div>
-                                       
+
                                         <div class="col-xl-6 col-lg-6 col-md-4 col-sm-12 col-12">
                                             <div class="form-group">Set Reminder
                                                 <label class="sr-only control-label" for="name">Set Reminder<span
@@ -427,7 +429,7 @@ $members = mysqli_query($db, $memberQuery);
                                                 <select name="day" id="day" class="form-control">
                                                     <?php
                                                     for ($day = 0; $day <= 365; $day++) {
-                                                        $selected=$day==$requestData[7] ? "selected=''" : '';
+                                                        $selected = $day == $requestData[7] ? "selected=''" : '';
                                                         echo "<option value=\"$day\" $selected>$day Days</option>";
                                                     }
                                                     ?>
@@ -441,59 +443,56 @@ $members = mysqli_query($db, $memberQuery);
                                                     </span></label>
                                                 <?php
 
-                                                   echo "<select class='form-control' name='user' required id='myDropdown'>
+                                                echo "<select class='form-control' name='user' required id='myDropdown'>
                                                 <option value=''>Select</option>";
                                                 while ($row = mysqli_fetch_row($members)) {
-                                                  
+
                                                     echo "<option value='" . $row['0'] . "'>" . $row['1'] . "-" . $row['4'] . "-" . $row['3'] . "</option>";
                                                 }
-                                                
-                                                 echo '<option value="other">Other</option>';
-                                                
+
+                                                echo '<option value="other">Other</option>';
+
                                                 echo "</select>";
                                                 ?>
                                             </div>
                                         </div>
                                         <!-- Text input-->
-                                        
-                                        <div class="col-xl-6 col-lg-6 col-md-4 col-sm-12 col-12" id="otherFields" style="display: none;">
+
+                                        <div class="col-xl-6 col-lg-6 col-md-4 col-sm-12 col-12" id="otherFields"
+                                            style="display: none;">
                                             <div class="form-group">Name <span style="color:red;"> *</span>
                                                 <label class="sr-only control-label" for="name">City<span class=" ">
                                                     </span></label>
                                                 <input id="name" name="name" type="text" class="form-control input-md"
-                                              placeholder="Enter Name"
-                                                  >
+                                                    placeholder="Enter Name">
                                             </div>
-                                            
-                                            
-                                            
-                                             <div class="form-group">Email<span style="color:red;"> *</span>
+
+
+
+                                            <div class="form-group">Email<span style="color:red;"> *</span>
                                                 <label class="sr-only control-label" for="name">City<span class=" ">
                                                     </span></label>
                                                 <input id="email" name="email" type="text" class="form-control input-md"
-                                                   placeholder="Enter Email Id"
-                                                  >
+                                                    placeholder="Enter Email Id">
                                             </div>
-                                            
-                                            
-                                            
-                                             <div class="form-group">Phone <span style="color:red;"> *</span>
+
+
+
+                                            <div class="form-group">Phone <span style="color:red;"> *</span>
                                                 <label class="sr-only control-label" for="name">City<span class=" ">
                                                     </span></label>
                                                 <input id="phone" name="phone" type="text" class="form-control input-md"
-                                                  placeholder="Enter Phone No"
-                                                  >
+                                                    placeholder="Enter Phone No">
                                             </div>
-                                            
-                                            
-                                            
-                                            
-                                             <div class="form-group">Company Name
+
+
+
+
+                                            <div class="form-group">Company Name
                                                 <label class="sr-only control-label" for="name">City<span class=" ">
                                                     </span></label>
-                                                <input id="company" name="company" type="text" class="form-control input-md"
-                                                    placeholder="Enter Company Name"
-                                                  >
+                                                <input id="company" name="company" type="text"
+                                                    class="form-control input-md" placeholder="Enter Company Name">
                                             </div>
                                         </div>
 

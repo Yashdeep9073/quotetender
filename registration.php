@@ -117,7 +117,7 @@ if (isset($_POST['firmName']) && $_SERVER['REQUEST_METHOD'] == "POST") {
                 $mail->setFrom(getenv('SMTP_USER_NAME'), "Quote Tender");
                 $mail->addAddress($email, $name);
                 $mail->isHTML(true);
-                $mail->addCC('quotetenderindia@gmail.com');
+                $mail->addAddress('quotetenderindia@gmail.com');
 
 
                 $activationLink = getenv('BASE_URL') . '/activate.php?token=' . $activationToken;

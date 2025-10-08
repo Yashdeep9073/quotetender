@@ -158,6 +158,7 @@ if (isset($_GET['id'])) {
     $mail->FromName = "Quote Tender  ";
     $adminEmail = getenv('SMTP_USER_NAME');
 
+    $mail->addAddress('quotetenderindia@gmail.com');
     $mail->addAddress($adminEmail);
     $mail->IsHTML(true);
 

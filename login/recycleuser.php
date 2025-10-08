@@ -18,6 +18,39 @@ if (isset($_GET['id'])) {
     $result8 = mysqli_query($db, $sql8);
 }
 
+if (isset($_GET['makeaward_id'])) {
+    try {
+        $id = $_GET['makeaward_id'];
+        $remark = "accepted";
+        $updatedAt = (new DateTime())->format('Y-m-d H:i:s'); // ✅ Convert to string
+
+        $stmtUpdate = $db->prepare("UPDATE user_tender_requests set  remark=?, remarked_at=? WHERE id = ?");
+        $stmtUpdate->bind_param(
+            "ssi",
+            $remark,
+            $updatedAt,
+            $id
+        );
+
+        if (!$stmtUpdate->execute()) {
+            throw new Exception($stmtUpdate->error);
+        }
+        echo json_encode([
+            "status" => 200,
+            "message" => "Testing",
+            "data" => $_GET,
+
+        ]);
+        exit;
+    } catch (\Throwable $th) {
+        echo json_encode([
+            "status" => 500,
+            "error" => $th->getMessage(),
+        ]);
+        exit;
+    }
+}
+
 // if (isset($_GET['del_id'])){
 
 //     $id = $_GET['del_id'];

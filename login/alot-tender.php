@@ -343,6 +343,8 @@ inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_i
 
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <link rel="stylesheet" href="assets/css/plugins/dataTables.bootstrap4.min.css">
 
     <link rel="stylesheet" href="assets/css/style.css">
@@ -787,14 +789,39 @@ inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_i
                                     $res = $row['t_id'];
                                     $res = base64_encode($res);
 
-                                    echo "<td>  <a href='alot-tender-update.php?id=$res'><button type='button' class='btn btn-warning'>
-                                    <i class='feather icon-edit'></i> &nbsp;Re-Alot</button></a>  &nbsp;";
-                                    echo "<br/>";
-                                    echo "<br/>";
-                                    if ($allowDelete == true || (in_array('All', $permissions)) || (in_array('Recycle Bin', $permissions))) {
-                                        echo "<a href='javascript:void(0);' id='" . $row['t_id'] . "'class='recyclebutton btn btn-danger' title='Click To Delete'> 
-                                    <i class='feather icon-trash'></i>  &nbsp; Move Bin</a></td>";
+
+                                    if ($allowDelete == true || in_array('All', $permissions) || in_array('Recycle Bin', $permissions)) {
+                                        echo "<td>
+        <div class='d-flex flex-column gap-2'>
+
+            <!-- Three-dot dropdown for other actions -->
+            <div class='dropdown'>
+                <button class='btn btn-secondary' type='button' id='dropdownMenu{$row['t_id']}' data-bs-toggle='dropdown' aria-expanded='false'>
+                     <i class='feather icon-more-vertical'></i> 
+                </button>
+                <ul class='dropdown-menu' aria-labelledby='dropdownMenu{$row['t_id']}'>
+                    <li>
+                        <a class='dropdown-item makeAward' href='javascript:void(0);' id='{$row['t_id']}' title='Click To Make Award' >
+                            <i class='feather icon-award'></i> Award
+                        </a>
+                    </li>   
+                    <li>
+                        <a class='dropdown-item recyclebutton' href='javascript:void(0);' id='{$row['t_id']}' title='Click To Delete'>
+                            <i class='feather icon-trash'></i> Move to Bin
+                        </a>
+                    </li>
+                    <li>
+                        <a class='dropdown-item' href='alot-tender-update.php?id=$res' >
+                            <i class='feather icon-repeat'></i> Re-Alot
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </td>";
                                     }
+
+
                                     echo "</tr>";
                                     $count++;
                                 }
@@ -878,6 +905,82 @@ inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_i
                             Swal.fire({
                                 title: 'Error!',
                                 text: 'Something went wrong while moving the record to recycle bin.',
+                                icon: 'error',
+                                confirmButtonColor: "#33cc33"
+                            });
+                        }
+                    });
+
+                    // Animate and remove the record
+                    $(this).parents(".record").animate({
+                        backgroundColor: "#FF3"
+                    }, "fast")
+                        .animate({
+                            opacity: "hide"
+                        }, "slow");
+
+                    // Reload page after animation
+                    setTimeout(function () {
+                        window.location.reload();
+                    }, 2000);
+                }
+            });
+        });
+        $(".makeAward").on('click', function () {
+
+            var element = $(this);
+
+            var del_id = element.attr("id");
+
+            var info = 'makeaward_id=' + del_id;
+
+            Swal.fire({
+                title: "Are you sure?",
+                text: "You won't be able to revert this Record!",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#33cc33",
+                cancelButtonColor: "#ff5471",
+                confirmButtonText: "Yes, Award tender!",
+                cancelButtonText: "Cancel"
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        type: "GET",
+                        url: "recycleuser.php",
+                        data: info,
+                        success: function (response) {
+
+                            console.log(response);
+
+                            let result = JSON.parse(response);
+
+                            if (result.status == 200) {
+                                // Show success message
+                                Swal.fire({
+                                    title: 'Awarded!',
+                                    text: 'Tender awarded to user.',
+                                    icon: 'success',
+                                    confirmButtonColor: "#33cc33",
+                                    timer: 1500,
+                                    timerProgressBar: true,
+                                    showConfirmButton: false
+                                });
+                            } else {
+                                Swal.fire({
+                                    title: 'Error!',
+                                    text: `${result.error}`,
+                                    icon: 'error',
+                                    confirmButtonColor: "#33cc33"
+                                });
+                            }
+
+                        },
+                        error: function (error) {
+                            console.log(error);
+                            Swal.fire({
+                                title: 'Error!',
+                                text: 'Something went wrong while moving updating.',
                                 icon: 'error',
                                 confirmButtonColor: "#33cc33"
                             });
