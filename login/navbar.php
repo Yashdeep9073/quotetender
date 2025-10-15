@@ -11,9 +11,11 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
 ?>
 
 <style>
-.logout_btn:hover .logout_btn{
-        color: rgb(255, 255, 255) !important; /* Set text color to white */
-        background-color: #ff2046 !important; /* Set background color */
+    .logout_btn:hover .logout_btn {
+        color: rgb(255, 255, 255) !important;
+        /* Set text color to white */
+        background-color: #ff2046 !important;
+        /* Set background color */
     }
 </style>
 
@@ -156,8 +158,12 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                         <a href="#!" class="nav-link "><span class="pcoded-micon"><i
                                     class="feather icon-users"></i></span><span class="pcoded-mtext">Staff User</span></a>
                         <ul class="pcoded-submenu">
-                            <?php if ((in_array('Add Staff User', $permissions)) || (in_array('All', $permissions))) {
-                                echo " <li><a href='add-user.php'>Add Staff User</a></li>";
+                            <?php
+                            if ((in_array('Manage Role', $permissions)) || (in_array('All', $permissions))) {
+                                echo " <li><a href='manage-permissions.php'>Manage Permissions </a></li>";
+                            }
+                            if ((in_array('Manage Role', $permissions)) || (in_array('All', $permissions))) {
+                                echo " <li><a href='manage-roles.php'>Manage Roles </a></li>";
                             }
                             if ((in_array('Manage Staff User', $permissions)) || (in_array('All', $permissions))) {
                                 echo "<li><a href='view-user.php'>Manage Staff User</a></li>";
@@ -189,10 +195,10 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                             }
                             if ((in_array('Award Tender', $permissions)) || (in_array('All', $permissions))) {
                                 echo "<li><a href='award-tender.php'> Award Tender</a></li>";
-                            } 
+                            }
                             if ((in_array('Award Tender', $permissions)) || (in_array('All', $permissions))) {
                                 echo "<li><a href='all-tender-request.php'>View All Tenders</a></li>";
-                            } 
+                            }
                             ?>
 
                         </ul>
@@ -292,7 +298,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
 
                 <li class="nav-item">
                     <a href="javascript:void(0);" class="nav-link "><span class="pcoded-micon"><i
-                                class="feather icon-layers"></i></span><span class="">Version 1.2.3</span></a>
+                                class="feather icon-layers"></i></span><span class="">Version 1.4.3</span></a>
                 </li>
 
             </ul>

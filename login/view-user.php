@@ -180,9 +180,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['memberIds'])) {
 
 
                         <div class="card-header table-card-header">
-
-
-
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="d-flex justify-content-end">
+                                        <a class="btn btn-primary rounded-sm" href="add-user.php">Add Staff User</a>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         <div class="card-body">
                             <div class="dt-responsive table-responsive">

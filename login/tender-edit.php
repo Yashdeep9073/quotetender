@@ -1,10 +1,10 @@
 <?php
 
+include("db/config.php");
 session_start();
 require_once "../vendor/autoload.php";
 require_once "../env.php";
 require_once __DIR__ . "/./utility/fileUploader.php";
-
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
@@ -16,103 +16,331 @@ if (!isset($_SESSION["login_user"])) {
 
 
 $name = $_SESSION['login_user'];
-
-include("db/config.php");
-
 $en = $_GET["id"];
-
 $d = base64_decode($en);
+$isUpdate = (int) $_GET['is_update'] ?? null;
+
+try {
+
+    // Lock the sequence row
+    $stmtCount = $db->prepare("SELECT last_sequence FROM reference_sequence WHERE id = 1 ");
+    $stmtCount->execute();
+    $lastCount = $stmtCount->get_result()->fetch_array();
+
+    $stmtFetchTenderData = $db->prepare("SELECT 
+    m.name, 
+    m.firm_name, 
+    m.mobile, 
+    ur.tender_no, 
+    dept.department_name, 
+    ur.name_of_work,
+    ur.due_date, 
+    ur.created_at, 
+    ur.sent_at, 
+    ur.file_name, 
+    ur.tenderID, 
+    ur.id, 
+    ur.reference_code, 
+    ur.file_name2, 
+    ur.tentative_cost, 
+    ur.section_id, 
+    ur.division_id,
+    ur.sub_division_id,
+    ur.additional_files,
+    MAX(s.section_name) AS section_name,
+    MAX(dv.division_name) AS division_name,
+    MAX(sd.subdivision) AS subdivision,
+    ur.auto_quotation,
+    ur.email_sent_date
+FROM 
+    user_tender_requests ur
+INNER JOIN 
+    members m ON ur.member_id = m.member_id
+LEFT JOIN 
+    department dept ON ur.department_id = dept.department_id
+LEFT JOIN 
+    section s ON ur.section_id = s.section_id
+LEFT JOIN 
+    division dv ON ur.division_id = dv.division_id
+LEFT JOIN
+    sub_division sd ON ur.sub_division_id = sd.id
+WHERE 
+    ur.delete_tender = '0' ANd ur.id = ?
+GROUP BY 
+    ur.id
+ORDER BY 
+    NOW() >= CAST(ur.sent_at AS DATE), 
+    CAST(ur.sent_at AS DATE) ASC, 
+    ABS(DATEDIFF(NOW(), CAST(ur.sent_at AS DATE)))
+    ");
+
+    $stmtFetchTenderData->bind_param("s", $d);
+
+    $stmtFetchTenderData->execute();
+    $tenderData = $stmtFetchTenderData->get_result()->fetch_array(MYSQLI_ASSOC);
+
+
+
+    // $requestQuery = mysqli_query($db, "SELECT department.department_name, ur.file_name, ur.tenderID, ur.id ,ur.reference_code,
+    // ur.tender_no,ur.name_of_work,ur.tentative_cost,ur.auto_quotation
+    // FROM user_tender_requests ur 
+    // inner join members m on ur.member_id= m.member_id
+    // inner join department on ur.department_id = department.department_id where ur.id='" . $d . "'");
+
+    // $requestData = mysqli_fetch_row($requestQuery);
+
+
+    $departmentQuery = "SELECT * FROM department ";
+    $departments = mysqli_query($db, $departmentQuery);
+
+    $sectionQuery = "SELECT * FROM section where status=1";
+    $sections = mysqli_query($db, $sectionQuery);
+
+    $stmtFetchDivision = $db->prepare("SELECT * FROM division ");
+    $stmtFetchDivision->execute();
+    $divisions = $stmtFetchDivision->get_result()->fetch_all(MYSQLI_ASSOC);
+
+
+    $stmtFetchSubDivision = $db->prepare("SELECT * FROM sub_division ");
+    $stmtFetchSubDivision->execute();
+    $subDivisions = $stmtFetchSubDivision->get_result()->fetch_all(MYSQLI_ASSOC);
+    // echo "<pre>";
+    // // print_r($divisions);
+
+    // foreach ($divisions as $key => $value) {
+    //     print_r($value);
+    // }
+    // exit;
+
+} catch (\Throwable $th) {
+    $_SESSION['error'] = $th->getMessage();
+}
 
 if ($_SERVER['REQUEST_METHOD'] == "POST") {
 
     try {
 
-        // echo json_encode([
-        //     "status" => 400,
-        //     "error" => "Success",
-        //     "data" => $_POST,
-        //     "files" => $_FILES,
+        if (isset($isUpdate) && $isUpdate === 1) {
 
-        // ]);
-        // exit;
+            // echo json_encode([
+            //     "status" => 400,
+            //     "error" => "debugging",
+            //     "data" => $tenderData,
+            // ]);
 
-        // DEBUG
-        $multiUploadResult = uploadMedia($_FILES['multi_file'], $upload_directory, [
-            // Images
-            'jpg',
-            'jpeg',
-            'png',
-            'gif',
-            'webp',
-            'bmp',
-            'svg',
-            'tiff',
-            'ico',
-            // Documents
-            'pdf',
-            'doc',
-            'docx',
-            'xls',
-            'xlsx',
-            'ppt',
-            'pptx',
-            'txt',
-            'rtf',
-            // Data
-            'csv',
-            // Archives (optional, be cautious with these)
-            // 'zip', 'rar', 'tar', 'gz',
-        ], 2 * 1024 * 1024);
+            // Check if files were actually uploaded
+            if (isset($_FILES['multi_file']) && !empty($_FILES['multi_file']['name'][0])) {
 
+                $tender = $_POST['tenderno'];
+                $code = $_POST['code'];
+                $work = $_POST['work'];
+                $tender1 = $_POST['tender'];
+                $dept = $_POST['department'];
+                $section = $_POST['coutrycode'];
+                $division_id = $_POST['statelist'];
+                $sub_division_id = $_POST['city'];
+                $tentative_cost = $_POST['tentative_cost'];
+                $autoEmail = $_POST['autoEmail'];
 
-        $mediaUrls = [];
+                // Upload new files
+                $multiUploadResult = uploadMedia($_FILES['multi_file'], $upload_directory, [
+                    // Images
+                    'jpg',
+                    'jpeg',
+                    'png',
+                    'gif',
+                    'webp',
+                    'bmp',
+                    'svg',
+                    'tiff',
+                    'ico',
+                    // Documents
+                    'pdf',
+                    'doc',
+                    'docx',
+                    'xls',
+                    'xlsx',
+                    'ppt',
+                    'pptx',
+                    'txt',
+                    'rtf',
+                    // Data
+                    'csv',
+                ], 2 * 1024 * 1024);
 
-        foreach ($multiUploadResult as $result) {
-            if (isset($result['error'])) {
-                // echo "Upload Error: " . $result['error'] . "\n";
+                $newMediaUrls = [];
+                foreach ($multiUploadResult as $result) {
+                    if (isset($result['error'])) {
+                        echo json_encode([
+                            "status" => 400,
+                            "error" => "Error:" . $result['error'],
+                        ]);
+                        exit;
+                    } else {
+                        $newMediaUrls[] = $result['filename'];
+                    }
+                }
+
+                // Get existing additional files to append to them
+                mysqli_select_db($db, DB_NAME);
+                $query = "SELECT additional_files FROM user_tender_requests WHERE id='" . $d . "'";
+                $result = mysqli_query($db, $query);
+                $row = mysqli_fetch_assoc($result);
+
+                $existingFiles = [];
+                if ($row && !empty($row['additional_files'])) {
+                    $existingFiles = json_decode($row['additional_files'], true);
+                    if (!is_array($existingFiles)) {
+                        $existingFiles = [];
+                    }
+                }
+
+                // Merge existing files with new files
+                $allMediaUrls = array_merge($existingFiles, $newMediaUrls);
+                $mediaUrlsJson = json_encode($allMediaUrls);
+
+                date_default_timezone_set('Asia/Kolkata');
+                $sent_at = date('Y-m-d H:i:s');
+
+                $tender2 = $tenderData['tenderID']; // Use the tenderID from $tenderData
+
+                // Update main fields
+                mysqli_query($db, "UPDATE user_tender_requests SET 
+                    `tender_no` = '$tender', 
+                    `reference_code` = '$code',
+                    `tenderID` = '$tender1', 
+                    `tentative_cost` = '$tentative_cost', 
+                    `department_id` = '$dept',
+                    `section_id` = '$section',
+                    `sub_division_id` = '$sub_division_id',
+                    `division_id` = '$division_id',
+                    `name_of_work` = '$work',
+                    `file_name` = 'null',
+                    `file_name2` = 'null',
+                    `status` = 'Sent', 
+                    `sent_at` = '$sent_at', 
+                    `auto_quotation` = '$autoEmail' 
+                    WHERE `tenderID` = '" . $tender2 . "'");
+
+                // Update additional_files with merged array
+                $stmtUpdateMedia = $db->prepare("UPDATE user_tender_requests SET additional_files = ? WHERE tenderID = ?");
+                $stmtUpdateMedia->bind_param("ss", $mediaUrlsJson, $tender2);
+                $stmtUpdateMedia->execute();
+
             } else {
-                $mediaUrls[] = $result['filename'];
+                // No files uploaded, just update the main fields without touching additional_files
+                $tender = $_POST['tenderno'];
+                $code = $_POST['code'];
+                $work = $_POST['work'];
+                $tender1 = $_POST['tender'];
+                $dept = $_POST['department'];
+                $section = $_POST['coutrycode'];
+                $division_id = $_POST['statelist'];
+                $sub_division_id = $_POST['city'];
+                $tentative_cost = $_POST['tentative_cost'];
+                $autoEmail = $_POST['autoEmail'];
+
+                date_default_timezone_set('Asia/Kolkata');
+                $sent_at = date('Y-m-d H:i:s');
+
+                $tender2 = $tenderData['tenderID']; // Use the tenderID from $tenderData
+
+                // Update main fields only (don't touch additional_files)
+                mysqli_query($db, "UPDATE user_tender_requests SET 
+                        `tender_no` = '$tender', 
+                        `reference_code` = '$code',
+                        `tenderID` = '$tender1', 
+                        `tentative_cost` = '$tentative_cost', 
+                        `department_id` = '$dept',
+                        `section_id` = '$section',
+                        `sub_division_id` = '$sub_division_id',
+                        `division_id` = '$division_id',
+                        `name_of_work` = '$work',
+                        `file_name` = 'null',
+                        `file_name2` = 'null',
+                        `status` = 'Sent', 
+                        `sent_at` = '$sent_at', 
+                        `auto_quotation` = '$autoEmail' 
+                        WHERE `tenderID` = '" . $tender2 . "'");
             }
-        }
+        } else {
+            // DEBUG
+            $multiUploadResult = uploadMedia($_FILES['multi_file'], $upload_directory, [
+                // Images
+                'jpg',
+                'jpeg',
+                'png',
+                'gif',
+                'webp',
+                'bmp',
+                'svg',
+                'tiff',
+                'ico',
+                // Documents
+                'pdf',
+                'doc',
+                'docx',
+                'xls',
+                'xlsx',
+                'ppt',
+                'pptx',
+                'txt',
+                'rtf',
+                // Data
+                'csv',
+                // Archives (optional, be cautious with these)
+                // 'zip', 'rar', 'tar', 'gz',
+            ], 2 * 1024 * 1024);
 
-        $mediaUrlsJson = json_encode($mediaUrls);
+
+            $mediaUrls = [];
+
+            foreach ($multiUploadResult as $result) {
+                if (isset($result['error'])) {
+                    // echo "Upload Error: " . $result['error'] . "\n";
+                } else {
+                    $mediaUrls[] = $result['filename'];
+                }
+            }
+
+            $mediaUrlsJson = json_encode($mediaUrls);
 
 
-        $tender = $_POST['tenderno'];
-        $code = $_POST['code'];
-        $work = $_POST['work'];
-        $tender1 = $_POST['tender'];
-        $dept = $_POST['department'];
+            $tender = $_POST['tenderno'];
+            $code = $_POST['code'];
+            $work = $_POST['work'];
+            $tender1 = $_POST['tender'];
+            $dept = $_POST['department'];
 
-        $section = $_POST['coutrycode'];
-        $division_id = $_POST['statelist'];
-        $sub_division_id = $_POST['city'];
-        $tentative_cost = $_POST['tentative_cost'];
-        $autoEmail = $_POST['autoEmail'];
-
-
-        mysqli_select_db($db, DB_NAME);
-
-        // Delete the old file
-        $query = "SELECT user_tender_requests.file_name , user_tender_requests.file_name2,user_tender_requests.tenderID  FROM user_tender_requests WHERE id='" . $d . "'";
-        $result = mysqli_query($db, $query);
-        $row = mysqli_fetch_row($result);
+            $section = $_POST['coutrycode'];
+            $division_id = $_POST['statelist'];
+            $sub_division_id = $_POST['city'];
+            $tentative_cost = $_POST['tentative_cost'];
+            $autoEmail = $_POST['autoEmail'];
 
 
-        date_default_timezone_set('Asia/Kolkata');
+            mysqli_select_db($db, DB_NAME);
 
-        $sent_at = date('Y-m-d H:i:s');
+            // Delete the old file
+            $query = "SELECT user_tender_requests.file_name , user_tender_requests.file_name2,user_tender_requests.tenderID  FROM user_tender_requests WHERE id='" . $d . "'";
+            $result = mysqli_query($db, $query);
+            $row = mysqli_fetch_row($result);
 
-        $tender2 = $row['2'];
 
-        mysqli_query($db, "UPDATE user_tender_requests set `tender_no` ='$tender', `reference_code`='$code',`tenderID`='$tender1', 
+            date_default_timezone_set('Asia/Kolkata');
+
+            $sent_at = date('Y-m-d H:i:s');
+
+            $tender2 = $row['2'];
+
+            mysqli_query($db, "UPDATE user_tender_requests set `tender_no` ='$tender', `reference_code`='$code',`tenderID`='$tender1', 
             `tentative_cost`='$tentative_cost', `department_id`='$dept',`section_id`='$section',`sub_division_id`='$sub_division_id',`division_id`='$division_id',`name_of_work`='$work',
             `file_name`='null',`file_name2`='null',`status`='Sent', `sent_at`='$sent_at' , `auto_quotation`='$autoEmail' WHERE `tenderID`='" . $tender2 . "' ");
 
-        $stmtUpdateMedia = $db->prepare("UPDATE user_tender_requests SET additional_files = ? WHERE tenderID = ?");
-        $stmtUpdateMedia->bind_param("ss", $mediaUrlsJson, $tender2); // "si" means first param is string (JSON), second is integer (ID)
-        $stmtUpdateMedia->execute();
-
+            $stmtUpdateMedia = $db->prepare("UPDATE user_tender_requests SET additional_files = ? WHERE tenderID = ?");
+            $stmtUpdateMedia->bind_param("ss", $mediaUrlsJson, $tender2); // "si" means first param is string (JSON), second is integer (ID)
+            $stmtUpdateMedia->execute();
+        }
 
         //auto quotation 
         $autoEmailQuery = mysqli_query($db, "SELECT `auto_quotation` FROM user_tender_requests WHERE `id`= '" . $d . "' ");
@@ -261,14 +489,6 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
     }
 }
 
-
-// Lock the sequence row
-$stmtCount = $db->prepare("SELECT last_sequence FROM reference_sequence WHERE id = 1 ");
-$stmtCount->execute();
-$lastCount = $stmtCount->get_result()->fetch_array();
-
-
-
 if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
     # code...
 // Get current timestamp in YYYYMMDDHHMMSS format
@@ -322,20 +542,6 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
         exit;
     }
 }
-
-$requestQuery = mysqli_query($db, "SELECT department.department_name, ur.file_name, ur.tenderID, ur.id ,ur.reference_code
-FROM user_tender_requests ur 
-inner join members m on ur.member_id= m.member_id
-inner join department on ur.department_id = department.department_id where ur.id='" . $d . "'");
-
-$requestData = mysqli_fetch_row($requestQuery);
-
-
-$departmentQuery = "SELECT * FROM department ";
-$departments = mysqli_query($db, $departmentQuery);
-
-$sectionQuery = "SELECT * FROM section where status=1";
-$sections = mysqli_query($db, $sectionQuery);
 
 ?>
 
@@ -456,6 +662,55 @@ $sections = mysqli_query($db, $sectionQuery);
 
 <body class="">
 
+    <?php if (isset($_SESSION['success'])) { ?>
+        <script>
+            const notyf = new Notyf({
+                position: {
+                    x: 'center',
+                    y: 'top'
+                },
+                types: [
+                    {
+                        type: 'success',
+                        background: '#26c975', // Change background color
+                        textColor: '#FFFFFF',  // Change text color
+                        dismissible: true,
+                        duration: 10000
+                    }
+                ]
+            });
+            notyf.success("<?php echo $_SESSION['success']; ?>");
+        </script>
+        <?php
+        unset($_SESSION['success']);
+        ?>
+    <?php } ?>
+
+    <?php if (isset($_SESSION['error'])) { ?>
+        <script>
+            const notyf = new Notyf({
+                position: {
+                    x: 'center',
+                    y: 'top'
+                },
+                types: [
+                    {
+                        type: 'error',
+                        background: '#ff1916',
+                        textColor: '#FFFFFF',
+                        dismissible: true,
+                        duration: 10000
+                    }
+                ]
+            });
+            notyf.error("<?php echo $_SESSION['error']; ?>");
+        </script>
+        <?php
+        unset($_SESSION['error']);
+        ?>
+    <?php } ?>
+
+
     <div class="loader-bg">
         <div class="loader-track">
             <div class="loader-fill"></div>
@@ -530,7 +785,7 @@ $sections = mysqli_query($db, $sectionQuery);
                     <div class="row align-items-center">
                         <div class="col-md-12">
                             <div class="page-header-title">
-                                <h5 class="m-b-10">Tender Update - Tender ID : <?php echo $requestData[2]; ?>
+                                <h5 class="m-b-10">Tender Update - Tender ID : <?php echo $tenderData['tenderID']; ?>
                                 </h5>
                             </div>
 
@@ -571,20 +826,7 @@ $sections = mysqli_query($db, $sectionQuery);
                                 <div class=" ">
                                     <!-- Text input-->
                                     <div class="row">
-                                        <!-- <div class="col-xl-6 col-lg-6 col-md-4 col-sm-12 col-12">
-                                            <div class="form-group">File1*
-                                                <label class="sr-only control-label" for="name">File1*</label>
-                                                <input name="uploaded_file1" type="file" class="form-control input-md"
-                                                    required accept="application/pdf,application/vnd.ms-excel">
-                                            </div>
-                                        </div>
-                                        <div class="col-xl-6 col-lg-6 col-md-4 col-sm-12 col-12">
-                                            <div class="form-group">File2*
-                                                <label class="sr-only control-label" for="name">File2*</label>
-                                                <input name="uploaded_file2" type="file" class="form-control input-md"
-                                                    accept="application/pdf,application/vnd.ms-excel">
-                                            </div>
-                                        </div> -->
+
                                         <div class="col-xl-6 col-lg-6 col-md-4 col-sm-12 col-12">
                                             <div class="form-group">
                                                 <label>Files <span class="text-danger">*</span></label>
@@ -606,10 +848,10 @@ $sections = mysqli_query($db, $sectionQuery);
                                         </div>
                                         <div class="col-xl-6 col-lg-6 col-md-4 col-sm-12 col-12">
                                             <div class="form-group">CA No <span class="text-danger">*</span>
-                                                <label class="sr-only control-label" for="name">Firm Name<span
-                                                        class=" ">
-                                                    </span></label>
+
+                                                </span></label>
                                                 <input id="tenderno" name="tenderno" type="text"
+                                                    value="<?php echo $tenderData['tender_no'] ?? ""; ?>"
                                                     placeholder=" Enter CA No *" class="form-control input-md" value="">
                                             </div>
                                         </div>
@@ -621,7 +863,8 @@ $sections = mysqli_query($db, $sectionQuery);
                                                         class="text-danger">*</span></label>
                                                 <div class="input-group">
                                                     <input id="code" name="code" type="text" placeholder="Enter Code *"
-                                                        class="form-control" value="<?php echo $requestData[4]; ?>">
+                                                        class="form-control"
+                                                        value="<?php echo $tenderData['reference_code'] ?? ""; ?>">
                                                     <!-- <button type="button"
                                                         class="btn btn-primary refNumber">Generate</button> -->
                                                 </div>
@@ -632,7 +875,8 @@ $sections = mysqli_query($db, $sectionQuery);
                                             <div class="form-group">Name of Work <span class="text-danger">*</span>
 
                                                 <input id="work" name="work" type="text" class="form-control input-md"
-                                                    placeholder="Name of the work" value="">
+                                                    placeholder="Name of the work"
+                                                    value="<?php echo $tenderData['name_of_work'] ?? ""; ?>">
                                             </div>
                                         </div>
 
@@ -643,7 +887,7 @@ $sections = mysqli_query($db, $sectionQuery);
                                                     </span></label>
                                                 <input id="tender" name="tender" type="text"
                                                     class="form-control input-md" placeholder="Enter tender id"
-                                                    value="<?php echo $requestData[2]; ?>">
+                                                    value="<?php echo $tenderData['tenderID'] ?? ""; ?>">
                                             </div>
                                         </div>
                                         <div class="col-xl-6 col-lg-6 col-md-4 col-sm-12 col-12">
@@ -653,7 +897,7 @@ $sections = mysqli_query($db, $sectionQuery);
                                                     </span></label>
                                                 <input id="tentative_cost" name="tentative_cost" type="number" min="0"
                                                     class="form-control input-md" placeholder="Enter Tentative Cost"
-                                                    value="">
+                                                    value="<?php echo $tenderData['tentative_cost'] ?? ""; ?>">
                                             </div>
                                         </div>
 
@@ -666,7 +910,7 @@ $sections = mysqli_query($db, $sectionQuery);
 
                                                 echo "<select class='form-control' name='department' >";
                                                 while ($row = mysqli_fetch_row($departments)) {
-                                                    $selected = $requestData['0'] == $row['1'] ? "selected=''" : '';
+                                                    $selected = $tenderData['division_id'] == $row['1'] ? "selected=''" : '';
 
                                                     echo "<option value='" . $row['0'] . "' " . $selected . ">" . $row['1'] . "</option>";
                                                 }
@@ -684,7 +928,8 @@ $sections = mysqli_query($db, $sectionQuery);
                                                     <option value="">Select Section</option>
                                                     <?php
                                                     while ($row = mysqli_fetch_row($sections)) {
-                                                        echo "<option value='" . $row['0'] . "'>" . $row['1'] . "</option>";
+                                                        $selected = $tenderData['section_id'] == $row['0'] ? "selected=''" : '';
+                                                        echo "<option $selected value='" . $row['0'] . "'>" . $row['1'] . "</option>";
                                                     }
 
                                                     ?>
@@ -696,12 +941,17 @@ $sections = mysqli_query($db, $sectionQuery);
                                         <div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 col-12">
 
                                             <div class="form-group"> Division <span class="text-danger">*</span>
-                                                <label class="sr-only control-label" for="name">Section<span class=" ">
-                                                    </span></label>
 
                                                 <select class='form-control' name="statelist" id="statelist"
                                                     onChange="getcity(this.value);">
                                                     <option value=''>Select Division </option>
+                                                    <?php foreach ($divisions as $key => $value) {
+                                                        $selected = $value['division_id'] == $tenderData['division_id'] ? "selected" : "";
+                                                        ?>
+                                                        <option <?= $selected ?> value='<?= $value['division_id'] ?>'>
+                                                            <?= $value['division_name'] ?>
+                                                        </option>
+                                                    <?php } ?>
 
                                                 </select>
 
@@ -714,6 +964,13 @@ $sections = mysqli_query($db, $sectionQuery);
 
                                                 <select name="city" id="city" class="form-control">
                                                     <option value="">Select Sub Division</option>
+                                                    <?php foreach ($subDivisions as $key => $value) {
+                                                        $selected = $value['id'] == $tenderData['sub_division_id'] ? "selected" : "";
+                                                        ?>
+                                                        <option <?= $selected ?> value='<?= $value['id'] ?>'>
+                                                            <?= $value['subdivision'] ?>
+                                                        </option>
+                                                    <?php } ?>
                                                 </select>
                                             </div>
                                         </div>
@@ -723,11 +980,11 @@ $sections = mysqli_query($db, $sectionQuery);
                                             <div class="form-group"> Send Quotation Automatically <span
                                                     class="text-danger">*</span>
                                                 <select name="autoEmail" id="auto-email" class="form-control">
-
                                                     <option value="">Select</option>
-                                                    <option value="1" required>Yes</option>
-                                                    <option value="0" required>No</option>
-
+                                                    <option value="1" <?php echo (isset($tenderData['auto_quotation']) && $tenderData['auto_quotation'] == 1) ? 'selected' : ''; ?>>Yes
+                                                    </option>
+                                                    <option value="0" <?php echo (isset($tenderData['auto_quotation']) && $tenderData['auto_quotation'] == 0) ? 'selected' : ''; ?>>No
+                                                    </option>
                                                 </select>
                                             </div>
                                         </div>
@@ -919,7 +1176,9 @@ $sections = mysqli_query($db, $sectionQuery);
                                 confirmButtonText: 'OK'
                             });
 
-                            window.location.href = "tender-request2.php";
+
+
+                            // window.location.href = "tender-request2.php";
                         } else {
 
                             $submitBtn.prop('disabled', false).html(originalBtnText);

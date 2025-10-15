@@ -1,13 +1,122 @@
 <?php
 
 session_start();
+include("db/config.php");
 error_reporting(0);
 
 if (!isset($_SESSION["login_user"])) {
     header("location: index.php");
 }
 
-include("db/config.php");
+try {
+    $stmtFetchTenderRequested = $db->prepare("SELECT
+            ROW_NUMBER() OVER (ORDER BY ur.created_at) AS sno, 
+            COUNT(ur.id) OVER() as COUNT,  -- Window function instead of aggregate
+            ur.id, 
+            m.name, 
+            m.member_id, 
+            m.firm_name, 
+            m.mobile, 
+            m.email_id, 
+            department.department_name, 
+            ur.due_date, 
+            ur.file_name, 
+            ur.tenderID, 
+            ur.reference_code, 
+            ur.created_at, 
+            ur.file_name2 
+        FROM 
+            user_tender_requests ur
+        INNER JOIN 
+            members m ON ur.member_id = m.member_id
+        LEFT JOIN 
+            department ON ur.department_id = department.department_id
+        LEFT JOIN 
+            section s ON ur.section_id = s.section_id
+        LEFT JOIN 
+            division dv ON ur.division_id = dv.division_id
+        INNER JOIN 
+            (
+                SELECT MIN(id) AS min_id, tenderID
+                FROM user_tender_requests
+                WHERE status = 'Requested' AND delete_tender = '0'
+                GROUP BY tenderID
+            ) AS unique_tenders ON ur.id = unique_tenders.min_id
+        ORDER BY 
+    ur.created_at ASC");
+    $stmtFetchTenderRequested->execute();
+    $tenderRequestedCount = $stmtFetchTenderRequested->get_result()->fetch_array(MYSQLI_ASSOC);
+
+    $stmtFetchTenderSent = $db->prepare("  SELECT 
+        ROW_NUMBER() OVER (ORDER BY ur.created_at) AS sno,
+        ur.id as t_id, 
+		COUNT(ur.id) OVER() as COUNT,  -- Window function instead of aggregate
+        m.name, 
+        m.member_id, 
+        m.firm_name, 
+        m.mobile, 
+        m.email_id, 
+        department.department_name, 
+        ur.due_date, 
+        ur.file_name, 
+        ur.tenderID, 
+        ur.created_at, 
+        ur.file_name2,
+        ur.reference_code,
+        ur.tentative_cost,
+        ur.tender_no, 
+        s.*, 
+        dv.*, 
+        sd.*,
+         st.*, 
+        ct.*  
+    FROM 
+        user_tender_requests ur
+    INNER JOIN 
+        members m ON ur.member_id = m.member_id
+    LEFT JOIN  
+        department ON ur.department_id = department.department_id
+    LEFT JOIN 
+        section s ON ur.section_id = s.section_id
+    LEFT JOIN 
+        division dv ON ur.division_id = dv.division_id
+    LEFT JOIN
+        sub_division sd ON ur.sub_division_id = sd.id
+ LEFT JOIN
+        state st ON CONVERT(m.state_code USING utf8mb4) = CONVERT(st.state_code USING utf8mb4)
+    LEFT JOIN   
+        cities ct ON CAST(m.city_state AS UNSIGNED) = ct.city_id    INNER JOIN 
+        (
+            SELECT MIN(id) AS min_id
+            FROM user_tender_requests sent
+            WHERE sent.status = 'Sent' AND sent.delete_tender = '0'
+            AND NOT EXISTS (
+                SELECT 1 FROM user_tender_requests a
+                WHERE a.tenderID = sent.tenderID
+                AND a.status = 'Allotted'
+                AND a.delete_tender = '0'
+            )
+            GROUP BY sent.tenderID
+        ) AS unique_sent_only ON ur.id = unique_sent_only.min_id
+    ORDER BY ur.created_at ASC");
+    $stmtFetchTenderSent->execute();
+    $tenderSentCount = $stmtFetchTenderSent->get_result()->fetch_array(MYSQLI_ASSOC);
+
+
+    $stmtFetchMember = $db->prepare("SELECT count(*) AS COUNT FROM members");
+    $stmtFetchMember->execute();
+    $memberCount = $stmtFetchMember->get_result()->fetch_array(MYSQLI_ASSOC);
+
+    $stmtFetchTenderAllotted = $db->prepare("SELECT count(*) AS COUNT FROM quotetender.user_tender_requests 
+    WHERE status = 'Allotted' AND delete_tender = 0;");
+    $stmtFetchTenderAllotted->execute();
+    $tenderAllottedCount = $stmtFetchTenderAllotted->get_result()->fetch_array(MYSQLI_ASSOC);
+
+} catch (\Throwable $th) {
+    $_SESSION['error'] = $th->getMessage();
+    header("Location: dashboard.php");
+}
+
 
 
 $name = $_SESSION['login_user'];
@@ -50,10 +159,62 @@ $type = $row11[5];
 
     <link rel="stylesheet" href="assets/css/style.css">
 
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.js"></script>
+
 
 </head>
 
 <body class="">
+
+    <?php if (isset($_SESSION['success'])) { ?>
+        <script>
+            const notyf = new Notyf({
+                position: {
+                    x: 'center',
+                    y: 'top'
+                },
+                types: [
+                    {
+                        type: 'success',
+                        background: '#26c975', // Change background color
+                        textColor: '#FFFFFF',  // Change text color
+                        dismissible: true,
+                        duration: 10000
+                    }
+                ]
+            });
+            notyf.success("<?php echo $_SESSION['success']; ?>");
+        </script>
+        <?php
+        unset($_SESSION['success']);
+        ?>
+    <?php } ?>
+
+    <?php if (isset($_SESSION['error'])) { ?>
+        <script>
+            const notyf = new Notyf({
+                position: {
+                    x: 'center',
+                    y: 'top'
+                },
+                types: [
+                    {
+                        type: 'error',
+                        background: '#ff1916',
+                        textColor: '#FFFFFF',
+                        dismissible: true,
+                        duration: 10000
+                    }
+                ]
+            });
+            notyf.error("<?php echo $_SESSION['error']; ?>");
+        </script>
+        <?php
+        unset($_SESSION['error']);
+        ?>
+    <?php } ?>
+
 
     <div class="loader-bg">
         <div class="loader-track">
@@ -187,8 +348,10 @@ $type = $row11[5];
                         <a href="tender-request2.php">
                             <div class="card-body">
                                 <h6 class="text-white">Tender Request</h6>
-                                <h2 class="text-right text-white"><i
-                                        class="feather icon-message-square float-left"></i><span id="new"></span></h2>
+                                <h2 class="text-right text-white">
+                                    <i class="feather icon-message-square float-left"></i>
+                                    <span id="new"><?= $tenderRequestedCount['COUNT'] ?? 0 ?></span>
+                                </h2>
 
                             </div>
                         </a>
@@ -201,7 +364,9 @@ $type = $row11[5];
                             <div class="card-body">
                                 <h6 class="text-white">Sent Tenders</h6>
                                 <h2 class="text-right text-white"><i
-                                        class="feather icon-message-square float-left"></i><span id="total"></span></h2>
+                                        class="feather icon-message-square float-left"></i><span
+                                        id="total"><?= $tenderSentCount['COUNT'] ?? 0 ?></span>
+                                </h2>
 
                             </div>
                         </a>
@@ -215,7 +380,7 @@ $type = $row11[5];
                             <div class="card-body">
                                 <h6 class="text-white">Registered Members</h6>
                                 <h2 class="text-right text-white"><i class="feather icon-users float-left"></i><span
-                                        id="user"></span></h2>
+                                        id="user"><?= $memberCount['COUNT'] ?? 0 ?></span></h2>
 
                             </div>
                         </a>
@@ -228,7 +393,7 @@ $type = $row11[5];
                             <div class="card-body">
                                 <h6 class="text-white">Alot Tender</h6>
                                 <h2 class="text-right text-white"><i class="feather icon-home float-left"></i><span
-                                        id="category"></span></h2>
+                                        id="category"><?= $tenderAllottedCount['COUNT'] ?? 0 ?></span></h2>
                             </div>
                         </a>
 
@@ -296,45 +461,6 @@ $type = $row11[5];
     <script src="assets/js/plugins/buttons.bootstrap4.min.js"></script>
     <script src="assets/js/pages/data-export-custom.js"></script>
 </body>
-<script>
-    $(document).ready(function () {
-        setInterval(function () {
-            $("#new").load("load.php");
-            // refresh();
-        }, 100);
-    });
-</script>
-
-<script>
-    $(document).ready(function () {
-        setInterval(function () {
-            $("#total").load("load-total.php");
-            // refresh();
-        }, 100);
-    });
-</script>
-
-<script>
-    $(document).ready(function () {
-        setInterval(function () {
-
-
-            $("#user").load("loadgold.php");
-            // refresh();
-
-        }, 100);
-    });
-</script>
-
-<script>
-    $(document).ready(function () {
-        setInterval(function () {
-            $("#category").load("loadmembers.php");
-            // refresh();
-
-        }, 100);
-    });
-</script>
 
 <script>
     $(document).ready(function () {

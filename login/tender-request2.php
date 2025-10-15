@@ -468,9 +468,9 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
                                                                 <?php } ?>
 
                                                                 <?php if ((in_array('All', $permissions)) || (in_array('Tender Request', $permissions)) || (in_array('Recycle Bin', $permissions)) || (in_array('Reference Number', $permissions))) { ?>
-                                                                    <li>
+                                                                    <!-- <li>
                                                                         <hr class="dropdown-divider">
-                                                                    </li>
+                                                                    </li> -->
                                                                     <li>
                                                                         <a class="dropdown-item recyclebutton" href="#"
                                                                             data-id="<?php echo $row['id']; ?>" title="Move to Bin">

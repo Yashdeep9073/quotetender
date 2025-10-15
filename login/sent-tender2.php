@@ -100,6 +100,7 @@ if (
         ur.tenderID, 
         ur.created_at, 
         ur.file_name2,
+        ur.additional_files,
         ur.reference_code,
         ur.tentative_cost,
         ur.tender_no, 
@@ -147,7 +148,7 @@ if (
 } else {
     // Initialize the row number variable
     mysqli_query($db, "SET @row_number = 0;");
-   $queryMain = "
+    $queryMain = "
     SELECT 
         ROW_NUMBER() OVER (ORDER BY ur.created_at) AS sno,
         ur.id as t_id, 
@@ -164,6 +165,7 @@ if (
         ur.tenderID, 
         ur.created_at, 
         ur.file_name2,
+        ur.additional_files,
         ur.reference_code,
         ur.tentative_cost,
         ur.tender_no, 
@@ -347,7 +349,8 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
 
 
     <link rel="stylesheet" href="assets/css/plugins/dataTables.bootstrap4.min.css">
-
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <link rel="stylesheet" href="assets/css/style.css">
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -699,80 +702,131 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
                                         onclick="printTable()" aria-controls="basic-btn2" type="button"
                                         title="Print"><span><i class="fas fa-print"></i> Print</span></button>
                                 </div>
-                                <?php
+                                <table id="basic-btn2" class="table table-striped table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th>
+                                                <label class="checkboxs">
+                                                    <input type="checkbox" id="select-all">
+                                                    <span class="checkmarks"></span>
+                                                </label> SNO
+                                            </th>
+                                            <th>Tender ID</th>
+                                            <th>Tender No</th>
+                                            <th>Department</th>
+                                            <th>Section</th>
+                                            <th>Division</th>
+                                            <th>Sub-Division</th>
+                                            <th>Tentative Cost</th>
+                                            <th>REF.Code</th>
+                                            <th>Due Date</th>
+                                            <th>Add Date</th>
+                                            <th>Edit</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php
+                                        $count = 1;
+                                        while ($row = mysqli_fetch_assoc($resultMain)) {
+                                            $res = base64_encode($row['t_id']);
 
-                                echo '<table id="basic-btn2" class="table table-striped table-bordered">';
-                                echo "<thead>";
-                                echo "<tr>";
-                                echo '<th><label class="checkboxs">
-                                    <input type="checkbox" id="select-all">
-                                    <span class="checkmarks"></span>
-                                </label>  SNO</th>';
-                                echo "<th>Tender ID</th>";
-                                echo "<th>Tender No</th>";
-                                echo "<th>Department</th>";
-                                echo "<th>Section</th>";
-                                echo "<th>Division</th>";
-                                echo "<th>Sub-Division</th>";
-                                echo "<th>Tentative Cost</th>";
-                                echo "<th>REF.Code</th>";
-                                echo "<th>Due Date</th>";
-                                echo "<th>Add Date </th>";
+                                            $dueDate = new DateTime($row['due_date']);
+                                            $formattedDueDate = $dueDate->format('d-m-Y');
 
-                                echo "<th>Edit</th>";
-                                echo "</tr>";
-                                echo "</thead>";
-                                ?>
-                                <?php
-                                $count = 1;
-                                echo "<tbody>";
-                                while ($row = mysqli_fetch_assoc($resultMain)) {
+                                            $createdDate = new DateTime($row['created_at']);
+                                            $formattedCreatedDate = $createdDate->format('d-m-Y H:i:s');
+                                            ?>
+                                            <tr class="record">
+                                                <td>
+                                                    <div class='custom-control custom-checkbox'>
+                                                        <input type='checkbox' class='custom-control-input request_checkbox'
+                                                            id='customCheck<?= $row['sno'] ?>'
+                                                            data-request-id='<?= htmlspecialchars($row['t_id']) ?>'>
+                                                        <label class='custom-control-label'
+                                                            for='customCheck<?= $row['sno'] ?>'>
+                                                            <?= htmlspecialchars($row['sno']) ?>
+                                                        </label>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <a class='tender_id'
+                                                        href='sent-tender3.php?tender_id=<?= base64_encode($row['tenderID']) ?>'>
+                                                        <?= htmlspecialchars($row['tenderID']) ?>
+                                                    </a>
+                                                </td>
+                                                <td><?= htmlspecialchars($row['tender_no']) ?></td>
+                                                <td><?= htmlspecialchars($row['department_name']) ?></td>
+                                                <td><?= htmlspecialchars($row['section_name']) ?></td>
+                                                <td><?= htmlspecialchars($row['division_name']) ?></td>
+                                                <td><?= htmlspecialchars($row['subdivision']) ?></td>
+                                                <td><?= htmlspecialchars($row['tentative_cost']) ?></td>
+                                                <td><?= htmlspecialchars($row['reference_code']) ?></td>
+                                                <td><?= htmlspecialchars($formattedDueDate) ?></td>
+                                                <td><?= htmlspecialchars($formattedCreatedDate) ?></td>
+                                                <td>
+
+                                                    <?php if ((in_array('All', $permissions)) || in_array('Recycle Bin', $permissions)): ?>
+
+                                                        <div class="dropdown">
+                                                            <button class="btn btn-secondary " type="button"
+                                                                id="actionMenu<?php echo $row['t_id']; ?>"
+                                                                data-bs-toggle="dropdown" aria-expanded="false">
+                                                                <i class="feather icon-more-vertical"></i>
+                                                            </button>
+                                                            <ul class="dropdown-menu"
+                                                                aria-labelledby="actionMenu<?php echo $row['id']; ?>">
+                                                                <li>
+                                                                    <a class="dropdown-item"
+                                                                        href='sent-edit.php?id=<?= urlencode($res) ?>'>
+                                                                        <i class="feather icon-edit me-2"></i>Alot
+                                                                    </a>
+                                                                </li>
 
 
-                                    echo "<tr class='record'>";
-                                    echo "<td><div class='custom-control custom-checkbox'>
-                                    <input type='checkbox' class='custom-control-input request_checkbox' id='customCheck" . $row['sno'] . "' data-request-id='" . $row['t_id'] . "'>
-                                    <label class='custom-control-label' for='customCheck" . $row['sno'] . "'>" . $row['sno'] . "</label>
-                                    </div>
-                                    </td>";
+                                                                <li>
+                                                                    <a class="dropdown-item"
+                                                                        href="tender-edit.php?id=<?php echo $res . "&is_update=" . 1; ?>">
+                                                                        <i class="feather icon-edit me-2"></i>Update
+                                                                    </a>
+                                                                </li>
 
-                                    echo "<td><a class='tender_id' href='sent-tender3.php?tender_id=" . base64_encode($row['tenderID']) . "'>" . $row['tenderID'] . "</a></td>";
-                                    echo "<td>" . $row['tender_no'] . "</td>";
-                                    echo "<td>" . $row['department_name'] . "</td>";
-                                    echo "<td>" . $row['section_name'] . "</td>";
-                                    echo "<td>" . $row['division_name'] . "</td>";
-                                    echo "<td>" . $row['subdivision'] . "</td>";
-                                    echo "<td>" . $row['tentative_cost'] . "</td>";
-                                    echo "<td>" . $row['reference_code'] . "</td>";
-                                    $dueDate = new DateTime($row['due_date']);
-                                    $formattedDueDate = $dueDate->format('d-m-Y');
-                                    echo "<td>" . $row['due_date'] . "</td>";
-                                    $createdDate = new DateTime($row['created_at']);
-                                    $formattedCreatedDate = $createdDate->format('d-m-Y H:i:s');
-                                    echo "<td>" . $row['created_at'] . "</td>";
+                                                                <?php if ((in_array('All', $permissions)) || (in_array('Tender Request', $permissions)) || (in_array('Recycle Bin', $permissions)) || (in_array('Reference Number', $permissions))) { ?>
+                                                                    <!-- <li>
+                                                                        <hr class="dropdown-divider">
+                                                                    </li> -->
+                                                                    <li>
+                                                                        <a class="dropdown-item recyclebutton"
+                                                                            href='javascript:void(0);'
+                                                                            id='<?= htmlspecialchars($row['t_id']) ?>'
+                                                                            data-tender-id='<?= htmlspecialchars($row['t_id']) ?>'
+                                                                            title="Move to Bin">
+                                                                            <i class="feather icon-trash me-2"></i>Move to Bin
+                                                                        </a>
+                                                                    </li>
+                                                                    <li>
+                                                                        <a class="dropdown-item tender-files"
+                                                                            href="javascript:void(0);"
+                                                                            data-tender-id="<?php echo $row['t_id']; ?>"
+                                                                            data-reference-code="<?php echo $row['reference_code']; ?>"
+                                                                            data-tender-files='<?php echo $row['additional_files']; ?>'
+                                                                            data-bs-toggle="modal" data-bs-target="#edit-units"
+                                                                            title="Change Reference Number">
+                                                                            <i class="feather icon-file me-2"></i>Files
+                                                                        </a>
+                                                                    </li>
+                                                                <?php } ?>
+                                                            </ul>
+                                                        </div>
 
-                                    $res = $row['t_id'];
-                                    $res = base64_encode($res);
-
-                                    if ($allowedAction == 'all' || $allowedAction == 'update') {
-                                        echo "<td>  <a href='sent-edit.php?id=$res'><button type='button' class='btn btn-warning rounded-sm'><i class='feather icon-edit'></i>
-                                    &nbsp;Alot</button></a>  &nbsp;";
-                                    }
-
-                                    echo "<br/>";
-                                    echo "<br/>";
-
-                                    if ((in_array('All', $permissions)) || in_array('Recycle Bin', $permissions)) {
-                                        echo "<a href='javascript:void(0);' id='" . $row['t_id'] . "' data-tender-id='" . $row['t_id'] . "' class='recyclebutton  btn btn-danger rounded-sm' title='Click To Delete'> 
-                                    <i class='feather icon-trash'></i>  &nbsp; Move to Bin</a>
-                                    </td>";
-                                    }
-                                    echo "</tr>";
-                                    $count++;
-                                }
-                                echo "</tfoot>";
-                                echo "</table>";
-                                ?>
+                                                    <?php endif; ?>
+                                                </td>
+                                            </tr>
+                                            <?php
+                                            $count++;
+                                        }
+                                        ?>
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
@@ -780,6 +834,32 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
             </div>
         </div>
     </section>
+
+    <div class="modal fade" id="edit-units" tabindex="-1" aria-labelledby="editUnitsLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editUnitsLabel">Tender Files</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <table id="tenderFilesTable" class="table table-striped table-bordered" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th>Sno</th>
+                                <th>File Name</th>
+                                <th>Uploaded Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
 
 
     <!-- jQuery first -->
@@ -814,6 +894,65 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
     <script>
         $(document).ready(function () {
 
+            // Handle tender files click
+            $(document).on("click", ".tender-files", async function (e) {
+                e.preventDefault();
+
+                let files = $(this).data("tender-files");
+                let tenderId = $(this).data("tender-id");
+                let referenceCode = $(this).data("reference-code");
+
+                // Clear existing table body
+                $('#tenderFilesTable tbody').empty();
+
+                if (files && Array.isArray(files)) {
+                    // Populate table with dynamic data
+                    files.forEach((file, index) => {
+                        let fileName = file.split('/').pop(); // Get filename from path
+                        let uploadDate = new Date().toLocaleDateString('en-GB'); // Current date as example
+
+                        console.log(file);
+                        console.log(uploadDate);
+
+                        let row = `
+                            <tr>
+                                <td>${index + 1}</td>
+                                <td><a target='_blank' href=${file}>${fileName}</a></td>
+                                <td>${uploadDate}</td>
+                            </tr>
+                        `;
+
+                        $('#tenderFilesTable tbody').append(row);
+                    });
+                } else if (typeof files === 'string') {
+                    // If files is a JSON string, parse it
+                    try {
+                        let parsedFiles = JSON.parse(files);
+                        if (Array.isArray(parsedFiles)) {
+                            parsedFiles.forEach((file, index) => {
+                                let fileName = file.split('/').pop();
+                                let uploadDate = new Date().toLocaleDateString('en-GB');
+
+                                console.log(file);
+
+                                let row = `
+                                <tr>
+                                    <td>${index + 1}</td>
+                                   <td><a target='_blank' href=${file}>${fileName}</a></td>
+                                    <td>${uploadDate}</td>
+                                </tr>
+                            `;
+
+                                $('#tenderFilesTable tbody').append(row);
+                            });
+                        }
+                    } catch (error) {
+                        console.error("Error parsing files:", error);
+                    }
+                }
+            });
+
+
             $('#department-search').select2({
                 placeholder: "Select Department"
             });
@@ -837,7 +976,7 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
                 placeholder: "Select City"
             });
 
-             $(document).on("change", ".select-state", async function (e) {
+            $(document).on("change", ".select-state", async function (e) {
                 let stateCode = $(this).val();
                 await $.ajax({
                     url: window.location.href,
@@ -1001,6 +1140,9 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
                 ordering: true,
                 searching: true
             });
+
+
+
             // Fetch the number of entries
             var info = table.page.info();
             var totalEntries = info.recordsTotal;
