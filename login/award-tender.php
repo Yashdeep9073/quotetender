@@ -9,10 +9,7 @@ if (!isset($_SESSION["login_user"])) {
 $name = $_SESSION['login_user'];
 include("db/config.php");
 $adminID = $_SESSION['login_user_id'];
-$adminPermissionQuery = "SELECT nm.title FROM admin_permissions ap 
-inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_id='" . $adminID . "' and ap.navigation_menu_id=1 ";
-$adminPermissionResult = mysqli_query($db, $adminPermissionQuery);
-$allowDelete = mysqli_num_rows($adminPermissionResult) > 0 ? true : false;
+
 
 if (
     $_SERVER['REQUEST_METHOD'] == 'GET' &&
@@ -652,7 +649,7 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
 
 
                                 <?php
-                                if ($allowDelete == true || (in_array('All', $permissions)) || (in_array('Recycle Bin', $permissions))) {
+                                if ($isAdmin || hasPermission('Dashboard', $privileges, $roleData['role_name'])) {
                                     echo "
                                 <a href='#' id='recycle_records' class='btn btn-danger me-3 rounded-sm'> <i class='feather icon-trash'></i>  &nbsp;
                                 Move to Bin</a>&nbsp&nbsp&nbsp&nbsp

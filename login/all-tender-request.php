@@ -13,21 +13,8 @@ $name = $_SESSION['login_user'];
 include("db/config.php");
 
 $adminID = $_SESSION['login_user_id'];
-$adminPermissionQuery = "SELECT nm.title FROM admin_permissions ap 
-inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_id='" . $adminID . "' and ap.navigation_menu_id=1 ";
-$adminPermissionResult = mysqli_query($db, $adminPermissionQuery);
-$allowDelete = mysqli_num_rows($adminPermissionResult) > 0 ? true : false;
 
-$adminID = $_SESSION['login_user_id'];
-$adminPermissionQuery = "SELECT nm.title FROM admin_permissions ap 
-inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_id='" . $adminID . "'";
-$adminPermissionResult = mysqli_query($db, $adminPermissionQuery);
-$userPermissions2 = [];
-while ($row = mysqli_fetch_row($adminPermissionResult)) {
-    $userPermissions2[] = $row[0];
-}
-$allowedAction = !in_array('All', $userPermissions2) && in_array('Update Tenders', $userPermissions2) ? 'update' :
-    (!in_array('All', $userPermissions2) && in_array('View Tenders', $userPermissions2) ? 'view' : 'all');
+
 
 
 // Initialize the row number variable
@@ -69,17 +56,6 @@ ORDER BY
 
 $resultMain = mysqli_query($db, $queryMain);
 
-
-
-$adminID = $_SESSION['login_user_id'];
-$adminPermissionQuery = "SELECT nm.title FROM admin_permissions ap 
-inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_id='" . $adminID . "' ";
-$adminPermissionResult = mysqli_query($db, $adminPermissionQuery);
-
-$permissions = [];
-while ($item = mysqli_fetch_row($adminPermissionResult)) {
-    array_push($permissions, $item[0]);
-}
 ?>
 
 <!DOCTYPE html>
@@ -302,7 +278,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                 ?>
                                 <br />
                                 <?php
-                                if ((in_array('All', $permissions)) || (in_array('Tender Request', $permissions)) || (in_array('Recycle Bin', $permissions))) {
+                                if ($isAdmin || hasPermission('Dashboard', $privileges, $roleData['role_name'])) {
                                     echo "<a href='#' id='recycle_records' class='btn btn-danger me-3 rounded-sm'> 
                                     <i class='feather icon-trash'></i> &nbsp; Move to Bin Selected Items
                                     </a>&nbsp&nbsp&nbsp&nbsp";
@@ -400,7 +376,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                     $res = isset($row['id']) ? base64_encode($row['id']) : '';
 
 
-                                    if ($allowedAction == 'all' || $allowedAction == 'update') {
+                                    if ($isAdmin || hasPermission('Dashboard', $privileges, $roleData['role_name'])) {
                                         echo "<td>  <a href='sent-edit.php?id=$res'><button type='button' class='btn btn-warning rounded-sm'><i class='feather icon-edit'></i>
                                     &nbsp;Alot</button></a>  &nbsp;";
                                     }
@@ -408,7 +384,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                     echo "<br/>";
                                     echo "<br/>";
 
-                                    if ((in_array('All', $permissions)) || in_array('Recycle Bin', $permissions)) {
+                                    if ($isAdmin || hasPermission('Dashboard', $privileges, $roleData['role_name'])) {
                                         echo "<a href='#' id='" . $row['id'] . "'class='recyclebutton btn btn-danger rounded-sm' title='Click To Delete'> 
                                     <i class='feather icon-trash'></i>  &nbsp; Move to Bin</a></td>";
                                     }

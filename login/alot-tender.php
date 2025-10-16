@@ -13,10 +13,7 @@ $name = $_SESSION['login_user'];
 include("db/config.php");
 
 $adminID = $_SESSION['login_user_id'];
-$adminPermissionQuery = "SELECT nm.title FROM admin_permissions ap 
-inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_id='" . $adminID . "' and ap.navigation_menu_id=1 ";
-$adminPermissionResult = mysqli_query($db, $adminPermissionQuery);
-$allowDelete = mysqli_num_rows($adminPermissionResult) > 0 ? true : false;
+
 
 if (
     $_SERVER['REQUEST_METHOD'] == 'GET' &&
@@ -664,7 +661,7 @@ inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_i
                                 ?>
                                 <br />
                                 <?php
-                                if ($allowDelete == true || (in_array('All', $permissions)) || (in_array('Recycle Bin', $permissions))) {
+                                if ($isAdmin || hasPermission('Dashboard', $privileges, $roleData['role_name'])) {
                                     echo "
                                 <a href='#' id='recycle_records' class='btn btn-danger me-3 rounded-sm'> 
                                 <i class='feather icon-trash'></i>
@@ -790,7 +787,7 @@ inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_i
                                     $res = base64_encode($res);
 
 
-                                    if ($allowDelete == true || in_array('All', $permissions) || in_array('Recycle Bin', $permissions)) {
+                                    if ($isAdmin || hasPermission('Dashboard', $privileges, $roleData['role_name'])) {
                                         echo "<td>
         <div class='d-flex flex-column gap-2'>
 

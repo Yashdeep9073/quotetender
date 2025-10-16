@@ -9,17 +9,8 @@ if (!isset($_SESSION["login_user"])) {
 
 $name = $_SESSION['login_user'];
 $adminID = $_SESSION['login_user_id'];
-$adminPermissionQuery = "SELECT nm.title FROM admin_permissions ap 
-INNER JOIN navigation_menus nm ON ap.navigation_menu_id = nm.id WHERE ap.admin_id='" . $adminID . "'";
-$adminPermissionResult = mysqli_query($db, $adminPermissionQuery);
-
 $tenderID = base64_decode($_GET['tender_id']);
 
-while ($row = mysqli_fetch_row($adminPermissionResult)) {
-    $userPermissions[] = $row[0];
-}
-$allowedAction = !in_array('All', $userPermissions) && in_array('Update Tenders', $userPermissions) ? 'update' :
-    (!in_array('All', $userPermissions) && in_array('View Tenders', $userPermissions) ? 'view' : 'all');
 
 $query = "SELECT DISTINCT
 m.name, 
@@ -52,20 +43,7 @@ ORDER BY
 
 $result = mysqli_query($db, $query);
 
-// $tenders = [];
-// while ($row = mysqli_fetch_assoc($result)) {
-//     $tenders[$row['tenderID']][] = $row;
-// }
 
-$adminID = $_SESSION['login_user_id'];
-$adminPermissionQuery = "SELECT nm.title FROM admin_permissions ap 
-inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_id='" . $adminID . "' ";
-$adminPermissionResult = mysqli_query($db, $adminPermissionQuery);
-
-$permissions = [];
-while ($item = mysqli_fetch_row($adminPermissionResult)) {
-    array_push($permissions, $item[0]);
-}
 
 ?>
 
@@ -321,12 +299,12 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
             echo '<div class="col-md row">';
 
             // Action Buttons
-            if ((in_array('All', $permissions)) || (in_array('Tender Request', $permissions)) || (in_array('Recycle Bin', $permissions))) {
+            if ($isAdmin || hasPermission('Dashboard', $privileges, $roleData['role_name'])) {
                 echo "<a href='#' id='recycle_records' class='btn btn-danger me-3 rounded-sm'> 
                     <i class='feather icon-trash'></i> &nbsp; Move to Bin 
                   </a>&nbsp&nbsp&nbsp&nbsp";
             }
-            if ((in_array('All', $permissions)) || (in_array('Update Tenders', $permissions)) || (in_array('Tender Request', $permissions))) {
+            if ($isAdmin || hasPermission('Dashboard', $privileges, $roleData['role_name'])) {
                 echo "<a href='#' class='update_records'><button type='button' class='btn btn-warning me-3 rounded-sm'>
                     <i class='feather icon-edit'></i> &nbsp; Update 
                   </button></a>
@@ -397,7 +375,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
 
             echo "<th>Due Date</th>";
             echo "<th>File Names </th>";
-            if ((in_array('All', $permissions)) || (in_array('Tender Request', $permissions)) || (in_array('Update Tenders', $permissions)) || (in_array('Recycle Bin', $permissions)) || (in_array('View Tenders', $permissions))) {
+            if ($isAdmin || hasPermission('Dashboard', $privileges, $roleData['role_name'])) {
                 echo "<th>Edit</th>";
             }
             echo "</tr>";
@@ -453,7 +431,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                 $res = base64_encode($res);
 
                 echo "<td>";
-                if ((in_array('All', $permissions)) || (in_array('Tender Request', $permissions)) || (in_array('Update Tenders', $permissions))) {
+                if ($isAdmin || hasPermission('Dashboard', $privileges, $roleData['role_name'])) {
                     echo "<a href='tender-edit.php?id=$res'>
                                     <button type='button' class='btn btn-warning rounded-sm'>
                                     <i class='feather icon-edit'></i> &nbsp;Update</button>
@@ -462,7 +440,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
 
                 echo "<br/>";
                 echo "<br/>";
-                if ((in_array('All', $permissions)) || (in_array('Tender Request', $permissions)) || (in_array('Recycle Bin', $permissions))) {
+                if ($isAdmin || hasPermission('Dashboard', $privileges, $roleData['role_name'])) {
                     echo "<a href='#' id='" . $row['id'] . "' class='recyclebutton btn btn-danger rounded-sm' title='Click To Delete'> 
                                         <i class='feather icon-trash'></i>  &nbsp; Move to Bin
                                         </a>";

@@ -13,10 +13,7 @@ $name = $_SESSION['login_user'];
 include("db/config.php");
 
 $adminID = $_SESSION['login_user_id'];
-$adminPermissionQuery = "SELECT nm.title FROM admin_permissions ap 
-inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_id='" . $adminID . "' and ap.navigation_menu_id=1 ";
-$adminPermissionResult = mysqli_query($db, $adminPermissionQuery);
-$allowDelete = mysqli_num_rows($adminPermissionResult) > 0 ? true : false;
+
 
 // Initialize the row number variable
 mysqli_query($db, "SET @row_number = 0;");
@@ -61,14 +58,7 @@ $resultMain = mysqli_query($db, $queryMain);
 
 
 $adminID = $_SESSION['login_user_id'];
-$adminPermissionQuery = "SELECT nm.title FROM admin_permissions ap 
-inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_id='" . $adminID . "' ";
-$adminPermissionResult = mysqli_query($db, $adminPermissionQuery);
 
-$permissions = [];
-while ($item = mysqli_fetch_row($adminPermissionResult)) {
-    array_push($permissions, $item[0]);
-}
 
 
 // Lock the sequence row
@@ -366,12 +356,12 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
                                 ?>
                                 <br />
                                 <?php
-                                if ((in_array('All', $permissions)) || (in_array('Tender Request', $permissions)) || (in_array('Recycle Bin', $permissions))) {
+                                if ($isAdmin || hasPermission('Dashboard', $privileges, $roleData['role_name'])) {
                                     echo "<a href='#' id='recycle_records' class='btn btn-danger me-3 rounded-sm'> 
                                     <i class='feather icon-trash'></i> &nbsp; Move to Bin
                                     </a>&nbsp&nbsp&nbsp&nbsp";
                                 }
-                                if ((in_array('All', $permissions)) || (in_array('Update Tenders', $permissions)) || (in_array('Tender Request', $permissions))) {
+                                if ($isAdmin || hasPermission('Dashboard', $privileges, $roleData['role_name'])) {
                                     echo "<a href='#' class='update_records'><button type='button' class='btn btn-warning me-3 rounded-sm'>
                                     <i class='feather icon-edit'></i> &nbsp; Update 
                                     </button></a>
@@ -449,7 +439,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
                                                 ?>
 
                                                 <td>
-                                                    <?php if ((in_array('All', $permissions)) || (in_array('Tender Request', $permissions)) || (in_array('Update Tenders', $permissions)) || (in_array('Recycle Bin', $permissions)) || (in_array('Reference Number', $permissions))) { ?>
+                                                    <?php if ($isAdmin || hasPermission('Dashboard', $privileges, $roleData['role_name'])) { ?>
                                                         <div class="dropdown">
                                                             <button class="btn btn-secondary " type="button"
                                                                 id="actionMenu<?php echo $row['id']; ?>"
@@ -458,7 +448,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
                                                             </button>
                                                             <ul class="dropdown-menu"
                                                                 aria-labelledby="actionMenu<?php echo $row['id']; ?>">
-                                                                <?php if ((in_array('All', $permissions)) || (in_array('Tender Request', $permissions)) || (in_array('Update Tenders', $permissions))) { ?>
+                                                                <?php if ($isAdmin || hasPermission('Dashboard', $privileges, $roleData['role_name'])) { ?>
                                                                     <li>
                                                                         <a class="dropdown-item"
                                                                             href="tender-edit.php?id=<?php echo $res; ?>">
@@ -467,7 +457,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
                                                                     </li>
                                                                 <?php } ?>
 
-                                                                <?php if ((in_array('All', $permissions)) || (in_array('Tender Request', $permissions)) || (in_array('Recycle Bin', $permissions)) || (in_array('Reference Number', $permissions))) { ?>
+                                                                <?php if ($isAdmin || hasPermission('Dashboard', $privileges, $roleData['role_name'])) { ?>
                                                                     <!-- <li>
                                                                         <hr class="dropdown-divider">
                                                                     </li> -->

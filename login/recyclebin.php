@@ -12,15 +12,6 @@ $name = $_SESSION['login_user'];
 include("db/config.php");
 
 $adminID = $_SESSION['login_user_id'];
-$adminPermissionQuery = "SELECT nm.title FROM admin_permissions ap 
-INNER JOIN navigation_menus nm ON ap.navigation_menu_id = nm.id WHERE ap.admin_id='" . $adminID . "'";
-$adminPermissionResult = mysqli_query($db, $adminPermissionQuery);
-
-while ($row = mysqli_fetch_row($adminPermissionResult)) {
-    $userPermissions[] = $row[0];
-}
-$allowedAction = !in_array('All', $userPermissions) && in_array('Update Tenders', $userPermissions) ? 'update' :
-    (!in_array('All', $userPermissions) && in_array('View Tenders', $userPermissions) ? 'view' : 'all');
 
 $query = "SELECT 
 m.member_id,
@@ -167,12 +158,12 @@ $result = mysqli_query($db, $query);
                             <div class="dt-responsive table-responsive">
 
                                 <?php
-                                if ($allowedAction == 'all') {
+                                if ($isAdmin || hasPermission('Departments', $privileges, $roleData['0']['role_name'])) {
                                     echo "<a href='#' id='delete_records' class='btn btn-danger'> <i class='feather icon-trash'></i>  &nbsp;
                                     Delete Selected Items</a>";
                                 }
 
-                                if ($allowedAction == 'all' || $allowedAction == 'update') {
+                                if ($isAdmin || hasPermission('Departments', $privileges, $roleData['0']['role_name'])) {
                                     echo "<a href='#' class='restore_records px-1'><button type='button' class='btn btn-warning'>
                                     <i class='feather icon-refresh-ccw'></i> &nbsp;Restore Selected Items</button>
                                     </a>   
