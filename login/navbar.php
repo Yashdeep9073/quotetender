@@ -169,8 +169,7 @@ $isAdmin = strtolower($roleData['role_name']) === 'admin';
                     <!-- Staff User Menu -->
                     <li class="nav-item pcoded-hasmenu">
                         <a href="#!" class="nav-link "><span class="pcoded-micon"><i
-                                    class="feather icon-users"></i></span><span class="pcoded-mtext">Staff User
-                                Management</span></a>
+                                    class="feather icon-users"></i></span><span class="pcoded-mtext">User Management</span></a>
                         <ul class="pcoded-submenu">
                             <li><a href='manage-permissions.php'>Manage Permissions </a></li>
                             <li><a href='manage-roles.php'>Manage Roles </a></li>
