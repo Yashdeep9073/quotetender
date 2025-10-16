@@ -87,7 +87,7 @@ $isAdmin = strtolower($roleData['role_name']) === 'admin';
         <div class="navbar-content scroll-div ">
             <ul class="nav pcoded-inner-navbar ">
                 <li class="nav-item pcoded-menu-caption">
-                    <label>Navigation</label>
+                    <label></label>
                 </li>
                 <?php if ($isAdmin || hasPermission('Dashboard', $privileges, $roleData['role_name'])): ?>
                     <li class="nav-item">
