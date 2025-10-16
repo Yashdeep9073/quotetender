@@ -7,11 +7,22 @@ if (!isset($_SESSION["login_user"])) {
     header("location: index.php");
 }
 $name = $_SESSION['login_user'];
-
 include("db/config.php");
 
-$query = "SELECT * FROM admin";
-$result = mysqli_query($db, $query);
+try {
+    $stmtFetchUser = $db->prepare("SELECT a.*,r.* FROM admin a 
+    LEFT JOIN roles r 
+    ON a.role_id = r.role_id
+    ");
+    if (!$stmtFetchUser->execute()) {
+        throw new Exception($stmtFetchUser->error);
+    }
+    $usersData = $stmtFetchUser->get_result()->fetch_all(MYSQLI_ASSOC);
+
+} catch (\Throwable $th) {
+    $_SESSION['error'] = $th->getMessage();
+}
+
 
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['memberIds'])) {
@@ -78,9 +89,61 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['memberIds'])) {
     <link rel="stylesheet" href="assets/css/plugins/dataTables.bootstrap4.min.css">
     <link rel="stylesheet" href="assets/css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.js"></script>
 </head>
 
 <body class="">
+
+    <?php if (isset($_SESSION['success'])) { ?>
+        <script>
+            const notyf = new Notyf({
+                position: {
+                    x: 'center',
+                    y: 'top'
+                },
+                types: [
+                    {
+                        type: 'success',
+                        background: '#26c975', // Change background color
+                        textColor: '#FFFFFF',  // Change text color
+                        dismissible: true,
+                        duration: 10000
+                    }
+                ]
+            });
+            notyf.success("<?php echo $_SESSION['success']; ?>");
+        </script>
+        <?php
+        unset($_SESSION['success']);
+        ?>
+    <?php } ?>
+
+    <?php if (isset($_SESSION['error'])) { ?>
+        <script>
+            const notyf = new Notyf({
+                position: {
+                    x: 'center',
+                    y: 'top'
+                },
+                types: [
+                    {
+                        type: 'error',
+                        background: '#ff1916',
+                        textColor: '#FFFFFF',
+                        dismissible: true,
+                        duration: 10000
+                    }
+                ]
+            });
+            notyf.error("<?php echo $_SESSION['error']; ?>");
+        </script>
+        <?php
+        unset($_SESSION['error']);
+        ?>
+    <?php } ?>
+
 
     <div class="loader-bg">
         <div class="loader-track">
@@ -88,11 +151,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['memberIds'])) {
         </div>
     </div>
 
-
-
-
     <?php include 'navbar.php'; ?>
-
 
     <header class="navbar pcoded-header navbar-expand-lg navbar-light headerpos-fixed header-blue">
         <div class="m-header">
@@ -158,7 +217,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['memberIds'])) {
                     <div class="row align-items-center">
                         <div class="col-md-12">
                             <div class="page-header-title">
-                                <h5 class="m-b-10">View/Edit User
+                                <h5 class="m-b-10">Manage Users
                                 </h5>
                             </div>
                             <ul class="breadcrumb">
@@ -190,103 +249,85 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['memberIds'])) {
                         </div>
                         <div class="card-body">
                             <div class="dt-responsive table-responsive">
-
-                                <?php
-
-                                if (isset($_GET['status'])) {
-                                    $st = $_GET['status'];
-                                    $st1 = base64_decode($st);
-
-                                    if ($st1 > 0) {
-                                        echo " <div class='alert alert-success alert-dismissible fade show' role='alert' style='font-size:16px;' id='updateuser'>
-  <strong><i class='feather icon-check'></i>Thanks!</strong> User has been Updated Successfully.
-  <button type='button' class='close' data-dismiss='alert' aria-label='Close'>
-    <span aria-hidden='true'>&times;</span>
-  </button>
-</div> ";
-                                    } else {
-
-                                        echo " <div class='alert alert-danger alert-dismissible fade show' role='alert' style='font-size:16px;' id='updateuser'>
-  <strong>Error!</strong> User has been not Updated
-  <button type='button' class='close' data-dismiss='alert' aria-label='Close'>
-    <span aria-hidden='true'>&times;</span>
-  </button>
-</div> ";
-                                    }
-                                }
-
-                                ?>
+                                <div class='col-md row'>
+                                    <a href='#' id='delete_records' class='btn btn-danger'>
+                                        <i class='feather icon-trash'></i> &nbsp; Delete Selected User
+                                    </a>
+                                </div>
                                 <br />
 
-
-                                <?php
-
-                                echo "<div class='col-md row'>
-                                <a href='#' id='delete_records' class='btn btn-danger'> <i class='feather icon-trash'></i>  &nbsp;
-                                Delete Selected User</a>
-                                </div> <br />";
-
-                                echo '<table id="basic-btn2" class="table table-striped table-bordered nowrap">';
-                                echo "<thead>";
-                                echo "<tr>";
-                                echo '<th> <label class="checkboxs">
-                                        <input type="checkbox" id="select-all">
-                                        <span class="checkmarks"></span>
-                                    </label>&nbsp SNO</th>';
-                                echo "<th>Username</th>";
-                                echo "<th>Email</th>";
-                                echo "<th>Mobile No</th>";
-                                echo "<th>Status</th>";
-
-                                echo "<th>Edit</th>";
-
-
-                                echo "</tr>";
-                                echo "</thead>";
-
-
-                                ?>
-                                <?php
-
-
-
-                                $count = 1;
-
-                                echo "<tbody>";
-                                while ($row = mysqli_fetch_row($result)) {
-
-                                    echo "<tr class='record'>";
-                                    echo "<td><div class='custom-control custom-checkbox'>
-                                    <input type='checkbox' class='custom-control-input member_checkbox' id='customCheck" . $count . "' data-member-id='" . $row['9'] . "'>
-                                    <label class='custom-control-label' for='customCheck" . $count . "'>" . $count . "</label>
-                                </div></td>";
-
-                                    echo "<td>" . $row['0'] . "</td>";
-                                    echo "<td>" . $row['2'] . "</td>";
-                                    echo "<td>" . $row['6'] . "</td>";
-
-                                    if ($row['3'] == 1) {
-                                        echo "<td> Enable</td>";
-
-
-                                    } else {
-                                        echo "<td> Disable</td>";
-                                    }
-
-                                    $res = $row[2];
-                                    $res = base64_encode($res);
-                                    echo "<td>  <a href='user-edit.php?id=$res'><button type='button' class='btn btn-warning'><i class='feather icon-edit'></i> &nbsp;Edit</button></a>  &nbsp;   <a href='#' id='" . $row['0'] . "'class='delbutton btn btn-danger' title='Click To Delete'> <i class='feather icon-trash'></i>  &nbsp; delete</a></td>";
-
-
-
-                                    echo "</tr>";
-                                    $count++;
-                                }
-
-
-                                echo "</tfoot>";
-                                echo "</table>";
-                                ?>
+                                <table id="basic-btn2" class="table table-striped table-bordered nowrap">
+                                    <thead>
+                                        <tr>
+                                            <th>
+                                                <label class="checkboxs">
+                                                    <input type="checkbox" id="select-all">
+                                                    <span class="checkmarks"></span>
+                                                </label>&nbsp; SNO
+                                            </th>
+                                            <th>Username</th>
+                                            <th>Email</th>
+                                            <th>Mobile No</th>
+                                            <th>Role</th>
+                                            <th>Status</th>
+                                            <th>Edit</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php
+                                        $count = 1;
+                                        foreach ($usersData as $key => $value) {
+                                            ?>
+                                            <tr class='record'>
+                                                <td>
+                                                    <div class='custom-control custom-checkbox'>
+                                                        <input type='checkbox' class='custom-control-input member_checkbox'
+                                                            id='customCheck<?php echo $count; ?>'
+                                                            data-member-id='<?php echo $value['id']; ?>'>
+                                                        <label class='custom-control-label'
+                                                            for='customCheck<?php echo $count; ?>'>
+                                                            <?php echo $count; ?>
+                                                        </label>
+                                                    </div>
+                                                </td>
+                                                <td><?php echo htmlspecialchars($value['username']); ?></td>
+                                                <td><?php echo htmlspecialchars($value['email']); ?></td>
+                                                <td><?php echo htmlspecialchars($value['mobile']); ?></td>
+                                                <td><?php echo htmlspecialchars($value['role_name']); ?></td>
+                                                <td>
+                                                    <?php
+                                                    if ($value['status'] == 1) {
+                                                        echo "Enable";
+                                                    } else {
+                                                        echo "Disable";
+                                                    }
+                                                    ?>
+                                                </td>
+                                                <td>
+                                                    <?php
+                                                    $res = base64_encode($value["email"]);
+                                                    ?>
+                                                    <a href='user-edit.php?id=<?php echo $res; ?>'>
+                                                        <button type='button' class='btn btn-warning'>
+                                                            <i class='feather icon-edit'></i> &nbsp;Edit
+                                                        </button>
+                                                    </a> &nbsp;
+                                                    <a href='javascript:void(0);'
+                                                        id='<?php echo htmlspecialchars($value['username']); ?>'
+                                                        class='delbutton btn btn-danger' title='Click To Delete'>
+                                                        <i class='feather icon-trash'></i> &nbsp; delete
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                            <?php
+                                            $count++;
+                                        }
+                                        ?>
+                                    </tbody>
+                                    <tfoot>
+                                        <!-- Add if needed -->
+                                    </tfoot>
+                                </table>
 
                             </div>
                         </div>

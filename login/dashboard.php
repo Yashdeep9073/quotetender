@@ -3,7 +3,6 @@
 session_start();
 include("db/config.php");
 error_reporting(0);
-
 if (!isset($_SESSION["login_user"])) {
     header("location: index.php");
 }
@@ -107,7 +106,7 @@ try {
     $stmtFetchMember->execute();
     $memberCount = $stmtFetchMember->get_result()->fetch_array(MYSQLI_ASSOC);
 
-    $stmtFetchTenderAllotted = $db->prepare("SELECT count(*) AS COUNT FROM quotetender.user_tender_requests 
+    $stmtFetchTenderAllotted = $db->prepare("SELECT count(*) AS COUNT FROM user_tender_requests 
     WHERE status = 'Allotted' AND delete_tender = 0;");
     $stmtFetchTenderAllotted->execute();
     $tenderAllottedCount = $stmtFetchTenderAllotted->get_result()->fetch_array(MYSQLI_ASSOC);

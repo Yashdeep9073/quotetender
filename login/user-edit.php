@@ -1,91 +1,137 @@
 <?php
 
 session_start();
+include("db/config.php");
 
 
 if (!isset($_SESSION["login_user"])) {
     header("location: index.php");
 }
-
-
 $name = $_SESSION['login_user'];
+$emailEncoded = $_GET["id"];
+$emailDecoded = base64_decode($emailEncoded);
 
-include("db/config.php");
+try {
 
-$en = $_GET["id"];
+    $stmtRole = $db->prepare("Select * from roles");
+    $stmtRole->execute();
+    $roles = $stmtRole->get_result()->fetch_all(MYSQLI_ASSOC);
 
-$de = base64_decode($en);
+    $stmtFetchUser = $db->prepare("SELECT * FROM admin WHERE email = ?");
+    $stmtFetchUser->bind_param("s", $emailDecoded);
+    if (!$stmtFetchUser->execute()) {
+        throw new Exception($stmtFetchUser->error);
+    }
+    $usersData = $stmtFetchUser->get_result()->fetch_array(MYSQLI_ASSOC);
 
-$result = mysqli_query($db, "SELECT * FROM admin WHERE email='" . $de . "'");
-$row = mysqli_fetch_row($result);
-
-$editUserPermissionQuery = "SELECT nm.title FROM admin_permissions ap 
-inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_id='" .$row[9] . "' ";
-$editUserPermissionResult = mysqli_query($db, $editUserPermissionQuery);
-
-$selectedPermissions=[];
-while ($permission = mysqli_fetch_row($editUserPermissionResult)) {
-    array_push($selectedPermissions,$permission[0]);
+} catch (\Throwable $th) {
+    $_SESSION['error'] = $th->getMessage();
 }
 
-/* Attempt to connect to MySQL database */
-if (isset($_POST['submit'])) {
+// Register user
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['username'])) {
+    try {
+        // Sanitize and validate inputs
+        $name = trim($_POST['username']);
+        $password = $_POST['password']; // Don't hash yet, validate first
+        $mobile = trim($_POST['mobile']);
+        $email = filter_var($_POST['email'], FILTER_VALIDATE_EMAIL);
+        $roleId = intval($_POST['roleId']); // Ensure it's an integer
+        $userId = intval($_POST['userId']); // Ensure it's an integer
+        $status = intval($_POST['status']); // Ensure it's an integer
+
+        // throw new Exception("test");
+        // Validate required fields
+        if (empty($name) || empty($email) || empty($mobile) || empty($roleId)) {
+            throw new Exception("Fill All Details");
+        }
+
+        // Validate email format
+        if (!preg_match('/^[_a-z0-9-]+(\.[_a-z0-9-]+)*@[a-z0-9-]+(\.[a-z0-9-]+)*(\.[a-z]{2,3})$/', $email)) {
+            throw new Exception("Invalid email format");
+        }
 
 
-    if (!empty($_POST['type'])) {
-        $types = array_values($_POST['type']);
-        foreach ($types as $type) {
+        // Validate mobile format (example: 10 digits)
+        if (!preg_match('/^[0-9]{10}$/', $mobile)) {
+            throw new Exception("Invalid mobile number format");
+        }
 
-            $adminPermissionExists = mysqli_query($db, "SELECT * FROM admin_permissions WHERE admin_id='" . $row[9] . "'
-            and navigation_menu_id='" . $type . "'");
-            $count = mysqli_num_rows($adminPermissionExists);
 
-            if ($count == 0) {
-                $query = "insert into admin_permissions (admin_id, navigation_menu_id ) 
-                values('$row[9]','$type')";
-                mysqli_query($db, $query);
+
+        $stmtCheckExistingUser = $db->prepare("SELECT * FROM admin WHERE (email = ? OR mobile = ?) AND id != ?");
+        $stmtCheckExistingUser->bind_param(
+            "ssi",
+            $email,
+            $mobile,
+            $userId
+        );
+
+        if (!$stmtCheckExistingUser->execute()) {
+            throw new Exception($stmtCheckExistingUser->error);
+        }
+
+        // Get the result to access num_rows
+        $existingUser = $stmtCheckExistingUser->get_result();
+
+        if ($existingUser->num_rows > 0) {
+            throw new Exception("Email or Phone already registered");
+        }
+
+        // Check if password is provided
+        if (!empty($password)) {
+            // Validate password if provided
+            if (strlen($password) < 6) {
+                throw new Exception("Password must be at least 6 characters long");
             }
 
+            // Hash password securely (use password_hash instead of md5)
+            $hashed_password = md5($password);
+
+            // Update with new password
+            $stmtInsertData = $db->prepare("UPDATE admin SET username=?, password=?, email=?, role_id=?, mobile=? , status=? WHERE id=?");
+            $stmtInsertData->bind_param(
+                "ssssiii",
+                $name,
+                $hashed_password,
+                $email,
+                $roleId,
+                $mobile,
+                $status,
+                $userId
+            );
+        } else {
+            // Update without password
+            $stmtInsertData = $db->prepare("UPDATE admin SET username=?, email=?, role_id=?, mobile=?,status=? WHERE id=?");
+            $stmtInsertData->bind_param(
+                "sssiii",
+                $name,
+                $email,
+                $roleId,
+                $mobile,
+                $status,
+                $userId
+            );
         }
 
-        mysqli_query($db, "DELETE FROM admin_permissions WHERE admin_id='" . $row[9] . "' 
-        and navigation_menu_id not in ( '" . implode( "', '" , $types ) . "' )" );
-
-    }
-
-    if (!empty($_POST['password'])) {
-
-        if (count($_POST) > 0) {
-            mysqli_query($db, "UPDATE admin set username ='" . $_POST["username"] . "',password ='" . md5($_POST["password"]) . "',
-        email ='" . $_POST["email"] . "',status ='" . $_POST["status"] . "' ,
-        mobile ='" . $_POST["mobile"] . "' WHERE email='"  . $de . "'");
-
-            $staus = 1;
-
-            $re = base64_encode($staus);
-
-            echo ("<SCRIPT LANGUAGE='JavaScript'>window.location.href='view-user.php?status=$re';</SCRIPT>");
+        if (!$stmtInsertData->execute()) {
+            throw new Exception($stmtInsertData->error);
         }
-    } else {
 
-        if (count($_POST) > 0) {
-            mysqli_query($db, "UPDATE admin set username ='" . $_POST["username"] . "',email ='" . $_POST["email"] . "',
-        status ='" . $_POST["status"] . "' ,mobile ='" . $_POST["mobile"] . "'
-         WHERE email='"  . $de . "'");
-
-            $staus = 1;
-
-            $re = base64_encode($staus);
-
-            echo ("<SCRIPT LANGUAGE='JavaScript'>window.location.href='view-user.php?status=$re';</SCRIPT>");
-        }
+        echo json_encode([
+            "status" => 201,
+            "message" => "User Updated successfully."
+        ]);
+        exit;
+    } catch (\Throwable $th) {
+        //throw $th;
+        echo json_encode([
+            'status' => 500,
+            'error' => $th->getMessage()
+        ]);
+        exit;
     }
 }
-
-
-$typesQuery = "SELECT * FROM navigation_menus ";
-$types = mysqli_query($db, $typesQuery);
-
 
 ?>
 
@@ -95,7 +141,7 @@ $types = mysqli_query($db, $typesQuery);
 <meta http-equiv="content-type" content="text/html;charset=UTF-8" />
 
 <head>
-    <title>Update User </title>
+    <title>Update User</title>
 
 
 
@@ -112,16 +158,58 @@ $types = mysqli_query($db, $typesQuery);
 
     <link rel="stylesheet" href="assets/css/style.css">
 
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.js"></script>
+
     <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet">
 
-    <Style>
-        .select2-container--default .select2-selection--multiple .select2-selection__rendered li {
-            list-style: none;
-            color: #33cc33;
-            ;
-            background: #fff;
+    <style>
+        /* Force Select2 to take full width */
+        .select2-container {
+            width: 100% !important;
         }
-    </Style>
+
+        /* Style for single select box */
+        .select2-container--default .select2-selection--single {
+            height: auto !important;
+            min-height: 40px;
+            border: 1px solid #d8d8d8 !important;
+            border-radius: 5px !important;
+            width: 100% !important;
+        }
+
+        /* Rendered text inside */
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            text-align: left !important;
+            line-height: 38px !important;
+            padding-left: 12px !important;
+            padding-right: 20px !important;
+            /* font-size: 14px; */
+            white-space: normal;
+            /* allows wrapping on smaller screens */
+        }
+
+        /* Dropdown arrow */
+        .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: 38px !important;
+        }
+
+        /* Mobile-friendly dropdown */
+        @media (max-width: 600px) {
+            .select2-container--default .select2-selection--single {
+                min-height: 45px;
+                font-size: 16px;
+                /* bigger text for mobile */
+            }
+
+            .select2-dropdown {
+                font-size: 16px;
+                /* dropdown items bigger */
+            }
+        }
+    </style>
 
 </head>
 
@@ -161,7 +249,8 @@ $types = mysqli_query($db, $typesQuery);
                     </div>
                 </li>
                 <li class="nav-item">
-                    <a href="#!" class="full-screen" onClick="javascript:toggleFullScreen()"><i class="feather icon-maximize"></i></a>
+                    <a href="#!" class="full-screen" onClick="javascript:toggleFullScreen()"><i
+                            class="feather icon-maximize"></i></a>
                 </li>
             </ul>
 
@@ -204,7 +293,11 @@ $types = mysqli_query($db, $typesQuery);
                                 <h5 class="m-b-10">Update User
                                 </h5>
                             </div>
-
+                            <ul class="breadcrumb">
+                                <li class="breadcrumb-item"><a href="index.php"><i class="feather icon-home"></i></a>
+                                </li>
+                                <li class="breadcrumb-item"><a href="view-user.php">Manage User</a></li>
+                            </ul>
                         </div>
                     </div>
                 </div>
@@ -212,116 +305,101 @@ $types = mysqli_query($db, $typesQuery);
 
 
             <div class="row">
-
                 <div class="col-sm-12">
                     <div class="card">
                         <div class="card-header table-card-header">
-                            <form class="contact-us" method="post" action="" enctype="multipart/form-data" autocomplete="off">
+                            <form class="user-edit-form">
+                                <input type="hidden" name="user_id" id="user_id" value="<?= $usersData['id'] ?? "" ?>">
                                 <div class=" ">
                                     <!-- Text input-->
                                     <div class="row">
                                         <div class="col-xl-6 col-lg-6 col-md-4 col-sm-12 col-12">
-                                            <div class="form-group">Enter Username*
+                                            <div class="form-group">Enter Username <span class="text-danger">*</span>
                                                 <label class="sr-only control-label" for="name">Username<span class=" ">
                                                     </span></label>
-                                                <input id="name" name="username" type="text" placeholder=" Username" class="form-control input-md" required value="<?php echo $row[0]; ?>" readonly>
+                                                <input id="name" name="username" type="text" placeholder="Username"
+                                                    class="form-control input-md"
+                                                    value="<?= $usersData['username']; ?>">
                                             </div>
                                         </div>
                                         <div class="col-xl-6 col-lg-6 col-md-4 col-sm-12 col-12">
-                                            <div class="form-group">Enter Password*
+                                            <div class="form-group">Enter Password <span class="text-danger">*</span>
                                                 <label class="sr-only control-label" for="name">Password<span class=" ">
                                                     </span></label>
-                                                <input id="name" name="password" type="password" placeholder="Enter new password,if you want to change current password" class="form-control input-md" value="">
+                                                <input id="name" name="password" type="password"
+                                                    placeholder="Enter new password,if you want to change current password"
+                                                    class="form-control input-md" value="">
                                             </div>
                                         </div>
                                         <div class="col-xl-6 col-lg-6 col-md-4 col-sm-12 col-12">
-                                            <div class="form-group">Mobile No*
-                                                <label class="sr-only control-label" for="name">Mobile No<span class=" ">
+                                            <div class="form-group">Mobile No <span class="text-danger">*</span>
+                                                <label class="sr-only control-label" for="name">Mobile No<span
+                                                        class=" ">
                                                     </span></label>
-                                                <input id="name" name="mobile" type="number" placeholder=" Enter Mobile No *" class="form-control input-md" required oninvalid="this.setCustomValidity('Please Enter Mobile Number')" oninput="setCustomValidity('')" value="<?php echo $row[6]; ?>">
+                                                <input id="name" name="mobile" type="number"
+                                                    placeholder=" Enter Mobile No *" class="form-control input-md"
+                                                    value="<?= $usersData['mobile']; ?>">
                                             </div>
                                         </div>
 
 
                                         <div class="col-xl-6 col-lg-6 col-md-4 col-sm-12 col-12">
-                                            <div class="form-group">Email*
+                                            <div class="form-group">Email <span class="text-danger">*</span>
                                                 <label class="sr-only control-label" for="name">Email<span class=" ">
                                                     </span></label>
-                                                <input id="name" name="email" type="email" class="form-control input-md" required placeholder="Enter Email" value="<?php echo $row[2]; ?>">
+                                                <input id="name" name="email" type="email" class="form-control input-md"
+                                                    placeholder="Enter Email" value="<?= $usersData['email']; ?>">
                                             </div>
                                         </div>
                                         <div class="col-xl-6 col-lg-6 col-md-4 col-sm-12 col-12">
-                                            <div class="form-group">Status*
+                                            <div class="form-group">Status <span class="text-danger">*</span>
                                                 <label class="sr-only control-label" for="name">Status<span class=" ">
                                                     </span></label>
-                                                <select id="" name="status" class="form-control" required>
-                                                    <option value="<?php echo $row['3']; ?>">
-                                                        <?php if ($row['3'] == 1) {
-                                                            echo "Enable";
-                                                        } else {
-                                                            echo "Disable";
-                                                        } ?>
-                                                    </option>
-                                                    <option value="1">Enable</option>
-                                                    <option value="0">Disabe</option>
+                                                <select id="" name="status" class="form-control">
+                                                    <option <?= $usersData['status'] == 1 ? "selected" : "" ?> value="1">
+                                                        Enable</option>
+                                                    <option <?= $usersData['status'] == 0 ? "selected" : "" ?> value="0">
+                                                        Disabe</option>
 
                                                 </select>
                                             </div>
                                         </div>
 
-                                        <!-- Text input-->
                                         <div class="col-xl-6 col-lg-6 col-md-4 col-sm-12 col-12">
-                                            <div class="form-group">User Type*
+                                            <div class="form-group">Role <span class="text-danger">*</span>
 
-                                                <select id="multiSelect" name="type[]" multiple="multiple" required>
-                                                    <?php while ($row = mysqli_fetch_row($types)) {
-                                                        $selected = in_array($row['1'], $selectedPermissions) ? "selected=''" : '';
-
-                                                        echo "<option value='" . $row['0'] . "'" . $selected . ">" . $row['1'] . "</option>";
-                                                    } ?>
-
+                                                <select id="role_id" name="role_id" class="form-control">
+                                                    <?php foreach ($roles as $key => $value) {
+                                                        $selected = $usersData['role_id'] == $value['role_id'] ? "selected" : "";
+                                                        ?>
+                                                        <option <?= $selected ?> value="<?= $value['role_id'] ?>">
+                                                            <?= $value['role_name'] ?>
+                                                        </option>
+                                                    <?php } ?>
                                                 </select>
-
                                             </div>
                                         </div>
-
-
                                         <!-- Button -->
                                         <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
-
-
                                             <button type="submit" class="btn btn-secondary" name="submit" id="submit">
                                                 <i class="feather icon-save lg"></i>&nbsp; Update
                                             </button>
-
                                         </div>
                                     </div>
                                 </div>
                             </form>
                         </div>
-                        <div class="card-body">
-                            <div class="dt-responsive table-responsive">
-
-
-                            </div>
-                        </div>
                     </div>
                 </div>
-
-
-
-
-
-
-
-
             </div>
-
         </div>
     </section>
 
 
 
+
+    <!-- jQuery first -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
 
     <script src="assets/js/vendor-all.min.js"></script>
@@ -340,31 +418,125 @@ $types = mysqli_query($db, $typesQuery);
     <script src="assets/js/plugins/buttons.bootstrap4.min.js"></script>
     <script src="assets/js/pages/data-export-custom.js"></script>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
-    <script>
-        $(document).ready(function() {
-            $('#multiSelect').select2({
-                width: '100%',
-                closeOnSelect: false,
-                templateSelection: function(data, container) {
-                    // Add a cross icon to selected items    <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet">
+    <!-- CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 
-                    var $option = $(data.element);
-                    var text = $option.text();
-                    container.text(text);
-                    container.append('<span class="remove-item" data-value="' + data.id + '">&times;</span>');
-                }
+    <!-- Select2 (must come AFTER jQuery) -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+    <script>
+        $(document).ready(function () {
+
+            $("#role_id").select2({
+                placeholder: "Select Role",
+                width: "100%"
             });
 
-            // Handle removal of selected items
-            $('#multiSelect').on('click', '.remove-item', function() {
-                var valueToRemove = $(this).data('value');
-                var $select = $('#multiSelect');
-                $select.find('option[value="' + valueToRemove + '"]').prop('selected', false);
-                $select.trigger('change.select2');
+
+            $(document).on("submit", ".user-edit-form", function (e) {
+                e.preventDefault();
+
+                // Get values correctly using the name attributes
+                let username = $("input[name='username']").val();
+                let password = $("input[name='password']").val();
+                let mobile = $("input[name='mobile']").val();
+                let email = $("input[name='email']").val();
+                let userId = $("input[name='user_id']").val();
+                let status = $("select[name='status']").val();
+                let roleId = $("select[name='role_id']").val();
+
+                if (!username || !mobile || !roleId || !email || !status) {
+                    Swal.fire("Error", "All fields are required. Please fill out the form completely.", "error");
+                    return;
+                }
+
+
+                // Password validation (minimum 6 characters)
+                if (password && password.length < 6) {
+                    Swal.fire("Error", "Password must be at least 6 characters long", "error");
+                    return;
+                }
+
+                // Mobile validation (assuming 10 digits for India)
+                const mobileRegex = /^[0-9]{10}$/;
+                if (!mobileRegex.test(mobile)) {
+                    Swal.fire("Error", "Please enter a valid 10-digit mobile number", "error");
+                    return;
+                }
+
+
+                // Email validation
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(email)) {
+                    Swal.fire("Error", "Please enter a valid email address", "error");
+                    return;
+                }
+
+                // Your AJAX submission logic here
+                $.ajax({
+                    url: window.location.href, // Change to your actual endpoint
+                    method: 'POST',
+                    data: {
+                        username: username,
+                        password: password,
+                        mobile: mobile,
+                        email: email,
+                        roleId: roleId,
+                        status: status,
+                        userId: userId,
+                    },
+
+                    success: function (response) {
+
+                        let result = JSON.parse(response);
+                        if (result.status == 201) {
+
+                            // Show success message
+                            Swal.fire({
+                                title: 'User Registered!',
+                                text: result.message,
+                                icon: 'success',
+                                confirmButtonColor: "#33cc33",
+                                timer: 1000,
+                                timerProgressBar: true,
+                                showConfirmButton: false
+                            }).then(() => {
+                                window.location.reload();
+                            });
+
+                        } else {
+                            // Show error message
+                            Swal.fire({
+                                title: 'Error!',
+                                text: result.error || 'Something went wrong',
+                                icon: 'error',
+                                confirmButtonColor: "#dc3545",
+                                timer: 1500,
+                                timerProgressBar: true,
+                                showConfirmButton: false
+                            });
+                        }
+
+
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Error:', error);
+                        // Show error message
+                        Swal.fire({
+                            title: 'Error!',
+                            text: 'Failed to update reference code',
+                            icon: 'error',
+                            confirmButtonColor: "#dc3545",
+                            timer: 1500,
+                            timerProgressBar: true,
+                            showConfirmButton: false
+                        });
+                    }
+                });
             });
         });
     </script>
+
 </body>
 
 </html>

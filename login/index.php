@@ -72,7 +72,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['username'])) {
     if ($count == 1) {
 
         $_SESSION['login_user'] = $myusername2;
-        $_SESSION['login_user_id'] = $adminData[9];
+        $_SESSION['login_user_id'] = $adminData[0];
+        $_SESSION['login_user_id'] = $adminData[0];
 
         /*?>setcookie('password',$myusername2,time() + (86400 * 7));<?php */
 

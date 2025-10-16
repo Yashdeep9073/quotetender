@@ -6,34 +6,52 @@ if (!isset($_SESSION["login_user"])) {
     header("location: index.php");
 }
 
+$roleId = null;
+$role = [];
 $name = $_SESSION['login_user'];
 
 try {
-    $stmtPermissions = $db->prepare("SELECT * FROM permissions");
+    $stmtPermissions = $db->prepare("SELECT * FROM permissions WHERE status = 1");
     $stmtPermissions->execute();
     $permissionsData = $stmtPermissions->get_result()->fetch_all(MYSQLI_ASSOC);
 
-    // echo "<pre>";
-    // print_r($permissions);
-    // foreach ($permissions as $key => $value) {
-    //     print_r($value['permission_name']);
-    //     # code...
-    // }
-    // exit;
+    // Handle GET request to fetch roleId
+    if (isset($_GET['id'])) {
+        $encryptedId = $_GET['id'];
+        if ($encryptedId === null || $encryptedId === false) {
+            throw new Exception("Invalid role ID provided");
+        }
+        $roleId = base64_decode($encryptedId);
+        if ($roleId === false) {
+            throw new Exception("Failed to decode role ID");
+        }
+        $roleId = (int) $roleId; // Ensure roleId is an integer
+
+
+        $stmtRole = $db->prepare("SELECT role_name FROM roles WHERE role_status = 1 AND role_id = ?");
+        $stmtRole->bind_param('i', $roleId);
+        $stmtRole->execute();
+        $role = $stmtRole->get_result()->fetch_array(MYSQLI_ASSOC);
+
+        $stmtRolePermission = $db->prepare("SELECT permissions.*, role_permissions.role_permission_id 
+            FROM role_permissions
+            INNER JOIN permissions ON role_permissions.permission_id = permissions.permission_id
+            WHERE role_permissions.role_id = ? ");
+        $stmtRolePermission->bind_param('i', $roleId);
+        $stmtRolePermission->execute();
+        $assignedPermissions = $stmtRolePermission->get_result()->fetch_all(MYSQLI_ASSOC);
+    }
 
 
 } catch (\Throwable $th) {
     $_SESSION['error'] = $th->getMessage();
 }
 
-// $query = "SELECT * FROM roles";
-// $result = mysqli_query($db, $query);
+
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['bulkDeletePermissionsIds'])) {
 
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['permissionsIds'])) {
-
-
-    $permissionsIds = $_POST['permissionsIds'];
+    $permissionsIds = $_POST['bulkDeletePermissionsIds'];
 
     // Validate: Must be an array of integers
     if (!is_array($permissionsIds)) {
@@ -49,7 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['permissionsIds'])) {
         $placeholders = implode(',', array_fill(0, count($permissionsIds), '?'));
         $types = str_repeat('i', count($permissionsIds)); // All integers
 
-        $stmt = $db->prepare("DELETE FROM permissions WHERE permission_id IN ($placeholders)");
+        $stmt = $db->prepare("DELETE FROM role_permissions WHERE role_permission_id IN ($placeholders)");
         $stmt->bind_param($types, ...$permissionsIds);
 
         if ($stmt->execute()) {
@@ -75,18 +93,39 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['permissionsIds'])) {
     }
 }
 
-if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['permissionName'])) {
+if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['assignPermissionIds'])) {
     try {
-        $permissionName = $_POST['permissionName'];
+
+        $assignPermissionIds = isset($_POST['assignPermissionIds']) && is_array($_POST['assignPermissionIds'])
+            ? array_map('intval', $_POST['assignPermissionIds'])
+            : [];
+
+
+        $roleId = base64_decode($_GET['id']) ?? null;
+
+        if (!$roleId) {
+            throw new Exception("Role ID is required");
+        }
+
+        if (empty($assignPermissionIds)) {
+            throw new Exception("No permissions selected");
+        }
+
         $db->begin_transaction();
-        $stmtPermission = $db->prepare("INSERT INTO permissions (permission_name) VALUES (?)");
-        $stmtPermission->bind_param('s', $permissionName);
-        $stmtPermission->execute();
+        $stmtRolePermission = $db->prepare("
+            INSERT INTO role_permissions (role_id, permission_id) 
+            VALUES (?, ?)
+        ");
+        foreach ($assignPermissionIds as $assignPermissionId) {
+            $stmtRolePermission->bind_param('ii', $roleId, $assignPermissionId);
+            $stmtRolePermission->execute();
+        }
+
         $db->commit(); // Commit the transaction
 
         echo json_encode([
             "status" => 200,
-            "message" => "Permission created successfully",
+            "message" => "Permission Assigned successfully",
         ]);
         exit;
 
@@ -100,57 +139,24 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['permissionName'])) {
     }
 }
 
-if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['editPermissionId'])) {
+
+
+if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['deleteRolePermissionId'])) {
     try {
-        $editPermissionId = $_POST['editPermissionId'];
-        $editPermissionName = $_POST['editPermissionName'];
-        $editPermissionStatus = $_POST['editPermissionStatus'];
-
-
-        $db->begin_transaction();
-        $stmtPermission = $db->prepare("UPDATE permissions SET permission_name = ?, status = ? WHERE permission_id = ?");
-        $stmtPermission->bind_param(
-            'sii',
-            $editPermissionName,
-            $editPermissionStatus,
-            $editPermissionId
-        );
-
-        $stmtPermission->execute();
-        $db->commit(); // Commit the transaction
-
-        echo json_encode([
-            "status" => 200,
-            "message" => "Permission Updated successfully",
-        ]);
-        exit;
-
-    } catch (\Throwable $th) {
-        $db->rollback(); // Rollback on error
-        echo json_encode([
-            "status" => 500,
-            "error" => "Database error: " . $th->getMessage(),
-        ]);
-        exit;
-    }
-}
-
-if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['deletePermissionId'])) {
-    try {
-        $deletePermissionId = $_POST['deletePermissionId'];
+        $deleteRolePermissionId = $_POST['deleteRolePermissionId'];
 
 
         $db->begin_transaction();
 
-        $stmtPermission = $db->prepare("DELETE FROM permissions WHERE permission_id = ?");
-        $stmtPermission->bind_param('i', $deletePermissionId);
-        $stmtPermission->execute();
+        $stmtRolePermission = $db->prepare("DELETE FROM role_permissions WHERE role_permission_id = ?");
+        $stmtRolePermission->bind_param('i', $deleteRolePermissionId);
+        $stmtRolePermission->execute();
 
         $db->commit(); // Commit the transaction
 
         echo json_encode([
             "status" => 200,
-            "message" => "Permission deleted successfully",
+            "message" => "Assign Permission deleted successfully",
         ]);
         exit;
 
@@ -172,7 +178,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['deletePermissionId']))
 <meta http-equiv="content-type" content="text/html;charset=UTF-8" />
 
 <head>
-    <title>Assign Permissions</title>
+    <title>Assign Permissions for <?= htmlspecialchars($role['role_name'] ?? 'Role') ?></title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimal-ui">
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
@@ -190,6 +196,11 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['deletePermissionId']))
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <link rel="stylesheet" href="assets/css/style.css">
 
+    <style>
+        .select2-container--default .select2-selection--multiple .select2-selection__choice__display {
+            color: black !important;
+        }
+    </style>
 </head>
 
 <body class="">
@@ -317,13 +328,15 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['deletePermissionId']))
                     <div class="row align-items-center">
                         <div class="col-md-12">
                             <div class="page-header-title">
-                                <h5 class="m-b-10">Assign Permissions
+                                <h5 class="m-b-10">Assign Permissions for
+                                    <?= htmlspecialchars($role['role_name'] ?? 'Role') ?>
                                 </h5>
                             </div>
                             <ul class="breadcrumb">
                                 <li class="breadcrumb-item"><a href="index.php"><i class="feather icon-home"></i></a>
                                 </li>
-                                <li class="breadcrumb-item"><a href="#!"></a></li>
+                                <li class="breadcrumb-item"><a href="manage-roles.php">Roles</a></li>
+                                <li class="breadcrumb-item"><a href="javascript:void(0);">Assign Permission</a></li>
                             </ul>
 
                         </div>
@@ -343,8 +356,8 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['deletePermissionId']))
                                 <div class="col-md-12">
                                     <div class="d-flex justify-content-end">
                                         <a class="btn btn-primary rounded-sm" href="javascript:void(0);"
-                                            data-bs-toggle="modal" data-bs-target="#add-permission-model"
-                                            title="Create Role" href="javascript:void(0);">Add Permission</a>
+                                            data-bs-toggle="modal" data-bs-target="#assign-permission-model"
+                                            title="Create Role" href="javascript:void(0);">Assign Permission</a>
                                     </div>
                                 </div>
                             </div>
@@ -370,7 +383,6 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['deletePermissionId']))
                                                 &nbsp;SNO
                                             </th>
                                             <th>Permission Name</th>
-                                            <th>Status</th>
                                             <th>Created At</th>
                                             <th>Edit</th>
                                         </tr>
@@ -378,14 +390,14 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['deletePermissionId']))
                                     <tbody>
                                         <?php
                                         $count = 1;
-                                        foreach ($permissionsData as $key => $value) {
+                                        foreach ($assignedPermissions as $key => $value) {
                                             ?>
                                             <tr class='record'>
                                                 <td>
                                                     <div class='custom-control custom-checkbox'>
                                                         <input type='checkbox' class='custom-control-input member_checkbox'
                                                             id='customCheck<?php echo $count; ?>'
-                                                            data-permission-id='<?php echo $value['permission_id']; ?>'>
+                                                            data-role-permission-id='<?php echo $value['role_permission_id']; ?>'>
                                                         <label class='custom-control-label'
                                                             for='customCheck<?php echo $count; ?>'>
                                                             <?php echo $count; ?>
@@ -393,22 +405,11 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['deletePermissionId']))
                                                     </div>
                                                 </td>
                                                 <td><?php echo htmlspecialchars($value['permission_name']); ?></td>
-                                                <td><?php echo $value['status'] == 1 ? "Active" : "Inactive"; ?></td>
                                                 <td><?php echo $value['created_at']; ?></td>
 
                                                 <td>
-                                                    <a class="btn btn-primary rounded-sm edit-permission-button"
-                                                        data-bs-toggle="modal" data-bs-target="#edit-permission-model"
-                                                        title="Edit Role"
-                                                        data-permission-id="<?php echo $value['permission_id']; ?>"
-                                                        data-permission-name="<?php echo htmlspecialchars($value['permission_name']); ?>"
-                                                        data-permission-status="<?php echo $value['status']; ?>"
-                                                        href="javascript:void(0);">
-                                                        <i class='feather icon-edit'></i> &nbsp;Edit
-                                                    </a>
-                                                    &nbsp;
                                                     <a href='javascript:void(0);'
-                                                        data-permission-id="<?php echo $value['permission_id']; ?>"
+                                                        data-role-permission-id="<?php echo $value['role_permission_id']; ?>"
                                                         class='delbutton btn btn-danger' title='Click To Delete'>
                                                         <i class='feather icon-trash'></i> &nbsp; Delete
                                                     </a>
@@ -432,22 +433,28 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['deletePermissionId']))
     </section>
 
 
-    <div class="modal fade" id="add-permission-model" tabindex="-1" aria-labelledby="editUnitsLabel" aria-hidden="true">
+    <div class="modal fade" id="assign-permission-model" tabindex="-1" aria-labelledby="editUnitsLabel"
+        aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="editUnitsLabel">Add Permission</h5>
+                    <h5 class="modal-title" id="editUnitsLabel">Assign Permission</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <form class="add-permission-form">
+                <form class="assign-permission-form">
                     <div class="modal-body">
                         <div class="row">
                             <div class="col-12 col-md-12 mb-3">
                                 <label for="editReferenceCode" class="form-label">Permission <span
                                         class="text-danger">*</span></label>
-                                <div class="input-group">
-                                    <input type="text" class="form-control" id="permission-name" name="permission-name"
-                                        placeholder="Enter Role Permission">
+                                <div class="input-group ">
+                                    <select class="form-select" name="permission-ids[]" id="permission-ids" multiple>
+                                        <option>Select</option>
+                                        <?php foreach ($permissionsData as $key => $value) { ?>
+                                            <option value="<?= $value['permission_id'] ?>"><?= $value['permission_name'] ?>
+                                            </option>
+                                        <?php } ?>
+                                    </select>
                                 </div>
                             </div>
 
@@ -508,6 +515,9 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['deletePermissionId']))
     </div>
 
 
+    <!-- jQuery first -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
     <script src="assets/js/vendor-all.min.js"></script>
     <script src="assets/js/plugins/bootstrap.min.js"></script>
     <script src="assets/js/pcoded.min.js"></script>
@@ -524,6 +534,11 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['deletePermissionId']))
     <script src="assets/js/plugins/buttons.bootstrap4.min.js"></script>
     <script src="assets/js/pages/data-export-custom.js"></script>
 
+    <!-- CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+    <!-- Select2 (must come AFTER jQuery) -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 
     <script>
@@ -537,30 +552,35 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['deletePermissionId']))
     <script type="text/javascript">
         $(document).ready(function () {
 
+            $('#permission-ids').select2({
+                placeholder: "Select Permission",
+                dropdownParent: $('#assign-permission-model'), // Attach dropdown to the modal
+                width: "100%"
+            });
 
-            $(document).on("submit", ".add-permission-form", function (e) {
+            $(document).on("submit", ".assign-permission-form", function (e) {
                 e.preventDefault();
 
                 // Get values correctly using the name attributes
-                let permissionName = $("input[name='permission-name']").val();
+                let permissionIds = $("select[name='permission-ids[]']").val();
 
                 // Your AJAX submission logic here
                 $.ajax({
                     url: window.location.href, // Change to your actual endpoint
                     method: 'POST',
                     data: {
-                        permissionName: permissionName
+                        assignPermissionIds: permissionIds
                     },
 
                     success: function (response) {
-                        $('#add-permission-model').modal('hide');
+                        $('#assign-permission-model').modal('hide');
 
                         let result = JSON.parse(response);
                         if (result.status == 200) {
 
                             // Show success message
                             Swal.fire({
-                                title: 'Permission Created!',
+                                title: 'Permission Assigned!',
                                 text: result.message,
                                 icon: 'success',
                                 confirmButtonColor: "#33cc33",
@@ -692,7 +712,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['deletePermissionId']))
             $(document).on("click", ".delbutton", function (e) {
                 e.preventDefault();
 
-                let permissionId = $(this).data("permission-id");
+                let rolePermissionId = $(this).data("role-permission-id");
 
 
 
@@ -711,7 +731,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['deletePermissionId']))
                             url: window.location.href, // Change to your actual endpoint
                             method: 'POST',
                             data: {
-                                deletePermissionId: permissionId,
+                                deleteRolePermissionId: rolePermissionId,
                             },
                             success: function () {
                                 // Show success message
@@ -789,12 +809,12 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['deletePermissionId']))
             $(document).on('click', '#delete_records', function (e) {
                 e.preventDefault();
 
-                let permissions = [];
+                let assignPermissions = [];
                 $(".member_checkbox:checked").each(function () {
-                    permissions.push($(this).data('permission-id'));
+                    assignPermissions.push($(this).data('role-permission-id'));
                 });
 
-                if (permissions.length == 0) {
+                if (assignPermissions.length == 0) {
                     Swal.fire({
                         icon: "error",
                         title: "Oops...",
@@ -817,7 +837,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['deletePermissionId']))
                         $.ajax({
                             url: window.location.href,
                             type: "post",
-                            data: { permissionsIds: permissions },
+                            data: { bulkDeletePermissionsIds: assignPermissions },
                             success: function (response) {
                                 let result = JSON.parse(response);
 
