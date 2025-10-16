@@ -349,7 +349,18 @@ $type = $row11[5];
                                 <h6 class="text-white">Tender Request</h6>
                                 <h2 class="text-right text-white">
                                     <i class="feather icon-message-square float-left"></i>
-                                    <span id="new"><?= $tenderRequestedCount['COUNT'] ?? 0 ?></span>
+                                    <span id="new">
+                                        <?php
+                                        $tenderRequestedCountValue = 0; // Default value
+                                        
+                                        if ($isAdmin || hasPermission('Dashboard Tenders Request Count', $privileges, $roleData['role_name'])) {
+                                            $tenderRequestedCountValue = $tenderRequestedCount['COUNT'] ?? 0;
+                                        } else {
+                                            $tenderRequestedCountValue = 0;
+                                        }
+                                        echo $tenderRequestedCountValue;
+                                        ?>
+                                    </span>
                                 </h2>
 
                             </div>
@@ -363,8 +374,18 @@ $type = $row11[5];
                             <div class="card-body">
                                 <h6 class="text-white">Sent Tenders</h6>
                                 <h2 class="text-right text-white"><i
-                                        class="feather icon-message-square float-left"></i><span
-                                        id="total"><?= $tenderSentCount['COUNT'] ?? 0 ?></span>
+                                        class="feather icon-message-square float-left"></i><span id="total">
+                                        <?php
+                                        $sentTendersCountValue = 0; // Default value
+                                        
+                                        if ($isAdmin || hasPermission('Dashboard Sent Tenders Count', $privileges, $roleData['role_name'])) {
+                                            $sentTendersCountValue = $tenderSentCount['COUNT'] ?? 0;
+                                        } else {
+                                            $sentTendersCountValue = 0;
+                                        }
+                                        echo $sentTendersCountValue;
+                                        ?>
+                                    </span>
                                 </h2>
 
                             </div>
@@ -379,7 +400,19 @@ $type = $row11[5];
                             <div class="card-body">
                                 <h6 class="text-white">Registered Members</h6>
                                 <h2 class="text-right text-white"><i class="feather icon-users float-left"></i><span
-                                        id="user"><?= $memberCount['COUNT'] ?? 0 ?></span></h2>
+                                        id="user">
+
+                                        <?php
+                                        $registeredMembersCountValue = 0; // Default value
+                                        
+                                        if ($isAdmin || hasPermission('Dashboard Registered Members Count', $privileges, $roleData['role_name'])) {
+                                            $registeredMembersCountValue = $memberCount['COUNT'] ?? 0;
+                                        } else {
+                                            $registeredMembersCountValue = 0;
+                                        }
+                                        echo $registeredMembersCountValue;
+                                        ?>
+                                    </span></h2>
 
                             </div>
                         </a>
@@ -392,7 +425,16 @@ $type = $row11[5];
                             <div class="card-body">
                                 <h6 class="text-white">Alot Tender</h6>
                                 <h2 class="text-right text-white"><i class="feather icon-home float-left"></i><span
-                                        id="category"><?= $tenderAllottedCount['COUNT'] ?? 0 ?></span></h2>
+                                        id="category">
+                                        <?php
+                                        $alotTendersCountValue = 0; // Default value
+                                        if ($isAdmin || hasPermission('Dashboard Alot Tenders Count', $privileges, $roleData['role_name'])) {
+                                            $alotTendersCountValue = $tenderAllottedCount['COUNT'] ?? 0;
+                                        } else {
+                                            $alotTendersCountValue = 0;
+                                        }
+                                        echo $alotTendersCountValue;
+                                        ?></span></h2>
                             </div>
                         </a>
 

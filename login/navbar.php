@@ -19,12 +19,13 @@ try {
             header('Location: index.php');
             exit();
         }
-    } else {
-        // // No session ID found, redirect to login
-        $_SESSION['error'] = "You must be logged in to access this page.";
-        header('Location: index.php');
-        exit();
     }
+    // else {
+    //     // // No session ID found, redirect to login
+    //     $_SESSION['error'] = "You must be logged in to access this page.";
+    //     header('Location: index.php');
+    //     exit();
+    // }
 
 
     // Fetch role details
@@ -104,13 +105,31 @@ $isAdmin = strtolower($roleData['role_name']) === 'admin';
                         <a href="#!" class="nav-link "><span class="pcoded-micon"><i
                                     class="feather icon-file"></i></span><span class="pcoded-mtext">Section</span></a>
                         <ul class="pcoded-submenu">
-                            <li><a href='add-section.php'>Add Section</a></li>
-                            <li><a href='view-section.php'>Manage Section</a></li>
-                            <li><a href='add-division.php'>Add Division</a></li>
-                            <li><a href='view-division.php'>Manage Division</a></li>
-                            <li><a href='add-sub-section.php'>Add Sub Division</a></li>
-                            <li><a href='view-sub-section.php'>Manage Sub Division</a></li>
-                            <li><a href='view-section-tree.php'>Section Tree</a></li>
+                            <?php if ($isAdmin || hasPermission('Add Section', $privileges, $roleData['role_name'])): ?>
+                                <li><a href='add-section.php'>Add Section</a></li>
+                            <?php endif; ?>
+                            <?php if ($isAdmin || hasPermission('Manage Section', $privileges, $roleData['role_name'])): ?>
+                                <li><a href='view-section.php'>Manage Section</a></li>
+                            <?php endif; ?>
+                            <?php if ($isAdmin || hasPermission('Add Division', $privileges, $roleData['role_name'])): ?>
+                                <li><a href='add-division.php'>Add Division</a></li>
+                            <?php endif; ?>
+
+                            <?php if ($isAdmin || hasPermission('Manage Division', $privileges, $roleData['role_name'])): ?>
+                                <li><a href='view-division.php'>Manage Division</a></li>
+                            <?php endif; ?>
+
+                            <?php if ($isAdmin || hasPermission('Add Sub Division', $privileges, $roleData['role_name'])): ?>
+                                <li><a href='add-sub-section.php'>Add Sub Division</a></li>
+                            <?php endif; ?>
+
+                            <?php if ($isAdmin || hasPermission('Manage Sub Division', $privileges, $roleData['role_name'])): ?>
+                                <li><a href='view-sub-section.php'>Manage Sub Division</a></li>
+                            <?php endif; ?>
+
+                            <?php if ($isAdmin || hasPermission('Section Tree', $privileges, $roleData['role_name'])): ?>
+                                <li><a href='view-section-tree.php'>Section Tree</a></li>
+                            <?php endif; ?>
                         </ul>
                     </li>
                 <?php endif; ?>
@@ -121,8 +140,12 @@ $isAdmin = strtolower($roleData['role_name']) === 'admin';
                         <a href="#!" class="nav-link "><span class="pcoded-micon"><i
                                     class="feather icon-edit"></i></span><span class="pcoded-mtext">Category</span></a>
                         <ul class="pcoded-submenu">
-                            <li><a href='add-category.php'>Add Category</a></li>
-                            <li><a href='view-category.php'>Manage Category</a></li>
+                            <?php if ($isAdmin || hasPermission('Add Category', $privileges, $roleData['role_name'])): ?>
+                                <li><a href='add-category.php'>Add Category</a></li>
+                            <?php endif; ?>
+                            <?php if ($isAdmin || hasPermission('Manage Category', $privileges, $roleData['role_name'])): ?>
+                                <li><a href='view-category.php'>Manage Category</a></li>
+                            <?php endif; ?>
                         </ul>
                     </li>
                 <?php endif; ?>
@@ -133,8 +156,13 @@ $isAdmin = strtolower($roleData['role_name']) === 'admin';
                         <a href="#!" class="nav-link "><span class="pcoded-micon"><i
                                     class="feather icon-file"></i></span><span class="pcoded-mtext">Brands</span></a>
                         <ul class="pcoded-submenu">
-                            <li><a href='add-brand.php'>Add Brands</a></li>
-                            <li><a href='manage-brand.php'>Manage Brands</a></li>
+
+                            <?php if ($isAdmin || hasPermission('Add Brands', $privileges, $roleData['role_name'])): ?>
+                                <li><a href='add-brand.php'>Add Brands</a></li>
+                            <?php endif; ?>
+                            <?php if ($isAdmin || hasPermission('Manage Brands', $privileges, $roleData['role_name'])): ?>
+                                <li><a href='manage-brand.php'>Manage Brands</a></li>
+                            <?php endif; ?>
                         </ul>
                     </li>
                 <?php endif; ?>
@@ -145,8 +173,13 @@ $isAdmin = strtolower($roleData['role_name']) === 'admin';
                         <a href="#!" class="nav-link "><span class="pcoded-micon"><i
                                     class="feather icon-home"></i></span><span class="pcoded-mtext">Departments</span></a>
                         <ul class="pcoded-submenu">
-                            <li><a href='add-department.php'>Add Departments</a></li>
-                            <li><a href='manage-department.php'>Manage Departments</a></li>
+                            <?php if ($isAdmin || hasPermission('Add Department', $privileges, $roleData['role_name'])): ?>
+                                <li><a href='add-department.php'>Add Department</a></li>
+                            <?php endif; ?>
+                            <?php if ($isAdmin || hasPermission('Manage Departments', $privileges, $roleData['role_name'])): ?>
+
+                                <li><a href='manage-department.php'>Manage Departments</a></li>
+                            <?php endif; ?>
                         </ul>
                     </li>
                 <?php endif; ?>
@@ -169,7 +202,8 @@ $isAdmin = strtolower($roleData['role_name']) === 'admin';
                     <!-- Staff User Menu -->
                     <li class="nav-item pcoded-hasmenu">
                         <a href="#!" class="nav-link "><span class="pcoded-micon"><i
-                                    class="feather icon-users"></i></span><span class="pcoded-mtext">User Management</span></a>
+                                    class="feather icon-users"></i></span><span class="pcoded-mtext">User
+                                Management</span></a>
                         <ul class="pcoded-submenu">
                             <li><a href='manage-permissions.php'>Manage Permissions </a></li>
                             <li><a href='manage-roles.php'>Manage Roles </a></li>
