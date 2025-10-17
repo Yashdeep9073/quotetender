@@ -242,7 +242,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['memberIds'])) {
                             <div class="row">
                                 <div class="col-md-12">
                                     <div class="d-flex justify-content-end">
-                                        <a class="btn btn-primary rounded-sm" href="add-user.php">Add Staff User</a>
+                                        <?php if ($isAdmin || hasPermission('Add Staff User', $privileges, $roleData['role_name'])) { ?>
+                                            <a class="btn btn-primary rounded-sm" href="add-user.php">Add Staff User</a>
+                                        <?php } ?>
                                     </div>
                                 </div>
                             </div>
@@ -250,9 +252,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['memberIds'])) {
                         <div class="card-body">
                             <div class="dt-responsive table-responsive">
                                 <div class='col-md row'>
-                                    <a href='#' id='delete_records' class='btn btn-danger'>
-                                        <i class='feather icon-trash'></i> &nbsp; Delete Selected User
-                                    </a>
+                                    <?php if ($isAdmin || hasPermission('Bulk Delete Staff User', $privileges, $roleData['role_name'])) { ?>
+                                        <a href='#' id='delete_records' class='btn btn-danger'>
+                                            <i class='feather icon-trash'></i> &nbsp; Delete Selected User
+                                        </a>
+                                    <?php } ?>
                                 </div>
                                 <br />
 
@@ -304,19 +308,23 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['memberIds'])) {
                                                     ?>
                                                 </td>
                                                 <td>
-                                                    <?php
-                                                    $res = base64_encode($value["email"]);
-                                                    ?>
-                                                    <a href='user-edit.php?id=<?php echo $res; ?>'>
-                                                        <button type='button' class='btn btn-warning'>
-                                                            <i class='feather icon-edit'></i> &nbsp;Edit
-                                                        </button>
-                                                    </a> &nbsp;
-                                                    <a href='javascript:void(0);'
-                                                        id='<?php echo htmlspecialchars($value['username']); ?>'
-                                                        class='delbutton btn btn-danger' title='Click To Delete'>
-                                                        <i class='feather icon-trash'></i> &nbsp; delete
-                                                    </a>
+                                                    <?php if ($isAdmin || hasPermission('Edit Staff User', $privileges, $roleData['role_name'])) {
+                                                        $res = base64_encode($value["email"]);
+                                                        ?>
+                                                        <a href='user-edit.php?id=<?php echo $res; ?>'>
+                                                            <button type='button' class='btn btn-warning'>
+                                                                <i class='feather icon-edit'></i> &nbsp;Edit
+                                                            </button>
+                                                        </a> &nbsp;
+                                                    <?php } ?>
+
+                                                    <?php if ($isAdmin || hasPermission('Delete Staff User', $privileges, $roleData['role_name'])) { ?>
+                                                        <a href='javascript:void(0);'
+                                                            id='<?php echo htmlspecialchars($value['username']); ?>'
+                                                            class='delbutton btn btn-danger' title='Click To Delete'>
+                                                            <i class='feather icon-trash'></i> &nbsp; delete
+                                                        </a>
+                                                    <?php } ?>
                                                 </td>
                                             </tr>
                                             <?php

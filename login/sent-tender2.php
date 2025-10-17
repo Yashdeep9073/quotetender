@@ -299,6 +299,65 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
     }
 }
 
+
+try {
+    $stmtFetchTenderSent = $db->prepare("  SELECT 
+        ROW_NUMBER() OVER (ORDER BY ur.created_at) AS sno,
+        ur.id as t_id, 
+		COUNT(ur.id) OVER() as COUNT,  -- Window function instead of aggregate
+        m.name, 
+        m.member_id, 
+        m.firm_name, 
+        m.mobile, 
+        m.email_id, 
+        department.department_name, 
+        ur.due_date, 
+        ur.file_name, 
+        ur.tenderID, 
+        ur.created_at, 
+        ur.file_name2,
+        ur.reference_code,
+        ur.tentative_cost,
+        ur.tender_no, 
+        s.*, 
+        dv.*, 
+        sd.*,
+         st.*, 
+        ct.*  
+    FROM 
+        user_tender_requests ur
+    INNER JOIN 
+        members m ON ur.member_id = m.member_id
+    LEFT JOIN  
+        department ON ur.department_id = department.department_id
+    LEFT JOIN 
+        section s ON ur.section_id = s.section_id
+    LEFT JOIN 
+        division dv ON ur.division_id = dv.division_id
+    LEFT JOIN
+        sub_division sd ON ur.sub_division_id = sd.id
+ LEFT JOIN
+        state st ON CONVERT(m.state_code USING utf8mb4) = CONVERT(st.state_code USING utf8mb4)
+    LEFT JOIN   
+        cities ct ON CAST(m.city_state AS UNSIGNED) = ct.city_id    INNER JOIN 
+        (
+            SELECT MIN(id) AS min_id
+            FROM user_tender_requests sent
+            WHERE sent.status = 'Sent' AND sent.delete_tender = '0'
+            AND NOT EXISTS (
+                SELECT 1 FROM user_tender_requests a
+                WHERE a.tenderID = sent.tenderID
+                AND a.status = 'Allotted'
+                AND a.delete_tender = '0'
+            )
+            GROUP BY sent.tenderID
+        ) AS unique_sent_only ON ur.id = unique_sent_only.min_id
+    ORDER BY ur.created_at ASC");
+    $stmtFetchTenderSent->execute();
+    $tenderSentCount = $stmtFetchTenderSent->get_result()->fetch_array(MYSQLI_ASSOC);
+} catch (\Throwable $th) {
+    //throw $th;
+}
 ?>
 
 <!DOCTYPE html>
@@ -476,144 +535,159 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
                         <div class="card-body">
                             <h6 class="text-white">Sent Tenders</h6>
                             <h2 class="text-right text-white"><i
-                                    class="feather icon-message-square float-left"></i><span id="total"></span></h2>
+                                    class="feather icon-message-square float-left"></i><span id="total">
+
+
+                                    <?php
+                                    $sentTendersCountValue = 0; // Default value
+                                    
+                                    if ($isAdmin || hasPermission('Sent Tenders Count', $privileges, $roleData['role_name'])) {
+                                        $sentTendersCountValue = $tenderSentCount['COUNT'] ?? 0;
+                                    } else {
+                                        $sentTendersCountValue = 0;
+                                    }
+                                    echo $sentTendersCountValue;
+                                    ?>
+                                </span></h2>
 
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="page-header">
-                <div class="page-block">
-                    <div class="row align-items-center">
-                        <div class="col-md-12">
-                            <!-- Filters Section -->
-                            <form method="get" id="filterForm">
-                                <div class="row">
-                                    <div class="col-md-4">
-                                        <div class="form-group">
-                                            <label for="faculty">Department <span class="text-danger">*</span></label>
-                                            <select class="form-control" name="department-search"
-                                                id="department-search">
-                                                <option value="0">All</option>
-                                                <?php foreach ($departments as $department) { ?>
-                                                    <option value="<?php echo $department['department_id']; ?>" <?php echo isset($_GET['department-search']) && $_GET['department-search'] == $department['department_id'] ? 'selected' : ''; ?>>
-                                                        <?php echo $department['department_name']; ?>
-                                                    </option>
-                                                <?php } ?>
-                                            </select>
-                                            <div class="invalid-feedback">Please select a faculty.</div>
+            <?php if ($isAdmin || hasPermission('Sent Tenders Filter', $privileges, $roleData['role_name'])) { ?>
+                <div class="page-header">
+                    <div class="page-block">
+                        <div class="row align-items-center">
+                            <div class="col-md-12">
+                                <!-- Filters Section -->
+                                <form method="get" id="filterForm">
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <div class="form-group">
+                                                <label for="faculty">Department <span class="text-danger">*</span></label>
+                                                <select class="form-control" name="department-search"
+                                                    id="department-search">
+                                                    <option value="0">All</option>
+                                                    <?php foreach ($departments as $department) { ?>
+                                                        <option value="<?php echo $department['department_id']; ?>" <?php echo isset($_GET['department-search']) && $_GET['department-search'] == $department['department_id'] ? 'selected' : ''; ?>>
+                                                            <?php echo $department['department_name']; ?>
+                                                        </option>
+                                                    <?php } ?>
+                                                </select>
+                                                <div class="invalid-feedback">Please select a faculty.</div>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-group">
-                                            <label for="program">Section <span class="text-danger">*</span></label>
-                                            <select class="form-control" name="section-search" id="section-search">
-                                                <option value="0">All</option>
-                                                <?php foreach ($sections as $section) {
-                                                    $selectedSection = (isset($_GET['section-search']) && urldecode($_GET['section-search']) == $section['section_id']) ? 'selected' : '';
+                                        <div class="col-md-4">
+                                            <div class="form-group">
+                                                <label for="program">Section <span class="text-danger">*</span></label>
+                                                <select class="form-control" name="section-search" id="section-search">
+                                                    <option value="0">All</option>
+                                                    <?php foreach ($sections as $section) {
+                                                        $selectedSection = (isset($_GET['section-search']) && urldecode($_GET['section-search']) == $section['section_id']) ? 'selected' : '';
 
-                                                    ?>
-                                                    <option <?= $selectedSection ?>
-                                                        value="<?php echo $section['section_id']; ?>">
-                                                        <?php echo $section['section_name']; ?>
-                                                    </option>
-                                                <?php } ?>
-                                            </select>
-                                            <div class="invalid-feedback">Please select a program.</div>
+                                                        ?>
+                                                        <option <?= $selectedSection ?>
+                                                            value="<?php echo $section['section_id']; ?>">
+                                                            <?php echo $section['section_name']; ?>
+                                                        </option>
+                                                    <?php } ?>
+                                                </select>
+                                                <div class="invalid-feedback">Please select a program.</div>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-group">
-                                            <label for="session">Division <span class="text-danger">*</span></label>
-                                            <select class="form-control" name="division-search" id="division-search">
-                                                <option value="0">All</option>
-                                                <?php foreach ($divisions as $division) { ?>
-                                                    <option value="<?php echo $division['division_id']; ?>" <?php echo isset($_GET['division-search']) && $_GET['division-search'] == $division['division_id'] ? 'selected' : ''; ?>>
-                                                        <?php echo $division['division_name']; ?>
-                                                    </option>
-                                                <?php } ?>
-                                            </select>
-                                            <div class="invalid-feedback">Please select a session.</div>
+                                        <div class="col-md-4">
+                                            <div class="form-group">
+                                                <label for="session">Division <span class="text-danger">*</span></label>
+                                                <select class="form-control" name="division-search" id="division-search">
+                                                    <option value="0">All</option>
+                                                    <?php foreach ($divisions as $division) { ?>
+                                                        <option value="<?php echo $division['division_id']; ?>" <?php echo isset($_GET['division-search']) && $_GET['division-search'] == $division['division_id'] ? 'selected' : ''; ?>>
+                                                            <?php echo $division['division_name']; ?>
+                                                        </option>
+                                                    <?php } ?>
+                                                </select>
+                                                <div class="invalid-feedback">Please select a session.</div>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-group">
-                                            <label for="semester">Sub Division <span
-                                                    class="text-danger">*</span></label>
-                                            <select class="form-control" name="sub-division-search"
-                                                id="sub-division-search" required>
-                                                <option value="0">All</option>
+                                        <div class="col-md-4">
+                                            <div class="form-group">
+                                                <label for="semester">Sub Division <span
+                                                        class="text-danger">*</span></label>
+                                                <select class="form-control" name="sub-division-search"
+                                                    id="sub-division-search" required>
+                                                    <option value="0">All</option>
 
-                                            </select>
-                                            <div class="invalid-feedback">Please select a semester.</div>
+                                                </select>
+                                                <div class="invalid-feedback">Please select a semester.</div>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-group">
-                                            <label for="semester">Firm <span class="text-danger">*</span></label>
-                                            <select class="form-control select-firm" name="firm" required>
-                                                <option value="0">All</option>
-                                                <?php foreach ($firms as $firm) {
-                                                    $selectedFirm = (isset($_GET['firm']) && urldecode($_GET['firm']) == $firm['firm_name']) ? 'selected' : '';
-                                                    ?>
-                                                    <option value="<?= htmlspecialchars($firm['firm_name']) ?>"
-                                                        <?= $selectedFirm ?>>
-                                                        <?= htmlspecialchars($firm['firm_name']) ?>
-                                                    </option>
-                                                <?php } ?>
-                                            </select>
-                                            <div class="invalid-feedback">Please select a semester.</div>
+                                        <div class="col-md-4">
+                                            <div class="form-group">
+                                                <label for="semester">Firm <span class="text-danger">*</span></label>
+                                                <select class="form-control select-firm" name="firm" required>
+                                                    <option value="0">All</option>
+                                                    <?php foreach ($firms as $firm) {
+                                                        $selectedFirm = (isset($_GET['firm']) && urldecode($_GET['firm']) == $firm['firm_name']) ? 'selected' : '';
+                                                        ?>
+                                                        <option value="<?= htmlspecialchars($firm['firm_name']) ?>"
+                                                            <?= $selectedFirm ?>>
+                                                            <?= htmlspecialchars($firm['firm_name']) ?>
+                                                        </option>
+                                                    <?php } ?>
+                                                </select>
+                                                <div class="invalid-feedback">Please select a semester.</div>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-group">
-                                            <label for="semester">State <span class="text-danger">*</span></label>
-                                            <select class="form-control select-state" name="state" required>
-                                                <option value="0">All</option>
-                                                <?php foreach ($states as $state) {
-                                                    $selectedState = (isset($_GET['state']) && urldecode($_GET['state']) == $state['state_code']) ? 'selected' : '';
-                                                    ?>
-                                                    <option value="<?= $state['state_code'] ?>" <?= $selectedState ?>>
-                                                        <?= $state['state_name'] ?>
-                                                    </option>
-                                                <?php } ?>
-                                            </select>
-                                            <div class="invalid-feedback">Please select a semester.</div>
+                                        <div class="col-md-4">
+                                            <div class="form-group">
+                                                <label for="semester">State <span class="text-danger">*</span></label>
+                                                <select class="form-control select-state" name="state" required>
+                                                    <option value="0">All</option>
+                                                    <?php foreach ($states as $state) {
+                                                        $selectedState = (isset($_GET['state']) && urldecode($_GET['state']) == $state['state_code']) ? 'selected' : '';
+                                                        ?>
+                                                        <option value="<?= $state['state_code'] ?>" <?= $selectedState ?>>
+                                                            <?= $state['state_name'] ?>
+                                                        </option>
+                                                    <?php } ?>
+                                                </select>
+                                                <div class="invalid-feedback">Please select a semester.</div>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-group">
-                                            <label for="semester">City <span class="text-danger">*</span></label>
-                                            <select class="form-control select-city" name="city">
-                                                <option value="0">All</option>
-                                            </select>
-                                            <div class="invalid-feedback">Please select a semester.</div>
+                                        <div class="col-md-4">
+                                            <div class="form-group">
+                                                <label for="semester">City <span class="text-danger">*</span></label>
+                                                <select class="form-control select-city" name="city">
+                                                    <option value="0">All</option>
+                                                </select>
+                                                <div class="invalid-feedback">Please select a semester.</div>
+                                            </div>
                                         </div>
-                                    </div>
 
-                                    <!-- Buttons -->
-                                    <div class="col-md-6 col-sm-12 d-flex align-items-center mt-3">
-                                        <!-- Submit Button -->
-                                        <button type="submit" class="btn btn-primary btn-md d-flex align-items-center">
-                                            <i class="fas fa-search" style="margin-right: 8px;"></i> Search
-                                        </button>
-                                        &nbsp;
-                                        <!-- Reset Button -->
-                                        <a href="sent-tender2.php"
-                                            class="btn btn-primary btn-md d-flex align-items-center"
-                                            id="filterResetButton">
-                                            <i class="fas fa-undo" style="margin-right: 8px;"></i>
-                                            Reset
-                                        </a>
+                                        <!-- Buttons -->
+                                        <div class="col-md-6 col-sm-12 d-flex align-items-center mt-3">
+                                            <!-- Submit Button -->
+                                            <button type="submit" class="btn btn-primary btn-md d-flex align-items-center">
+                                                <i class="fas fa-search" style="margin-right: 8px;"></i> Search
+                                            </button>
+                                            &nbsp;
+                                            <!-- Reset Button -->
+                                            <a href="sent-tender2.php"
+                                                class="btn btn-primary btn-md d-flex align-items-center"
+                                                id="filterResetButton">
+                                                <i class="fas fa-undo" style="margin-right: 8px;"></i>
+                                                Reset
+                                            </a>
+                                        </div>
                                     </div>
-                                </div>
-                            </form>
+                                </form>
 
 
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            <?php } ?>
             <div class="row">
                 <div class="col-sm-12">
                     <div class="card">
@@ -645,34 +719,35 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
                                 ?>
                                 <br />
                                 <?php
-                                if ($isAdmin || hasPermission('Tenders', $privileges, $roleData['role_name'])) {
+                                if ($isAdmin || hasPermission('Bulk Delete Sent Tender', $privileges, $roleData['role_name'])) {
                                     echo "<a href='javascript:void(0);' id='recycle_records' class='btn btn-danger me-3 rounded-sm'> 
                                     <i class='feather icon-trash'></i> &nbsp; Move to Bin
                                     </a>&nbsp&nbsp";
                                 }
-                                if ($isAdmin || hasPermission('Tenders', $privileges, $roleData['role_name'])) {
-                                    echo "<a href='javascript:void(0);' class='update_records'><button type='button' class='btn btn-warning me-3 rounded-sm'>
-                                    <i class='feather icon-edit'></i> &nbsp; Update
-                                    </button></a>
-                                    ";
-                                } ?>
+                                ?>
                                 <div class="dt-buttons btn-group">
-                                    <button class="btn btn-secondary buttons-excel buttons-html5 btn-primary rounded-sm"
-                                        tabindex="0" aria-controls="basic-btn2" type="button"
-                                        onclick="exportTableToExcel()" title="Export to Excel"><span><i
-                                                class="fas fa-file-excel"></i>
-                                            Excel</span></button>
-                                    <button class="btn btn-secondary buttons-csv buttons-html5 btn-primary rounded-sm"
-                                        tabindex="0" aria-controls="basic-btn2" type="button"
-                                        onclick="exportTableToCSV()" title="Export to CSV"><span><i
-                                                class="fas fa-file-csv"></i> CSV</span></button>
-                                    <button class="btn btn-secondary buttons-copy buttons-html5 btn-primary rounded-sm"
-                                        tabindex="0" aria-controls="basic-btn2" type="button"
-                                        title="Copy to clipboard"><span><i class="fas fa-copy"></i> Copy</span></button>
-                                    <button class="btn btn-secondary buttons-print btn-primary rounded-sm" tabindex="0"
-                                        onclick="printTable()" aria-controls="basic-btn2" type="button"
-                                        title="Print"><span><i class="fas fa-print"></i> Print</span></button>
+                                    <?php if ($isAdmin || hasPermission('Sent Tender Excel', $privileges, $roleData['role_name'])) { ?>
+                                        <button class="btn btn-secondary buttons-excel buttons-html5 btn-primary rounded-sm"
+                                            tabindex="0" aria-controls="basic-btn2" type="button"
+                                            onclick="exportTableToExcel()" title="Export to Excel"><span><i
+                                                    class="fas fa-file-excel"></i>
+                                                Excel</span></button>
+                                    <?php } ?>
+                                    <?php if ($isAdmin || hasPermission('Sent Tender CSV', $privileges, $roleData['role_name'])) { ?>
+
+                                        <button class="btn btn-secondary buttons-csv buttons-html5 btn-primary rounded-sm"
+                                            tabindex="0" aria-controls="basic-btn2" type="button"
+                                            onclick="exportTableToCSV()" title="Export to CSV"><span><i
+                                                    class="fas fa-file-csv"></i> CSV</span></button>
+                                    <?php } ?>
+
+                                    <?php if ($isAdmin || hasPermission('Sent Tender Print', $privileges, $roleData['role_name'])) { ?>
+                                        <button class="btn btn-secondary buttons-print btn-primary rounded-sm" tabindex="0"
+                                            onclick="printTable()" aria-controls="basic-btn2" type="button"
+                                            title="Print"><span><i class="fas fa-print"></i> Print</span></button>
+                                    <?php } ?>
                                 </div>
+
                                 <table id="basic-btn2" class="table table-striped table-bordered">
                                     <thead>
                                         <tr>
@@ -720,10 +795,14 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
                                                     </div>
                                                 </td>
                                                 <td>
-                                                    <a class='tender_id'
-                                                        href='sent-tender3.php?tender_id=<?= base64_encode($row['tenderID']) ?>'>
+                                                    <?php if ($isAdmin || hasPermission('Sent Tender Print', $privileges, $roleData['role_name'])) { ?>
+                                                        <a class='tender_id'
+                                                            href='sent-tender3.php?tender_id=<?= base64_encode($row['tenderID']) ?>'>
+                                                            <?= htmlspecialchars($row['tenderID']) ?>
+                                                        </a>
+                                                    <?php } else { ?>
                                                         <?= htmlspecialchars($row['tenderID']) ?>
-                                                    </a>
+                                                    <?php } ?>
                                                 </td>
                                                 <td><?= htmlspecialchars($row['tender_no']) ?></td>
                                                 <td><?= htmlspecialchars($row['department_name']) ?></td>
@@ -735,24 +814,26 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
                                                 <td><?= htmlspecialchars($formattedDueDate) ?></td>
                                                 <td><?= htmlspecialchars($formattedCreatedDate) ?></td>
                                                 <td>
+                                                    <div class="dropdown">
+                                                        <button class="btn btn-secondary " type="button"
+                                                            id="actionMenu<?php echo $row['t_id']; ?>"
+                                                            data-bs-toggle="dropdown" aria-expanded="false">
+                                                            <i class="feather icon-more-vertical"></i>
+                                                        </button>
+                                                        <ul class="dropdown-menu"
+                                                            aria-labelledby="actionMenu<?php echo $row['id']; ?>">
 
-                                                    <?php if ($isAdmin || hasPermission('Dashboard', $privileges, $roleData['role_name'])): ?>
-
-                                                        <div class="dropdown">
-                                                            <button class="btn btn-secondary " type="button"
-                                                                id="actionMenu<?php echo $row['t_id']; ?>"
-                                                                data-bs-toggle="dropdown" aria-expanded="false">
-                                                                <i class="feather icon-more-vertical"></i>
-                                                            </button>
-                                                            <ul class="dropdown-menu"
-                                                                aria-labelledby="actionMenu<?php echo $row['id']; ?>">
+                                                            <?php if ($isAdmin || hasPermission('Alot Sent Tender', $privileges, $roleData['role_name'])) { ?>
                                                                 <li>
                                                                     <a class="dropdown-item"
                                                                         href='sent-edit.php?id=<?= urlencode($res) ?>'>
                                                                         <i class="feather icon-edit me-2"></i>Alot
                                                                     </a>
                                                                 </li>
+                                                            <?php } ?>
 
+
+                                                            <?php if ($isAdmin || hasPermission('Edit Sent Tender', $privileges, $roleData['role_name'])) { ?>
 
                                                                 <li>
                                                                     <a class="dropdown-item"
@@ -760,36 +841,38 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
                                                                         <i class="feather icon-edit me-2"></i>Update
                                                                     </a>
                                                                 </li>
+                                                            <?php } ?>
 
-                                                                <?php if ($isAdmin || hasPermission('Dashboard', $privileges, $roleData['role_name'])) { ?>
-                                                                    <!-- <li>
+                                                            <?php if ($isAdmin || hasPermission('Delete Sent Tender', $privileges, $roleData['role_name'])) { ?>
+                                                                <!-- <li>
                                                                         <hr class="dropdown-divider">
                                                                     </li> -->
-                                                                    <li>
-                                                                        <a class="dropdown-item recyclebutton"
-                                                                            href='javascript:void(0);'
-                                                                            id='<?= htmlspecialchars($row['t_id']) ?>'
-                                                                            data-tender-id='<?= htmlspecialchars($row['t_id']) ?>'
-                                                                            title="Move to Bin">
-                                                                            <i class="feather icon-trash me-2"></i>Move to Bin
-                                                                        </a>
-                                                                    </li>
-                                                                    <li>
-                                                                        <a class="dropdown-item tender-files"
-                                                                            href="javascript:void(0);"
-                                                                            data-tender-id="<?php echo $row['t_id']; ?>"
-                                                                            data-reference-code="<?php echo $row['reference_code']; ?>"
-                                                                            data-tender-files='<?php echo $row['additional_files']; ?>'
-                                                                            data-bs-toggle="modal" data-bs-target="#edit-units"
-                                                                            title="Change Reference Number">
-                                                                            <i class="feather icon-file me-2"></i>Files
-                                                                        </a>
-                                                                    </li>
-                                                                <?php } ?>
-                                                            </ul>
-                                                        </div>
+                                                                <li>
+                                                                    <a class="dropdown-item recyclebutton"
+                                                                        href='javascript:void(0);'
+                                                                        id='<?= htmlspecialchars($row['t_id']) ?>'
+                                                                        data-tender-id='<?= htmlspecialchars($row['t_id']) ?>'
+                                                                        title="Move to Bin">
+                                                                        <i class="feather icon-trash me-2"></i>Move to Bin
+                                                                    </a>
+                                                                </li>
+                                                            <?php } ?>
+                                                            <?php if ($isAdmin || hasPermission('Files Sent Tender', $privileges, $roleData['role_name'])) { ?>
 
-                                                    <?php endif; ?>
+                                                                <li>
+                                                                    <a class="dropdown-item tender-files"
+                                                                        href="javascript:void(0);"
+                                                                        data-tender-id="<?php echo $row['t_id']; ?>"
+                                                                        data-reference-code="<?php echo $row['reference_code']; ?>"
+                                                                        data-tender-files='<?php echo $row['additional_files']; ?>'
+                                                                        data-bs-toggle="modal" data-bs-target="#edit-units"
+                                                                        title="Change Reference Number">
+                                                                        <i class="feather icon-file me-2"></i>Files
+                                                                    </a>
+                                                                </li>
+                                                            <?php } ?>
+                                                        </ul>
+                                                    </div>
                                                 </td>
                                             </tr>
                                             <?php
@@ -1111,14 +1194,6 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
                 ordering: true,
                 searching: true
             });
-
-
-
-            // Fetch the number of entries
-            var info = table.page.info();
-            var totalEntries = info.recordsTotal;
-            // Display the number of entries
-            $('#total').text(totalEntries);
         });
     </script>
 

@@ -177,7 +177,6 @@ $isAdmin = strtolower($roleData['role_name']) === 'admin';
                                 <li><a href='add-department.php'>Add Department</a></li>
                             <?php endif; ?>
                             <?php if ($isAdmin || hasPermission('Manage Departments', $privileges, $roleData['role_name'])): ?>
-
                                 <li><a href='manage-department.php'>Manage Departments</a></li>
                             <?php endif; ?>
                         </ul>
@@ -192,22 +191,34 @@ $isAdmin = strtolower($roleData['role_name']) === 'admin';
                                     class="feather icon-credit-card"></i></span><span class="pcoded-mtext">Price
                                 List</span></a>
                         <ul class="pcoded-submenu">
-                            <li><a href='add-price.php'>Add Price List</a></li>
-                            <li><a href='manage-price.php'>Manage Price List</a></li>
+                            <?php if ($isAdmin || hasPermission('Add Price', $privileges, $roleData['role_name'])): ?>
+                                <li><a href='add-price.php'>Add Price List</a></li>
+                            <?php endif; ?>
+
+                            <?php if ($isAdmin || hasPermission('Manage Price', $privileges, $roleData['role_name'])): ?>
+                                <li><a href='manage-price.php'>Manage Price List</a></li>
+                            <?php endif; ?>
                         </ul>
                     </li>
                 <?php endif; ?>
 
-                <?php if ($isAdmin || hasPermission('Staff User Management', $privileges, $roleData['role_name'])): ?>
+                <?php if ($isAdmin || hasPermission('User Management', $privileges, $roleData['role_name'])): ?>
                     <!-- Staff User Menu -->
                     <li class="nav-item pcoded-hasmenu">
                         <a href="#!" class="nav-link "><span class="pcoded-micon"><i
                                     class="feather icon-users"></i></span><span class="pcoded-mtext">User
                                 Management</span></a>
                         <ul class="pcoded-submenu">
-                            <li><a href='manage-permissions.php'>Manage Permissions </a></li>
-                            <li><a href='manage-roles.php'>Manage Roles </a></li>
-                            <li><a href='view-user.php'>Manage Staff Users</a></li>
+                            <?php if ($isAdmin || hasPermission('User Management', $privileges, $roleData['role_name'])): ?>
+                                <li><a href='manage-permissions.php'>Manage Permissions </a></li>
+                            <?php endif; ?>
+
+                            <?php if ($isAdmin || hasPermission('Manage Roles', $privileges, $roleData['role_name'])): ?>
+                                <li><a href='manage-roles.php'>Manage Roles </a></li>
+                            <?php endif; ?>
+                            <?php if ($isAdmin || hasPermission('Manage Roles', $privileges, $roleData['role_name'])): ?>
+                                <li><a href='view-user.php'>Manage Staff Users</a></li>
+                            <?php endif; ?>
                         </ul>
                     </li>
                 <?php endif; ?>
@@ -220,11 +231,23 @@ $isAdmin = strtolower($roleData['role_name']) === 'admin';
                                     class="feather icon-briefcase"></i></span><span class="pcoded-mtext">Tenders
                             </span></a>
                         <ul class="pcoded-submenu">
-                            <li><a href='tender-request2.php'>Tender Requests</a></li>
-                            <li><a href='sent-tender2.php'> Sent Tenders</a></li>
-                            <li><a href='alot-tender.php'> Alot Tenders</a></li>
-                            <li><a href='award-tender.php'> Award Tenders</a></li>
-                            <li><a href='all-tender-request.php'>View All Tenders</a></li>
+                            <?php if ($isAdmin || hasPermission('Tender Requests', $privileges, $roleData['role_name'])): ?>
+                                <li><a href='tender-request2.php'>Tender Requests</a></li>
+                            <?php endif; ?>
+
+                            <?php if ($isAdmin || hasPermission('Sent Tenders', $privileges, $roleData['role_name'])): ?>
+                                <li><a href='sent-tender2.php'> Sent Tenders</a></li>
+                            <?php endif; ?>
+
+                            <?php if ($isAdmin || hasPermission('Alot Tenders', $privileges, $roleData['role_name'])): ?>
+                                <li><a href='alot-tender.php'> Alot Tenders</a></li>
+                            <?php endif; ?>
+                            <?php if ($isAdmin || hasPermission('Award Tenders', $privileges, $roleData['role_name'])): ?>
+                                <li><a href='award-tender.php'> Award Tenders</a></li>
+                            <?php endif; ?>
+                            <?php if ($isAdmin || hasPermission('View All Tenders', $privileges, $roleData['role_name'])): ?>
+                                <li><a href='all-tender-request.php'>View All Tenders</a></li>
+                            <?php endif; ?>
                         </ul>
                     </li>
                 <?php endif; ?>
@@ -253,10 +276,21 @@ $isAdmin = strtolower($roleData['role_name']) === 'admin';
                                     class="feather icon-credit-card"></i></span><span class="pcoded-mtext">Website
                             </span></a>
                         <ul class="pcoded-submenu">
-                            <li><a href='add-banner.php'>Add Banner</a></li>
-                            <li><a href='manage-banner.php'> Manage Banner</a></li>
-                            <li><a href='add-content.php'>Add Content</a></li>
-                            <li><a href='manage-content.php'> Manage Content</a></li>
+                            <?php if ($isAdmin || hasPermission('Add Banner', $privileges, $roleData['role_name'])): ?>
+                                <li><a href='add-banner.php'>Add Banner</a></li>
+                            <?php endif; ?>
+
+                            <?php if ($isAdmin || hasPermission('Manage Banner', $privileges, $roleData['role_name'])): ?>
+                                <li><a href='manage-banner.php'> Manage Banner</a></li>
+                            <?php endif; ?>
+
+                            <?php if ($isAdmin || hasPermission('Add Content', $privileges, $roleData['role_name'])): ?>
+                                <li><a href='add-content.php'>Add Content</a></li>
+                            <?php endif; ?>
+
+                            <?php if ($isAdmin || hasPermission('Manage Content', $privileges, $roleData['role_name'])): ?>
+                                <li><a href='manage-content.php'> Manage Content</a></li>
+                            <?php endif; ?>
                         </ul>
                     </li>
                 <?php endif; ?>

@@ -305,98 +305,123 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['memberIds'])) {
                                 <br />
 
 
-                                <?php
-                                echo "<div class='col-md row'>
-                                <a href='#' id='delete_records' class='btn btn-danger'> <i class='feather icon-trash'></i>  &nbsp;
-                                Delete Selected Members</a>
-                                </div> <br />";
-
-                                echo '
-                                 <div class="dt-buttons btn-group">
-                                    <button class="btn btn-secondary buttons-excel buttons-html5 btn-primary rounded-sm"
-                                        tabindex="0" aria-controls="basic-btn2" type="button"
-                                        onclick="exportTableToExcel()" title="Export to Excel"><span><i
-                                                class="fas fa-file-excel"></i>
-                                            Excel</span></button>
-                                    <button class="btn btn-secondary buttons-csv buttons-html5 btn-primary rounded-sm"
-                                        tabindex="0" aria-controls="basic-btn2" type="button"
-                                        onclick="exportTableToCSV()" title="Export to CSV"><span><i
-                                                class="fas fa-file-csv"></i> CSV</span></button>
-                                    <button class="btn btn-secondary buttons-copy buttons-html5 btn-primary rounded-sm"
-                                        tabindex="0" aria-controls="basic-btn2" type="button"
-                                        title="Copy to clipboard"><span><i class="fas fa-copy"></i> Copy</span></button>
-                                    <button class="btn btn-secondary buttons-print btn-primary rounded-sm" tabindex="0"
-                                        onclick="printTable()" aria-controls="basic-btn2" type="button"
-                                        title="Print"><span><i class="fas fa-print"></i> Print</span></button>
+                                <div class='col-md row'>
+                                    <?php if ($isAdmin || hasPermission('Bulk Delete Registered Users', $privileges, $roleData['role_name'])) { ?>
+                                        <a href='#' id='delete_records' class='btn btn-danger'>
+                                            <i class='feather icon-trash'></i> &nbsp;
+                                            Delete Selected Members
+                                        </a>
+                                    <?php } ?>
                                 </div>
-                                ';
+                                <br />
 
+                                <div class="dt-buttons btn-group">
+                                    <?php if ($isAdmin || hasPermission('Registered User Excel', $privileges, $roleData['role_name'])) { ?>
+                                        <button class="btn btn-secondary buttons-excel buttons-html5 btn-primary rounded-sm"
+                                            tabindex="0" aria-controls="basic-btn2" type="button"
+                                            onclick="exportTableToExcel()" title="Export to Excel">
+                                            <span>
+                                                <i class="fas fa-file-excel"></i> Excel
+                                            </span>
+                                        </button>
+                                    <?php } ?>
+                                    <?php if ($isAdmin || hasPermission('Registered User CSV', $privileges, $roleData['role_name'])) { ?>
+                                        <button class="btn btn-secondary buttons-csv buttons-html5 btn-primary rounded-sm"
+                                            tabindex="0" aria-controls="basic-btn2" type="button"
+                                            onclick="exportTableToCSV()" title="Export to CSV">
+                                            <span>
+                                                <i class="fas fa-file-csv"></i> CSV
+                                            </span>
+                                        </button>
+                                    <?php } ?>
 
-                                echo '<table id="basic-btn2" class="table table-striped table-bordered ">';
-                                echo "<thead>";
-                                echo "<tr>";
-                                echo '<th>
-                                    <label class="checkboxs">
-                                        <input type="checkbox" id="select-all">
-                                        <span class="checkmarks"></span>
-                                    </label>
-                                    SNO
-                                </th>';
-                                echo "<th>Name</th>";
-                                echo "<th>Firm Name</th>";
-                                echo "<th>Mobile</th>";
-                                echo "<th>Email</th>";
-                                echo "<th>State</th>";
-                                echo "<th>City</th>";
-                                echo "<th>Status</th>";
-
-                                echo "<th> Tender</th>";
-                                echo "<th>Edit</th>";
-
-
-                                echo "</tr>";
-                                echo "</thead>";
-
-
-                                ?>
-                                <?php
-                                $count = 1;
-
-                                echo "<tbody>";
-                                foreach ($result as $row) {
-
-                                    echo "<tr class='record' id='" . $row[0] . "'>";
-                                    echo "<td>
-                                <div class='custom-control custom-checkbox'>
-                                    <input type='checkbox' class='custom-control-input member_checkbox' id='customCheck" . $count . "' data-member-id='" . $row[0] . "'>
-                                    <label class='custom-control-label' for='customCheck" . $count . "'>" . $count . "</label>
+                                    <?php if ($isAdmin || hasPermission('Registered User Print', $privileges, $roleData['role_name'])) { ?>
+                                        <button class="btn btn-secondary buttons-print btn-primary rounded-sm" tabindex="0"
+                                            onclick="printTable()" aria-controls="basic-btn2" type="button" title="Print">
+                                            <span>
+                                                <i class="fas fa-print"></i> Print
+                                            </span>
+                                        </button>
+                                    <?php } ?>
                                 </div>
-                            </td>";
 
-                                    echo "<td>" . $row['1'] . "</td>";
-                                    echo "<td>" . $row['2'] . "</td>";
-                                    echo "<td>" . $row['3'] . "</td>";
-                                    echo "<td>" . $row['4'] . "</td>";
-                                    echo "<td>" . $row['15'] . "</td>";
-                                    echo "<td>" . $row['19'] . "</td>";
-                                    echo "<td>" . (($row['9'] == 1) ? "Enable" : "Disabled") . "</td>";
-                                    echo "<td>" . "Free: " . $row['11'] . "<br/> " . "<span style='color:green;'> " . " Balance: " . $row['12'] . "</span>" . "</td>";
+                                <table id="basic-btn2" class="table table-striped table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th>
+                                                <label class="checkboxs">
+                                                    <input type="checkbox" id="select-all">
+                                                    <span class="checkmarks"></span>
+                                                </label>
+                                                SNO
+                                            </th>
+                                            <th>Name</th>
+                                            <th>Firm Name</th>
+                                            <th>Mobile</th>
+                                            <th>Email</th>
+                                            <th>State</th>
+                                            <th>City</th>
+                                            <th>Status</th>
+                                            <th>Tender</th>
+                                            <th>Edit</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php
+                                        $count = 1;
+                                        foreach ($result as $row) {
+                                            ?>
+                                            <tr class='record' id='<?php echo $row[0]; ?>'>
+                                                <td>
+                                                    <div class='custom-control custom-checkbox'>
+                                                        <input type='checkbox' class='custom-control-input member_checkbox'
+                                                            id='customCheck<?php echo $count; ?>'
+                                                            data-member-id='<?php echo $row[0]; ?>'>
+                                                        <label class='custom-control-label'
+                                                            for='customCheck<?php echo $count; ?>'><?php echo $count; ?></label>
+                                                    </div>
+                                                </td>
 
+                                                <td><?php echo $row['1']; ?></td>
+                                                <td><?php echo $row['2']; ?></td>
+                                                <td><?php echo $row['3']; ?></td>
+                                                <td><?php echo $row['4']; ?></td>
+                                                <td><?php echo $row['15']; ?></td>
+                                                <td><?php echo $row['19']; ?></td>
+                                                <td><?php echo (($row['9'] == 1) ? "Enable" : "Disabled"); ?></td>
 
-                                    $res = $row[0];
-                                    $ree = base64_encode($res);
-                                    echo "<td>  <a href='registered-users-edit.php?id=$ree'><button type='button' class='btn btn-warning'>
-                                    <i class='feather icon-edit'></i> &nbsp;Activate</button></a>  &nbsp;   <a href='#'
-                                    id='" . $row['0'] . "' class='delbutton btn btn-danger' title='Click To Delete'> 
-                                    <i class='feather icon-trash'></i>  &nbsp; delete</a></td>";
-                                    echo "</tr>";
-                                    $count++;
-                                }
+                                                <td>
+                                                    Free: <?php echo $row['11']; ?><br />
+                                                    <span style='color:green;'>Balance: <?php echo $row['12']; ?></span>
+                                                </td>
 
-
-                                echo "</tfoot>";
-                                echo "</table>";
-                                ?>
+                                                <td>
+                                                    <?php
+                                                    if ($isAdmin || hasPermission('Edit Registered Users', $privileges, $roleData['role_name'])) {
+                                                        $res = $row[0];
+                                                        $ree = base64_encode($res);
+                                                        ?>
+                                                        <a href='registered-users-edit.php?id=<?php echo $ree; ?>'>
+                                                            <button type='button' class='btn btn-warning'>
+                                                                <i class='feather icon-edit'></i> &nbsp;Activate
+                                                            </button>
+                                                        </a> &nbsp;
+                                                    <?php } ?>
+                                                    <?php if ($isAdmin || hasPermission('Delete Registered Users', $privileges, $roleData['role_name'])) { ?>
+                                                        <a href='#' id='<?php echo $row['0']; ?>'
+                                                            class='delbutton btn btn-danger' title='Click To Delete'>
+                                                            <i class='feather icon-trash'></i> &nbsp; delete
+                                                        </a>
+                                                    <?php } ?>
+                                                </td>
+                                            </tr>
+                                            <?php
+                                            $count++;
+                                        }
+                                        ?>
+                                    </tbody>
+                                    <tfoot></tfoot>
+                                </table>
 
                             </div>
                         </div>

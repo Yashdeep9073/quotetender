@@ -175,50 +175,50 @@ $result = mysqli_query($db, $query);
 
                                 ?>
                                 <br />
-                                <?php
+                                <table id="basic-btn2" class="table table-striped table-bordered nowrap">
+                                    <thead>
+                                        <tr>
+                                            <th>SNO</th>
+                                            <th>Section Name</th>
+                                            <th>Division Name</th>
+                                            <th>Edit</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php
+                                        $count = 1;
+                                        while ($row = mysqli_fetch_row($result)) {
+                                            $res = $row[0];
+                                            $res = base64_encode($res);
+                                            ?>
+                                            <tr class='record'>
+                                                <td><?php echo $count; ?></td>
+                                                <td><?php echo $row['2']; ?></td>
+                                                <td><?php echo $row['1']; ?></td>
+                                                <td>
+                                                    <?php if ($isAdmin || hasPermission('Edit Division', $privileges, $roleData['role_name'])) { ?>
+                                                        <a href='division-edit.php?sect=<?php echo $res; ?>'>
+                                                            <button type='button' class='btn btn-warning'>
+                                                                <i class='feather icon-edit'></i> &nbsp;Edit
+                                                            </button>
+                                                        </a> &nbsp;
+                                                    <?php } ?>
 
-                                echo '<table id="basic-btn" class="table table-striped table-bordered nowrap">';
-                                echo "<thead>";
-                                echo "<tr>";
-                                echo "<th>SNO</th>";
-                                echo "<th>Section Name</th>";
-                                echo "<th>Division Name</th>";
-
-                                echo "<th>Edit</th>";
-
-
-                                echo "</tr>";
-                                echo "</thead>";
-
-
-                                ?>
-                                <?php
-
-                                $count = 1;
-                                echo "<tbody>";
-                                while ($row = mysqli_fetch_row($result)) {
-
-                                    echo "<tr class='record'>";
-                                    echo "<td> $count </td>";
-                                    echo "<td>" . $row['2'] . "</td>";
-                                    echo "<td>" . $row['1'] . "</td>";
-
-                                    $res = $row[0];
-                                    $res = base64_encode($res);
-
-
-                                    echo "<td>  <a href='division-edit.php?sect=$res'><button type='button' class='btn btn-warning'><i class='feather icon-edit'></i> &nbsp;Edit</button></a>  &nbsp;   <a href='#' id='" . $row['0'] . "'class='delbutton btn btn-danger' title='Click To Delete'> <i class='feather icon-trash'></i>  &nbsp; delete</a></td>";
-
-
-                                    echo "</tr>";
-
-                                    $count++;
-                                }
-
-
-                                echo "</tfoot>";
-                                echo "</table>";
-                                ?>
+                                                    <?php if ($isAdmin || hasPermission('Delete Division', $privileges, $roleData['role_name'])) { ?>
+                                                        <a href='#' id='<?php echo $row['0']; ?>'
+                                                            class='delbutton btn btn-danger' title='Click To Delete'>
+                                                            <i class='feather icon-trash'></i> &nbsp; delete
+                                                        </a>
+                                                    <?php } ?>
+                                                </td>
+                                            </tr>
+                                            <?php
+                                            $count++;
+                                        }
+                                        ?>
+                                    </tbody>
+                                    <tfoot></tfoot>
+                                </table>
 
                             </div>
                         </div>
@@ -343,6 +343,22 @@ $result = mysqli_query($db, $query);
                 // }
                 return false;
             });
+        });
+    </script>
+
+    <script type="text/javascript">
+        $(document).ready(function () {
+            // Initialize the DataTable with buttons
+            var table = $('#basic-btn2').DataTable({
+                pageLength: 100,
+                lengthMenu: [25, 50, 100, 200, 500, 1000], // Custom dropdown options
+                responsive: true,
+                ordering: true,
+                searching: true
+            });
+
+            // Fetch the number of entries
+
         });
     </script>
 </body>

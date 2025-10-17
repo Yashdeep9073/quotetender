@@ -158,12 +158,12 @@ $result = mysqli_query($db, $query);
                             <div class="dt-responsive table-responsive">
 
                                 <?php
-                                if ($isAdmin || hasPermission('Departments', $privileges, $roleData['0']['role_name'])) {
+                                if ($isAdmin || hasPermission('Bulk Delete Recycle Bin', $privileges, $roleData['role_name'])) {
                                     echo "<a href='#' id='delete_records' class='btn btn-danger'> <i class='feather icon-trash'></i>  &nbsp;
                                     Delete Selected Items</a>";
                                 }
 
-                                if ($isAdmin || hasPermission('Departments', $privileges, $roleData['0']['role_name'])) {
+                                if ($isAdmin || hasPermission('Bulk Restore Recycle Bin', $privileges, $roleData['role_name'])) {
                                     echo "<a href='#' class='restore_records px-1'><button type='button' class='btn btn-warning'>
                                     <i class='feather icon-refresh-ccw'></i> &nbsp;Restore Selected Items</button>
                                     </a>   
@@ -194,60 +194,73 @@ $result = mysqli_query($db, $query);
                                 <br />
 
 
-                                <?php
-                                echo '<table id="basic-btn2" class="table table-striped table-bordered ">';
-                                echo "<thead>";
-                                echo "<tr>";
-                                echo '<th><label class="checkboxs">
+                                <table id="basic-btn2" class="table table-striped table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th>
+                                                <label class="checkboxs">
                                                     <input type="checkbox" id="select-all">
                                                     <span class="checkmarks"></span>
-                                                </label> SNO</th>';
-                                echo "<th> Tender Id</th>";
-                                echo "<th>Name</th>";
-                                echo "<th>Firm Name</th>";
-                                echo "<th>Mobile</th>";
-                                echo "<th>Status</th>";
+                                                </label> SNO
+                                            </th>
+                                            <th>Tender Id</th>
+                                            <th>Name</th>
+                                            <th>Firm Name</th>
+                                            <th>Mobile</th>
+                                            <th>Status</th>
+                                            <th>Edit</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php
+                                        $count = 1;
+                                        while ($row = mysqli_fetch_row($result)) {
+                                            ?>
+                                            <tr class='record'>
+                                                <td>
+                                                    <div class='custom-control custom-checkbox'>
+                                                        <input type='checkbox' class='custom-control-input request_checkbox'
+                                                            id='customCheck<?php echo $row[6]; ?>'
+                                                            data-request-id='<?php echo $row[6]; ?>'>
+                                                        <label class='custom-control-label'
+                                                            for='customCheck<?php echo $row[6]; ?>'><?php echo $count; ?></label>
+                                                    </div>
+                                                </td>
 
-                                echo "<th>Edit</th>";
+                                                <td><?php echo $row[1]; ?></td>
+                                                <td><?php echo $row[2]; ?></td>
+                                                <td><?php echo $row[3]; ?></td>
+                                                <td><?php echo $row[4]; ?></td>
+                                                <td><?php echo $row[5]; ?></td>
 
+                                                <td>
+                                                    <?php
+                                                    $res = $row[6];
+                                                    $ree = base64_encode($res);
+                                                    if ($isAdmin || hasPermission('Restore Recycle Bin', $privileges, $roleData['role_name'])) {
+                                                        ?>
+                                                        <a href='#' id='<?php echo $row[6]; ?>'
+                                                            class='restorebutton btn btn-warning'>
+                                                            <i class='feather icon-refresh-ccw'></i> &nbsp;Restore
+                                                        </a>
+                                                        &nbsp;
+                                                    <?php } ?>
 
-                                echo "</tr>";
-                                echo "</thead>";
-
-
-                                ?>
-                                <?php
-                                $count = 1;
-
-                                echo "<tbody>";
-                                while ($row = mysqli_fetch_row($result)) {
-
-                                    echo "<tr class='record'>";
-                                    echo "<td><div class='custom-control custom-checkbox'>
-                                    <input type='checkbox' class='custom-control-input request_checkbox' id='customCheck" . $row[6] . "' data-request-id='" . $row[6] . "'>
-                                    <label class='custom-control-label' for= 'customCheck" . $row[6] . "'>" . $count . "</label>
-                                </div>
-                                </td>";
-                                    echo "<td>" . $row[1] . "</td>";
-                                    echo "<td>" . $row[2] . "</td>";
-                                    echo "<td>" . $row[3] . "</td>";
-                                    echo "<td>" . $row[4] . "</td>";
-                                    echo "<td>" . $row[5] . "</td>";
-                                    $res = $row[6];
-                                    $ree = base64_encode($res);
-                                    echo "<td>
-                                    <a href='#' id='" . $row[6] . "' class='restorebutton btn btn-warning'>
-                                    <i class='feather icon-refresh-ccw'></i> &nbsp;Restore</a>
-                                    &nbsp;   
-                                    <a href='#' id='" . $row[6] . "' class='delbutton btn btn-danger' title='Click To Delete'> 
-                                    <i class='feather icon-trash'></i>  &nbsp; Permanent Delete</a>
-                                    </td>";
-                                    echo "</tr>";
-                                    $count++;
-                                }
-                                echo "</tfoot>";
-                                echo "</table>";
-                                ?>
+                                                    <?php if ($isAdmin || hasPermission('Delete Recycle Bin', $privileges, $roleData['role_name'])) { ?>
+                                                        <a href='#' id='<?php echo $row[6]; ?>' class='delbutton btn btn-danger'
+                                                            title='Click To Delete'>
+                                                            <i class='feather icon-trash'></i> &nbsp; Permanent Delete
+                                                        </a>
+                                                    <?php } ?>
+                                                </td>
+                                            </tr>
+                                            <?php
+                                            $count++;
+                                        }
+                                        ?>
+                                    </tbody>
+                                    <tfoot></tfoot>
+                                </table>
                             </div>
                         </div>
                     </div>

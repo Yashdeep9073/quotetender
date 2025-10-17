@@ -243,6 +243,12 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
 
 
 try {
+
+    $stmtFetchTenderAllotted = $db->prepare("SELECT count(*) AS COUNT FROM user_tender_requests 
+    WHERE status = 'Allotted' AND delete_tender = 0;");
+    $stmtFetchTenderAllotted->execute();
+    $tenderAllottedCount = $stmtFetchTenderAllotted->get_result()->fetch_array(MYSQLI_ASSOC);
+
     //fecth Department
     $queryDepartment = "SELECT * FROM department WHERE status = 1";
     $resultDepartment = mysqli_query($db, $queryDepartment);
@@ -495,141 +501,155 @@ inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_i
                         <div class="card-body">
                             <h6 class="text-white">Alot Tender</h6>
                             <h2 class="text-right text-white"><i class="feather icon-home float-left"></i><span
-                                    id="category"></span></h2>
+                                    id="category">
+                                    <?php
+                                    $alotTendersCountValue = 0; // Default value
+                                    if ($isAdmin || hasPermission('Alot Tenders Count', $privileges, $roleData['role_name'])) {
+                                        $alotTendersCountValue = $tenderAllottedCount['COUNT'] ?? 0;
+                                    } else {
+                                        $alotTendersCountValue = 0;
+                                    }
+                                    echo $alotTendersCountValue;
+                                    ?>
+                                </span></h2>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="page-header">
-                <div class="page-block">
-                    <div class="row align-items-center">
-                        <div class="col-md-12">
-                            <!-- Filters Section -->
-                            <form method="get" id="filterForm">
-                                <div class="row">
-                                    <div class="col-md-4">
-                                        <div class="form-group">
-                                            <label for="faculty">Department <span class="text-danger">*</span></label>
-                                            <select class="form-control" name="department-search"
-                                                id="department-search">
-                                                <option value="0">All</option>
-                                                <?php foreach ($departments as $department) { ?>
-                                                    <option value="<?php echo $department['department_id']; ?>" <?php echo isset($_GET['department-search']) && $_GET['department-search'] == $department['department_id'] ? 'selected' : ''; ?>>
-                                                        <?php echo $department['department_name']; ?>
-                                                    </option>
-                                                <?php } ?>
-                                            </select>
-                                            <div class="invalid-feedback">Please select a faculty.</div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-group">
-                                            <label for="program">Section <span class="text-danger">*</span></label>
-                                            <select class="form-control" name="section-search" id="section-search">
-                                                <option value="0">All</option>
-                                                <?php foreach ($sections as $section) {
-                                                    $selectedSection = (isset($_GET['section-search']) && urldecode($_GET['section-search']) == $section['section_id']) ? 'selected' : '';
 
-                                                    ?>
-                                                    <option <?= $selectedSection ?>
-                                                        value="<?php echo $section['section_id']; ?>">
-                                                        <?php echo $section['section_name']; ?>
-                                                    </option>
-                                                <?php } ?>
-                                            </select>
-                                            <div class="invalid-feedback">Please select a program.</div>
+            <?php
+            if ($isAdmin || hasPermission('Alot Tenders Filter', $privileges, $roleData['role_name'])) { ?>
+                <div class="page-header">
+                    <div class="page-block">
+                        <div class="row align-items-center">
+                            <div class="col-md-12">
+                                <!-- Filters Section -->
+                                <form method="get" id="filterForm">
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <div class="form-group">
+                                                <label for="faculty">Department <span class="text-danger">*</span></label>
+                                                <select class="form-control" name="department-search"
+                                                    id="department-search">
+                                                    <option value="0">All</option>
+                                                    <?php foreach ($departments as $department) { ?>
+                                                        <option value="<?php echo $department['department_id']; ?>" <?php echo isset($_GET['department-search']) && $_GET['department-search'] == $department['department_id'] ? 'selected' : ''; ?>>
+                                                            <?php echo $department['department_name']; ?>
+                                                        </option>
+                                                    <?php } ?>
+                                                </select>
+                                                <div class="invalid-feedback">Please select a faculty.</div>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-group">
-                                            <label for="session">Division <span class="text-danger">*</span></label>
-                                            <select class="form-control" name="division-search" id="division-search">
-                                                <option value="0">All</option>
-                                                <?php foreach ($divisions as $division) { ?>
-                                                    <option value="<?php echo $division['division_id']; ?>" <?php echo isset($_GET['division-search']) && $_GET['division-search'] == $division['division_id'] ? 'selected' : ''; ?>>
-                                                        <?php echo $division['division_name']; ?>
-                                                    </option>
-                                                <?php } ?>
-                                            </select>
-                                            <div class="invalid-feedback">Please select a session.</div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-group">
-                                            <label for="semester">Sub Division <span
-                                                    class="text-danger">*</span></label>
-                                            <select class="form-control" name="sub-division-search"
-                                                id="sub-division-search" required>
-                                                <option value="0">All</option>
+                                        <div class="col-md-4">
+                                            <div class="form-group">
+                                                <label for="program">Section <span class="text-danger">*</span></label>
+                                                <select class="form-control" name="section-search" id="section-search">
+                                                    <option value="0">All</option>
+                                                    <?php foreach ($sections as $section) {
+                                                        $selectedSection = (isset($_GET['section-search']) && urldecode($_GET['section-search']) == $section['section_id']) ? 'selected' : '';
 
-                                            </select>
-                                            <div class="invalid-feedback">Please select a semester.</div>
+                                                        ?>
+                                                        <option <?= $selectedSection ?>
+                                                            value="<?php echo $section['section_id']; ?>">
+                                                            <?php echo $section['section_name']; ?>
+                                                        </option>
+                                                    <?php } ?>
+                                                </select>
+                                                <div class="invalid-feedback">Please select a program.</div>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-group">
-                                            <label for="semester">Firm <span class="text-danger">*</span></label>
-                                            <select class="form-control select-firm" name="firm" required>
-                                                <option value="0">All</option>
-                                                <?php foreach ($firms as $firm) {
-                                                    $selectedFirm = (isset($_GET['firm']) && urldecode($_GET['firm']) == $firm['firm_name']) ? 'selected' : '';
-                                                    ?>
-                                                    <option value="<?= htmlspecialchars($firm['firm_name']) ?>"
-                                                        <?= $selectedFirm ?>>
-                                                        <?= htmlspecialchars($firm['firm_name']) ?>
-                                                    </option>
-                                                <?php } ?>
-                                            </select>
-                                            <div class="invalid-feedback">Please select a semester.</div>
+                                        <div class="col-md-4">
+                                            <div class="form-group">
+                                                <label for="session">Division <span class="text-danger">*</span></label>
+                                                <select class="form-control" name="division-search" id="division-search">
+                                                    <option value="0">All</option>
+                                                    <?php foreach ($divisions as $division) { ?>
+                                                        <option value="<?php echo $division['division_id']; ?>" <?php echo isset($_GET['division-search']) && $_GET['division-search'] == $division['division_id'] ? 'selected' : ''; ?>>
+                                                            <?php echo $division['division_name']; ?>
+                                                        </option>
+                                                    <?php } ?>
+                                                </select>
+                                                <div class="invalid-feedback">Please select a session.</div>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-group">
-                                            <label for="semester">State <span class="text-danger">*</span></label>
-                                            <select class="form-control select-state" name="state" required>
-                                                <option value="0">All</option>
-                                                <?php foreach ($states as $state) {
-                                                    $selectedState = (isset($_GET['state']) && urldecode($_GET['state']) == $state['state_code']) ? 'selected' : '';
-                                                    ?>
-                                                    <option value="<?= $state['state_code'] ?>" <?= $selectedState ?>>
-                                                        <?= $state['state_name'] ?>
-                                                    </option>
-                                                <?php } ?>
-                                            </select>
-                                            <div class="invalid-feedback">Please select a semester.</div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-group">
-                                            <label for="semester">City <span class="text-danger">*</span></label>
-                                            <select class="form-control select-city" name="city">
-                                                <option value="0">All</option>
-                                            </select>
-                                            <div class="invalid-feedback">Please select a semester.</div>
-                                        </div>
-                                    </div>
+                                        <div class="col-md-4">
+                                            <div class="form-group">
+                                                <label for="semester">Sub Division <span
+                                                        class="text-danger">*</span></label>
+                                                <select class="form-control" name="sub-division-search"
+                                                    id="sub-division-search" required>
+                                                    <option value="0">All</option>
 
-                                    <!-- Buttons -->
-                                    <div class="col-md-6 col-sm-12 d-flex align-items-center mt-3">
-                                        <!-- Submit Button -->
-                                        <button type="submit" class="btn btn-primary btn-md d-flex align-items-center">
-                                            <i class="fas fa-search" style="margin-right: 8px;"></i> Search
-                                        </button>
-                                        &nbsp;
-                                        <!-- Reset Button -->
-                                        <a href="alot-tender.php"
-                                            class="btn btn-primary btn-md d-flex align-items-center"
-                                            id="filterResetButton">
-                                            <i class="fas fa-undo" style="margin-right: 8px;"></i>
-                                            Reset
-                                        </a>
+                                                </select>
+                                                <div class="invalid-feedback">Please select a semester.</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="form-group">
+                                                <label for="semester">Firm <span class="text-danger">*</span></label>
+                                                <select class="form-control select-firm" name="firm" required>
+                                                    <option value="0">All</option>
+                                                    <?php foreach ($firms as $firm) {
+                                                        $selectedFirm = (isset($_GET['firm']) && urldecode($_GET['firm']) == $firm['firm_name']) ? 'selected' : '';
+                                                        ?>
+                                                        <option value="<?= htmlspecialchars($firm['firm_name']) ?>"
+                                                            <?= $selectedFirm ?>>
+                                                            <?= htmlspecialchars($firm['firm_name']) ?>
+                                                        </option>
+                                                    <?php } ?>
+                                                </select>
+                                                <div class="invalid-feedback">Please select a semester.</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="form-group">
+                                                <label for="semester">State <span class="text-danger">*</span></label>
+                                                <select class="form-control select-state" name="state" required>
+                                                    <option value="0">All</option>
+                                                    <?php foreach ($states as $state) {
+                                                        $selectedState = (isset($_GET['state']) && urldecode($_GET['state']) == $state['state_code']) ? 'selected' : '';
+                                                        ?>
+                                                        <option value="<?= $state['state_code'] ?>" <?= $selectedState ?>>
+                                                            <?= $state['state_name'] ?>
+                                                        </option>
+                                                    <?php } ?>
+                                                </select>
+                                                <div class="invalid-feedback">Please select a semester.</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="form-group">
+                                                <label for="semester">City <span class="text-danger">*</span></label>
+                                                <select class="form-control select-city" name="city">
+                                                    <option value="0">All</option>
+                                                </select>
+                                                <div class="invalid-feedback">Please select a semester.</div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Buttons -->
+                                        <div class="col-md-6 col-sm-12 d-flex align-items-center mt-3">
+                                            <!-- Submit Button -->
+                                            <button type="submit" class="btn btn-primary btn-md d-flex align-items-center">
+                                                <i class="fas fa-search" style="margin-right: 8px;"></i> Search
+                                            </button>
+                                            &nbsp;
+                                            <!-- Reset Button -->
+                                            <a href="alot-tender.php"
+                                                class="btn btn-primary btn-md d-flex align-items-center"
+                                                id="filterResetButton">
+                                                <i class="fas fa-undo" style="margin-right: 8px;"></i>
+                                                Reset
+                                            </a>
+                                        </div>
                                     </div>
-                                </div>
-                            </form>
+                                </form>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            <?php } ?>
 
             <div class="row">
                 <div class="col-sm-12">
@@ -661,7 +681,7 @@ inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_i
                                 ?>
                                 <br />
                                 <?php
-                                if ($isAdmin || hasPermission('Dashboard', $privileges, $roleData['role_name'])) {
+                                if ($isAdmin || hasPermission('Bulk Delete Alot Tender', $privileges, $roleData['role_name'])) {
                                     echo "
                                 <a href='#' id='recycle_records' class='btn btn-danger me-3 rounded-sm'> 
                                 <i class='feather icon-trash'></i>
@@ -669,162 +689,190 @@ inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_i
                                 ";
                                 } ?>
                                 <div class="dt-buttons btn-group">
-                                    <button class="btn btn-secondary buttons-excel buttons-html5 btn-primary rounded-sm"
-                                        tabindex="0" aria-controls="basic-btn2" type="button"
-                                        onclick="exportTableToExcel()" title="Export to Excel"><span><i
-                                                class="fas fa-file-excel"></i>
-                                            Excel</span></button>
-                                    <button class="btn btn-secondary buttons-csv buttons-html5 btn-primary rounded-sm"
-                                        tabindex="0" aria-controls="basic-btn2" type="button"
-                                        onclick="exportTableToCSV()" title="Export to CSV"><span><i
-                                                class="fas fa-file-csv"></i> CSV</span></button>
-                                    <button class="btn btn-secondary buttons-copy buttons-html5 btn-primary rounded-sm"
-                                        tabindex="0" aria-controls="basic-btn2" type="button"
-                                        title="Copy to clipboard"><span><i class="fas fa-copy"></i> Copy</span></button>
-                                    <button class="btn btn-secondary buttons-print btn-primary rounded-sm" tabindex="0"
-                                        onclick="printTable()" aria-controls="basic-btn2" type="button"
-                                        title="Print"><span><i class="fas fa-print"></i> Print</span></button>
-                                </div>
-                                <?php
-                                echo '<table id="basic-btn2" class="table table-striped table-bordered">';
-                                echo "<thead>";
-                                echo "<tr>";
-                                echo '<th><label class="checkboxs">
-                                    <input type="checkbox" id="select-all">
-                                    <span class="checkmarks"></span>
-                                </label>  SNO</th>';
-                                echo "<th>User</th>";
-                                echo "<th>Email</th>";
-                                echo "<th>Firm</th>";
-                                echo "<th>State</th>";
-                                echo "<th>City</th>";
-                                echo "<th>Mobile</th>";
-                                echo "<th>Tender ID</th>";
-                                echo "<th>Ref. Code </th>";
-                                echo "<th>Tender No</th>";
-                                echo "<th>Department</th>";
-                                echo "<th>Section</th>";
-                                echo "<th>Division</th>";
-                                echo "<th>Sub-division</th>";
-                                echo "<th class='work-name'>Work Name</th>";
-                                echo "<th>Tentative Cost</th>";
-                                echo "<th>Reminder</th>";
-                                echo "<th>Updated By</th>";
-                                echo "<th>Edit</th>";
-                                echo "</tr>";
-                                echo "</thead>";
-                                ?>
-                                <?php
-                                $count = 1;
-                                echo "<tbody>";
-                                while ($row = mysqli_fetch_assoc($resultMain)) {
-
-                                    echo "<tr class='record'>";
-                                    echo "<td><div class='custom-control custom-checkbox'>
-                                    <input type='checkbox' class='custom-control-input request_checkbox' id='customCheck" . $count . "' data-request-id='" . $row['t_id'] . "'>
-                                    <label class='custom-control-label' for='customCheck" . $count . "'>" . $count . "</label>
-                                    </div>
-                                    </td>";
-
-                                    echo "<td><span style='color:red;'> " . $row['name'] . " </span></td>";
-                                    echo "<td>  <span style='color:green;'>" . $row['email_id'] . " </span></td>";
-                                    echo "<td>" . $row['firm_name'] . "</td>";
-                                    echo "<td>" . $row['state_name'] . "</td>";
-                                    echo "<td>" . $row['city_name'] . "</td>";
-                                    echo "<td>" . $row['mobile'] . "</td>";
-                                    echo "<td>" . $row['tenderID'] . "</td>";
-                                    echo "<td>" . $row['reference_code'] . "</td>";
-                                    echo "<td>" . $row['tender_no'] . "</td>";
-                                    echo "<td>" . $row['department_name'] . "</td>";
-                                    echo "<td>" . $row['section_name'] . "</td>";
-                                    echo "<td>" . $row['division_name'] . "</td>";
-                                    echo "<td>" . $row['subdivision'] . "</td>";
-                                    echo "<td style='white-space:pre-wrap; word-wrap:break-word; max-width:20rem;'>" . $row['name_of_work'] . "</td>";
-                                    echo "<td style='white-space:pre-wrap; word-wrap:break-word; max-width:20rem;'>" . $row['tentative_cost'] . " rupees /-</td>";
-                                    ?>
-
-
-                                    <td><span class='btn btn-success'><?= $row['reminder_days'] ?>days</span>
-                                        <br /><br />
-
-                                        Alloted Date : <br /> <?= date_format(date_create($row['allotted_at']), "d-m-Y ") ?>
-                                        <br />
-                                        <?php if (isset($row['file_name']) && $row['file_name'] == null) { ?>
-                                            <a href="<?= '../login/tender/' . $row['file_name'] ?>" target="_blank">
-                                                View file 1
-                                            </a> </br>
-                                        <?php } ?>
-
-                                        <?php if (isset($row['file_name2']) && $row['file_name2'] == null) { ?>
-                                            <a href="<?= '../login/tender/' . $row['file_name2'] ?>" target="_blank">View
-                                                File 2
-                                            </a>
-                                        <?php } ?>
-
-                                        <?php if (!empty($row['additional_files'])) {
-                                            $extraFiles = json_decode($row['additional_files'], true);
-                                            ?>
-                                            <?php if (is_array($extraFiles)) {
-                                                $count = 1;
-                                                ?>
-                                                <?php foreach ($extraFiles as $index => $filePath) { ?>
-                                                    <a href="<?= '../login/' . $filePath ?>" target="_blank">View
-                                                        File <?= $count ?>
-                                                    </a><br />
-                                                    <?php
-                                                    $count++;
-                                                } ?>
-                                            <?php } ?>
-                                        <?php } ?>
-                                    </td>
-
-
                                     <?php
-                                    echo "<td>" . $row['updated_by'] . "</td>";
+                                    if ($isAdmin || hasPermission('Alot Tender Excel', $privileges, $roleData['role_name'])) { ?>
+                                        <button class="btn btn-secondary buttons-excel buttons-html5 btn-primary rounded-sm"
+                                            tabindex="0" aria-controls="basic-btn2" type="button"
+                                            onclick="exportTableToExcel()" title="Export to Excel"><span><i
+                                                    class="fas fa-file-excel"></i>
+                                                Excel</span></button>
+                                    <?php } ?>
+                                    <?php
+                                    if ($isAdmin || hasPermission('Alot Tender CSV', $privileges, $roleData['role_name'])) { ?>
+                                        <button class="btn btn-secondary buttons-csv buttons-html5 btn-primary rounded-sm"
+                                            tabindex="0" aria-controls="basic-btn2" type="button"
+                                            onclick="exportTableToCSV()" title="Export to CSV"><span><i
+                                                    class="fas fa-file-csv"></i> CSV</span></button>
+                                    <?php } ?>
+                                    <?php
+                                    if ($isAdmin || hasPermission('Alot Tender Print', $privileges, $roleData['role_name'])) { ?>
+                                        <button class="btn btn-secondary buttons-print btn-primary rounded-sm" tabindex="0"
+                                            onclick="printTable()" aria-controls="basic-btn2" type="button"
+                                            title="Print"><span><i class="fas fa-print"></i> Print</span></button>
+                                    <?php } ?>
+
+                                </div>
+                                <table id="basic-btn2" class="table table-striped table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th>
+                                                <label class="checkboxs">
+                                                    <input type="checkbox" id="select-all">
+                                                    <span class="checkmarks"></span>
+                                                </label> SNO
+                                            </th>
+                                            <th>User</th>
+                                            <th>Email</th>
+                                            <th>Firm</th>
+                                            <th>State</th>
+                                            <th>City</th>
+                                            <th>Mobile</th>
+                                            <th>Tender ID</th>
+                                            <th>Ref. Code </th>
+                                            <th>Tender No</th>
+                                            <th>Department</th>
+                                            <th>Section</th>
+                                            <th>Division</th>
+                                            <th>Sub-division</th>
+                                            <th class='work-name'>Work Name</th>
+                                            <th>Tentative Cost</th>
+                                            <th>Reminder</th>
+                                            <th>Updated By</th>
+                                            <th>Edit</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php
+                                        $count = 1;
+                                        while ($row = mysqli_fetch_assoc($resultMain)) {
+                                            ?>
+                                            <tr class='record'>
+                                                <td>
+                                                    <div class='custom-control custom-checkbox'>
+                                                        <input type='checkbox' class='custom-control-input request_checkbox'
+                                                            id='customCheck<?php echo $count; ?>'
+                                                            data-request-id='<?php echo $row['t_id']; ?>'>
+                                                        <label class='custom-control-label'
+                                                            for='customCheck<?php echo $count; ?>'><?php echo $count; ?></label>
+                                                    </div>
+                                                </td>
+
+                                                <td><span style='color:red;'><?php echo $row['name']; ?></span></td>
+                                                <td><span style='color:green;'><?php echo $row['email_id']; ?></span></td>
+                                                <td><?php echo $row['firm_name']; ?></td>
+                                                <td><?php echo $row['state_name']; ?></td>
+                                                <td><?php echo $row['city_name']; ?></td>
+                                                <td><?php echo $row['mobile']; ?></td>
+                                                <td><?php echo $row['tenderID']; ?></td>
+                                                <td><?php echo $row['reference_code']; ?></td>
+                                                <td><?php echo $row['tender_no']; ?></td>
+                                                <td><?php echo $row['department_name']; ?></td>
+                                                <td><?php echo $row['section_name']; ?></td>
+                                                <td><?php echo $row['division_name']; ?></td>
+                                                <td><?php echo $row['subdivision']; ?></td>
+                                                <td style='white-space:pre-wrap; word-wrap:break-word; max-width:20rem;'>
+                                                    <?php echo $row['name_of_work']; ?>
+                                                </td>
+                                                <td style='white-space:pre-wrap; word-wrap:break-word; max-width:20rem;'>
+                                                    <?php echo $row['tentative_cost']; ?> rupees /-
+                                                </td>
+
+                                                <td>
+                                                    <span
+                                                        class='btn btn-success'><?php echo $row['reminder_days']; ?>days</span>
+                                                    <br /><br />
+                                                    Alloted Date : <br />
+                                                    <?php echo date_format(date_create($row['allotted_at']), "d-m-Y "); ?>
+                                                    <br />
+                                                    <?php if (isset($row['file_name']) && $row['file_name'] == null) { ?>
+                                                        <a href="<?php echo '../login/tender/' . $row['file_name']; ?>"
+                                                            target="_blank">
+                                                            View file 1
+                                                        </a> </br>
+                                                    <?php } ?>
+
+                                                    <?php if (isset($row['file_name2']) && $row['file_name2'] == null) { ?>
+                                                        <a href="<?php echo '../login/tender/' . $row['file_name2']; ?>"
+                                                            target="_blank">View
+                                                            File 2
+                                                        </a>
+                                                    <?php } ?>
+
+                                                    <?php if (!empty($row['additional_files'])) {
+                                                        $extraFiles = json_decode($row['additional_files'], true);
+                                                        if (is_array($extraFiles)) {
+                                                            $fileCount = 1;
+                                                            foreach ($extraFiles as $index => $filePath) { ?>
+                                                                <a href="<?php echo '../login/' . $filePath; ?>" target="_blank">View
+                                                                    File <?php echo $fileCount; ?>
+                                                                </a><br />
+                                                                <?php
+                                                                $fileCount++;
+                                                            }
+                                                        }
+                                                    } ?>
+                                                </td>
+
+                                                <td><?php echo $row['updated_by']; ?></td>
 
 
-                                    $res = $row['t_id'];
-                                    $res = base64_encode($res);
+                                                <td>
+                                                    <div class='d-flex flex-column gap-2'>
+                                                        <!-- Three-dot dropdown for other actions -->
+                                                        <div class='dropdown'>
+                                                            <button class='btn btn-secondary' type='button'
+                                                                id='dropdownMenu<?php echo $row['t_id']; ?>'
+                                                                data-bs-toggle='dropdown' aria-expanded='false'>
+                                                                <i class='feather icon-more-vertical'></i>
+                                                            </button>
+                                                            <ul class='dropdown-menu'
+                                                                aria-labelledby='dropdownMenu<?php echo $row['t_id']; ?>'>
+                                                                <?php if ($isAdmin || hasPermission('Award Alot Tender', $privileges, $roleData['role_name'])) { ?>
+                                                                    <li>
+                                                                        <a class='dropdown-item makeAward'
+                                                                            href='javascript:void(0);'
+                                                                            id='<?php echo $row['t_id']; ?>'
+                                                                            title='Click To Make Award'>
+                                                                            <i class='feather icon-award'></i> Award
+                                                                        </a>
+                                                                    </li>
+                                                                <?php } ?>
+                                                                <?php if ($isAdmin || hasPermission('Delete Alot Tender', $privileges, $roleData['role_name'])) { ?>
+                                                                    <li>
+                                                                        <a class='dropdown-item recyclebutton'
+                                                                            href='javascript:void(0);'
+                                                                            id='<?php echo $row['t_id']; ?>'
+                                                                            title='Click To Delete'>
+                                                                            <i class='feather icon-trash'></i> Move to Bin
+                                                                        </a>
+                                                                    </li>
+                                                                <?php } ?>
+                                                                <?php
+                                                                $res = $row['t_id'];
+                                                                $res = base64_encode($res);
 
+                                                                if ($isAdmin || hasPermission('Re-Alot Alot Tender', $privileges, $roleData['role_name'])) {
+                                                                    ?>
+                                                                    <li>
+                                                                        <a class='dropdown-item'
+                                                                            href='alot-tender-update.php?id=<?php echo $res; ?>'>
+                                                                            <i class='feather icon-repeat'></i> Re-Alot
+                                                                        </a>
+                                                                    </li>
+                                                                <?php } ?>
+                                                            </ul>
+                                                        </div>
+                                                    </div>
+                                                </td>
 
-                                    if ($isAdmin || hasPermission('Dashboard', $privileges, $roleData['role_name'])) {
-                                        echo "<td>
-        <div class='d-flex flex-column gap-2'>
-
-            <!-- Three-dot dropdown for other actions -->
-            <div class='dropdown'>
-                <button class='btn btn-secondary' type='button' id='dropdownMenu{$row['t_id']}' data-bs-toggle='dropdown' aria-expanded='false'>
-                     <i class='feather icon-more-vertical'></i> 
-                </button>
-                <ul class='dropdown-menu' aria-labelledby='dropdownMenu{$row['t_id']}'>
-                    <li>
-                        <a class='dropdown-item makeAward' href='javascript:void(0);' id='{$row['t_id']}' title='Click To Make Award' >
-                            <i class='feather icon-award'></i> Award
-                        </a>
-                    </li>   
-                    <li>
-                        <a class='dropdown-item recyclebutton' href='javascript:void(0);' id='{$row['t_id']}' title='Click To Delete'>
-                            <i class='feather icon-trash'></i> Move to Bin
-                        </a>
-                    </li>
-                    <li>
-                        <a class='dropdown-item' href='alot-tender-update.php?id=$res' >
-                            <i class='feather icon-repeat'></i> Re-Alot
-                        </a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </td>";
-                                    }
-
-
-                                    echo "</tr>";
-                                    $count++;
-                                }
-                                echo "</tfoot>";
-                                echo "</table>";
-                                ?>
+                                            </tr>
+                                            <?php
+                                            $count++;
+                                        }
+                                        ?>
+                                    </tbody>
+                                    <tfoot></tfoot>
+                                </table>
                             </div>
                         </div>
                     </div>
@@ -1091,12 +1139,7 @@ inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_i
                 searching: true
             });
 
-            // Fetch the number of entries
-            var info = table.page.info();
-            var totalEntries = info.recordsTotal;
 
-            // Display the number of entries
-            $('#category').text(totalEntries);
 
 
             $(document).on("change", ".select-state", async function (e) {

@@ -259,9 +259,70 @@ try {
 
     $firms = $unique_firms;
 
+    // count awarded tender
+    $stmtAwardTenderCount = $db->prepare("SELECT COUNT(*) AS COUNT
+    FROM (
+    SELECT DISTINCT
+        sm.name, 
+        m.email_id, 
+        m.mobile, 
+        m.firm_name, 
+        ur.tender_no, 
+        department.department_name,
+        ur.name_of_work,
+        ur.remarked_at, 
+        ur.file_name, 
+        ur.id AS t_id,
+        se.section_name,
+        dv.division_name,
+        sd.subdivision,
+        ur.tenderID,
+        ur.remark,
+        ur.reference_code,
+        MAX(st.state_name) AS state_name,
+        MAX(ct.city_name) AS city_name
+    FROM 
+        user_tender_requests ur 
+    LEFT JOIN members m ON ur.member_id = m.member_id
+    LEFT JOIN department ON ur.department_id = department.department_id
+    LEFT JOIN section se ON ur.section_id = se.section_id
+    LEFT JOIN members sm ON ur.selected_user_id = sm.member_id
+    LEFT JOIN division dv ON ur.division_id = dv.division_id
+    LEFT JOIN sub_division sd ON ur.sub_division_id = sd.id
+    LEFT JOIN state st 
+        ON CONVERT(sm.state_code USING utf8mb4) = CONVERT(st.state_code USING utf8mb4)
+    LEFT JOIN cities ct 
+        ON CAST(sm.city_state AS UNSIGNED) = ct.city_id
+    WHERE 
+        ur.remark = 'accepted' 
+        AND ur.delete_tender = '0'
+    GROUP BY 
+        ur.id, 
+        sm.name, 
+        m.email_id, 
+        m.mobile, 
+        m.firm_name, 
+        ur.tender_no, 
+        department.department_name,
+        ur.name_of_work,
+        ur.remarked_at, 
+        ur.file_name, 
+        se.section_name,
+        dv.division_name,
+        sd.subdivision,
+        ur.tenderID
+        ) AS subquery;
+        ");
+    $stmtAwardTenderCount->execute();
+    $awardTenderData = $stmtAwardTenderCount->get_result()->fetch_array(MYSQLI_ASSOC);
+
+
+
 } catch (\Throwable $th) {
     //throw $th;
 }
+
+
 
 // fetch city by state code with ajax
 if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
@@ -301,6 +362,7 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
         exit;
     }
 }
+
 
 
 ?>
@@ -474,142 +536,158 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
                     <div class="card bg-c-yellow order-card">
                         <div class="card-body">
                             <h6 class="text-white">Award Tender</h6>
-                            <h2 class="text-right text-white"><i class="feather icon-award float-left"></i><span
-                                    id="category"></span></h2>
+                            <h2 class="text-right text-white"><i class="feather icon-award float-left"></i>
+                                <span id="category">
+
+                                    <?php
+                                    $awardTenderCount = 0; // Default value
+                                    
+                                    if ($isAdmin || hasPermission('Award Tenders Count', $privileges, $roleData['role_name'])) {
+                                        $awardTenderCount = $awardTenderData['COUNT'] ?? 0;
+                                    } else {
+                                        $awardTenderCount = 0;
+                                    }
+                                    echo $awardTenderCount;
+                                    ?>
+
+                                </span>
+                            </h2>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="page-header">
-                <div class="page-block">
-                    <div class="row align-items-center">
-                        <div class="col-md-12">
-                            <!-- Filters Section -->
-                            <form method="get" id="filterForm">
-                                <div class="row">
-                                    <div class="col-md-4">
-                                        <div class="form-group">
-                                            <label for="faculty">Department <span class="text-danger">*</span></label>
-                                            <select class="form-control" name="department-search"
-                                                id="department-search">
-                                                <option value="0">All</option>
-                                                <?php foreach ($departments as $department) { ?>
-                                                    <option value="<?php echo $department['department_id']; ?>" <?php echo isset($_GET['department-search']) && $_GET['department-search'] == $department['department_id'] ? 'selected' : ''; ?>>
-                                                        <?php echo $department['department_name']; ?>
-                                                    </option>
-                                                <?php } ?>
-                                            </select>
-                                            <div class="invalid-feedback">Please select a faculty.</div>
+            <?php if ($isAdmin || hasPermission('Award Tenders Filter', $privileges, $roleData['role_name'])) { ?>
+                <div class="page-header">
+                    <div class="page-block">
+                        <div class="row align-items-center">
+                            <div class="col-md-12">
+                                <!-- Filters Section -->
+                                <form method="get" id="filterForm">
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <div class="form-group">
+                                                <label for="faculty">Department <span class="text-danger">*</span></label>
+                                                <select class="form-control" name="department-search"
+                                                    id="department-search">
+                                                    <option value="0">All</option>
+                                                    <?php foreach ($departments as $department) { ?>
+                                                        <option value="<?php echo $department['department_id']; ?>" <?php echo isset($_GET['department-search']) && $_GET['department-search'] == $department['department_id'] ? 'selected' : ''; ?>>
+                                                            <?php echo $department['department_name']; ?>
+                                                        </option>
+                                                    <?php } ?>
+                                                </select>
+                                                <div class="invalid-feedback">Please select a faculty.</div>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-group">
-                                            <label for="program">Section <span class="text-danger">*</span></label>
-                                            <select class="form-control" name="section-search" id="section-search">
-                                                <option value="0">All</option>
-                                                <?php foreach ($sections as $section) {
-                                                    $selectedSection = (isset($_GET['section-search']) && urldecode($_GET['section-search']) == $section['section_id']) ? 'selected' : '';
+                                        <div class="col-md-4">
+                                            <div class="form-group">
+                                                <label for="program">Section <span class="text-danger">*</span></label>
+                                                <select class="form-control" name="section-search" id="section-search">
+                                                    <option value="0">All</option>
+                                                    <?php foreach ($sections as $section) {
+                                                        $selectedSection = (isset($_GET['section-search']) && urldecode($_GET['section-search']) == $section['section_id']) ? 'selected' : '';
 
-                                                    ?>
-                                                    <option <?= $selectedSection ?>
-                                                        value="<?php echo $section['section_id']; ?>">
-                                                        <?php echo $section['section_name']; ?>
-                                                    </option>
-                                                <?php } ?>
-                                            </select>
-                                            <div class="invalid-feedback">Please select a program.</div>
+                                                        ?>
+                                                        <option <?= $selectedSection ?>
+                                                            value="<?php echo $section['section_id']; ?>">
+                                                            <?php echo $section['section_name']; ?>
+                                                        </option>
+                                                    <?php } ?>
+                                                </select>
+                                                <div class="invalid-feedback">Please select a program.</div>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-group">
-                                            <label for="session">Division <span class="text-danger">*</span></label>
-                                            <select class="form-control" name="division-search" id="division-search">
-                                                <option value="0">All</option>
-                                                <?php foreach ($divisions as $division) { ?>
-                                                    <option value="<?php echo $division['division_id']; ?>" <?php echo isset($_GET['division-search']) && $_GET['division-search'] == $division['division_id'] ? 'selected' : ''; ?>>
-                                                        <?php echo $division['division_name']; ?>
-                                                    </option>
-                                                <?php } ?>
-                                            </select>
-                                            <div class="invalid-feedback">Please select a session.</div>
+                                        <div class="col-md-4">
+                                            <div class="form-group">
+                                                <label for="session">Division <span class="text-danger">*</span></label>
+                                                <select class="form-control" name="division-search" id="division-search">
+                                                    <option value="0">All</option>
+                                                    <?php foreach ($divisions as $division) { ?>
+                                                        <option value="<?php echo $division['division_id']; ?>" <?php echo isset($_GET['division-search']) && $_GET['division-search'] == $division['division_id'] ? 'selected' : ''; ?>>
+                                                            <?php echo $division['division_name']; ?>
+                                                        </option>
+                                                    <?php } ?>
+                                                </select>
+                                                <div class="invalid-feedback">Please select a session.</div>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-group">
-                                            <label for="semester">Sub Division <span
-                                                    class="text-danger">*</span></label>
-                                            <select class="form-control" name="sub-division-search"
-                                                id="sub-division-search" required>
-                                                <option value="0">All</option>
+                                        <div class="col-md-4">
+                                            <div class="form-group">
+                                                <label for="semester">Sub Division <span
+                                                        class="text-danger">*</span></label>
+                                                <select class="form-control" name="sub-division-search"
+                                                    id="sub-division-search" required>
+                                                    <option value="0">All</option>
 
-                                            </select>
-                                            <div class="invalid-feedback">Please select a semester.</div>
+                                                </select>
+                                                <div class="invalid-feedback">Please select a semester.</div>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-group">
-                                            <label for="semester">Firm <span class="text-danger">*</span></label>
-                                            <select class="form-control select-firm" name="firm" required>
-                                                <option value="0">All</option>
-                                                <?php foreach ($firms as $firm) {
-                                                    $selectedFirm = (isset($_GET['firm']) && urldecode($_GET['firm']) == $firm['firm_name']) ? 'selected' : '';
-                                                    ?>
-                                                    <option value="<?= htmlspecialchars($firm['firm_name']) ?>"
-                                                        <?= $selectedFirm ?>>
-                                                        <?= htmlspecialchars($firm['firm_name']) ?>
-                                                    </option>
-                                                <?php } ?>
-                                            </select>
-                                            <div class="invalid-feedback">Please select a semester.</div>
+                                        <div class="col-md-4">
+                                            <div class="form-group">
+                                                <label for="semester">Firm <span class="text-danger">*</span></label>
+                                                <select class="form-control select-firm" name="firm" required>
+                                                    <option value="0">All</option>
+                                                    <?php foreach ($firms as $firm) {
+                                                        $selectedFirm = (isset($_GET['firm']) && urldecode($_GET['firm']) == $firm['firm_name']) ? 'selected' : '';
+                                                        ?>
+                                                        <option value="<?= htmlspecialchars($firm['firm_name']) ?>"
+                                                            <?= $selectedFirm ?>>
+                                                            <?= htmlspecialchars($firm['firm_name']) ?>
+                                                        </option>
+                                                    <?php } ?>
+                                                </select>
+                                                <div class="invalid-feedback">Please select a semester.</div>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-group">
-                                            <label for="semester">State <span class="text-danger">*</span></label>
-                                            <select class="form-control select-state" name="state" required>
-                                                <option value="0">All</option>
-                                                <?php foreach ($states as $state) {
-                                                    $selectedState = (isset($_GET['state']) && urldecode($_GET['state']) == $state['state_code']) ? 'selected' : '';
-                                                    ?>
-                                                    <option value="<?= $state['state_code'] ?>" <?= $selectedState ?>>
-                                                        <?= $state['state_name'] ?>
-                                                    </option>
-                                                <?php } ?>
-                                            </select>
-                                            <div class="invalid-feedback">Please select a semester.</div>
+                                        <div class="col-md-4">
+                                            <div class="form-group">
+                                                <label for="semester">State <span class="text-danger">*</span></label>
+                                                <select class="form-control select-state" name="state" required>
+                                                    <option value="0">All</option>
+                                                    <?php foreach ($states as $state) {
+                                                        $selectedState = (isset($_GET['state']) && urldecode($_GET['state']) == $state['state_code']) ? 'selected' : '';
+                                                        ?>
+                                                        <option value="<?= $state['state_code'] ?>" <?= $selectedState ?>>
+                                                            <?= $state['state_name'] ?>
+                                                        </option>
+                                                    <?php } ?>
+                                                </select>
+                                                <div class="invalid-feedback">Please select a semester.</div>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-group">
-                                            <label for="semester">City <span class="text-danger">*</span></label>
-                                            <select class="form-control select-city" name="city">
-                                                <option value="0">All</option>
-                                            </select>
-                                            <div class="invalid-feedback">Please select a semester.</div>
+                                        <div class="col-md-4">
+                                            <div class="form-group">
+                                                <label for="semester">City <span class="text-danger">*</span></label>
+                                                <select class="form-control select-city" name="city">
+                                                    <option value="0">All</option>
+                                                </select>
+                                                <div class="invalid-feedback">Please select a semester.</div>
+                                            </div>
                                         </div>
-                                    </div>
 
-                                    <!-- Buttons -->
-                                    <div class="col-md-6 col-sm-12 d-flex align-items-center mt-3">
-                                        <!-- Submit Button -->
-                                        <button type="submit" class="btn btn-primary btn-md d-flex align-items-center">
-                                            <i class="fas fa-search" style="margin-right: 8px;"></i> Search
-                                        </button>
-                                        &nbsp;
-                                        <!-- Reset Button -->
-                                        <a href="award-tender.php"
-                                            class="btn btn-primary btn-md d-flex align-items-center"
-                                            id="filterResetButton">
-                                            <i class="fas fa-undo" style="margin-right: 8px;"></i>
-                                            Reset
-                                        </a>
+                                        <!-- Buttons -->
+                                        <div class="col-md-6 col-sm-12 d-flex align-items-center mt-3">
+                                            <!-- Submit Button -->
+                                            <button type="submit" class="btn btn-primary btn-md d-flex align-items-center">
+                                                <i class="fas fa-search" style="margin-right: 8px;"></i> Search
+                                            </button>
+                                            &nbsp;
+                                            <!-- Reset Button -->
+                                            <a href="award-tender.php"
+                                                class="btn btn-primary btn-md d-flex align-items-center"
+                                                id="filterResetButton">
+                                                <i class="fas fa-undo" style="margin-right: 8px;"></i>
+                                                Reset
+                                            </a>
+                                        </div>
                                     </div>
-                                </div>
-                            </form>
+                                </form>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            <?php } ?>
 
 
             <div class="row">
@@ -649,114 +727,138 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
 
 
                                 <?php
-                                if ($isAdmin || hasPermission('Dashboard', $privileges, $roleData['role_name'])) {
+                                if ($isAdmin || hasPermission('Bulk Delete Award Tender', $privileges, $roleData['role_name'])) {
                                     echo "
                                 <a href='#' id='recycle_records' class='btn btn-danger me-3 rounded-sm'> <i class='feather icon-trash'></i>  &nbsp;
                                 Move to Bin</a>&nbsp&nbsp&nbsp&nbsp
                                 ";
                                 } ?>
                                 <div class="dt-buttons btn-group">
-                                    <button class="btn btn-secondary buttons-excel buttons-html5 btn-primary rounded-sm"
-                                        tabindex="0" aria-controls="basic-btn2" type="button"
-                                        onclick="exportTableToExcel()" title="Export to Excel"><span><i
-                                                class="fas fa-file-excel"></i>
-                                            Excel</span></button>
-                                    <button class="btn btn-secondary buttons-csv buttons-html5 btn-primary rounded-sm"
-                                        tabindex="0" aria-controls="basic-btn2" type="button"
-                                        onclick="exportTableToCSV()" title="Export to CSV"><span><i
-                                                class="fas fa-file-csv"></i> CSV</span></button>
-                                    <button class="btn btn-secondary buttons-copy buttons-html5 btn-primary rounded-sm"
-                                        tabindex="0" aria-controls="basic-btn2" type="button"
-                                        title="Copy to clipboard"><span><i class="fas fa-copy"></i> Copy</span></button>
-                                    <button class="btn btn-secondary buttons-print btn-primary rounded-sm" tabindex="0"
-                                        onclick="printTable()" aria-controls="basic-btn2" type="button"
-                                        title="Print"><span><i class="fas fa-print"></i> Print</span></button>
+                                    <?php if ($isAdmin || hasPermission('Award Tender Excel', $privileges, $roleData['role_name'])) { ?>
+
+                                        <button class="btn btn-secondary buttons-excel buttons-html5 btn-primary rounded-sm"
+                                            tabindex="0" aria-controls="basic-btn2" type="button"
+                                            onclick="exportTableToExcel()" title="Export to Excel"><span><i
+                                                    class="fas fa-file-excel"></i>
+                                                Excel</span></button>
+                                    <?php } ?>
+                                    <?php if ($isAdmin || hasPermission('Award Tender CSV', $privileges, $roleData['role_name'])) { ?>
+
+                                        <button class="btn btn-secondary buttons-csv buttons-html5 btn-primary rounded-sm"
+                                            tabindex="0" aria-controls="basic-btn2" type="button"
+                                            onclick="exportTableToCSV()" title="Export to CSV"><span><i
+                                                    class="fas fa-file-csv"></i> CSV</span></button>
+                                    <?php } ?>
+                                    <?php if ($isAdmin || hasPermission('Award Tender Print', $privileges, $roleData['role_name'])) { ?>
+
+
+                                        <button class="btn btn-secondary buttons-print btn-primary rounded-sm" tabindex="0"
+                                            onclick="printTable()" aria-controls="basic-btn2" type="button"
+                                            title="Print"><span><i class="fas fa-print"></i> Print</span></button>
+                                    <?php } ?>
+
                                 </div>
-                                <?php
+                                <table id="basic-btn3" class="table table-striped table-bordered nowrap">
+                                    <thead>
+                                        <tr>
+                                            <th>
+                                                <label class="checkboxs">
+                                                    <input type="checkbox" id="select-all">
+                                                    <span class="checkmarks"></span>
+                                                </label> SNO
+                                            </th>
+                                            <th>User</th>
+                                            <th>State & City</th>
+                                            <th>Tender No</th>
+                                            <th>Tender ID</th>
+                                            <th>Reference No</th>
+                                            <th>Department</th>
+                                            <th>Section</th>
+                                            <th>Division</th>
+                                            <th>Sub-Division</th>
+                                            <th>Work Name</th>
+                                            <th>Awarded At</th>
+                                            <th>Status</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php
+                                        $count = 1;
+                                        while ($row = mysqli_fetch_row($result)) {
+                                            ?>
+                                            <tr class='record'>
+                                                <td>
+                                                    <div class='custom-control custom-checkbox'>
+                                                        <input type='checkbox' class='custom-control-input request_checkbox'
+                                                            id='customCheck<?php echo $count; ?>'
+                                                            data-request-id='<?php echo $row['9']; ?>'>
+                                                        <label class='custom-control-label'
+                                                            for='customCheck<?php echo $count; ?>'><?php echo $count; ?></label>
+                                                    </div>
+                                                </td>
 
-                                echo '<table id="basic-btn3" class="table table-striped table-bordered nowrap">';
-                                echo "<thead>";
-                                echo "<tr>";
-                                echo '<th><label class="checkboxs">
-                                    <input type="checkbox" id="select-all">
-                                    <span class="checkmarks"></span>
-                                </label>  SNO</th>';
-                                echo "<th>User</th>";
-                                echo "<th>State & City</th>";
-                                echo "<th>Tender No</th>";
-                                echo "<th>Tender ID</th>";
-                                echo "<th>Reference No</th>";
-                                echo "<th>Department</th>";
-                                echo "<th>Section</th>";
-                                echo "<th>Division</th>";
-                                echo "<th>Sub-Division</th>";
-                                echo "<th>Work Name</th>";
+                                                <td>
+                                                    Name - <?php echo $row['0']; ?><br />
+                                                    <span style=''>Mail - <?php echo $row['1']; ?></span><br />
+                                                    <span style=''>M.No - <?php echo $row['2']; ?></span><br />
+                                                    <span style=''>Firm - <?php echo $row['3']; ?></span>
+                                                </td>
 
-                                echo "<th>Awarded At</th>";
+                                                <td>
+                                                    State - <?php echo $row['16']; ?><br />
+                                                    <span style=''>City - <?php echo $row['17']; ?></span><br />
+                                                </td>
 
+                                                <td><?php echo $row['4']; ?></td>
+                                                <td><?php echo $row['13']; ?></td>
+                                                <td><?php echo $row['15']; ?></td>
+                                                <td><?php echo $row['5']; ?></td>
+                                                <td><?php echo $row['10']; ?></td>
+                                                <td><?php echo $row['11']; ?></td>
+                                                <td><?php echo $row['12']; ?></td>
+                                                <td><?php echo $row['6']; ?></td>
 
-                                echo "<th>Status</th>";
-                                echo "<th>Action</th>";
+                                                <td>
+                                                    Award Date :<br />
+                                                    <?php echo date_format(date_create($row['7']), "d-m-Y h:i A"); ?><br />
+                                                    <a href="../login/tender/<?php echo $row['8']; ?>" target="_blank">View
+                                                        file</a>
+                                                </td>
 
+                                                <td><?php echo $row['14']; ?></td>
 
-                                echo "</tr>";
-                                echo "</thead>";
+                                                <td>
+                                                    <?php
+                                                    if ($isAdmin || hasPermission('Edit Award Tender', $privileges, $roleData['role_name'])) {
+                                                        $res = $row[9];
+                                                        $res = base64_encode($res);
+                                                        ?>
+                                                        <a href='award-edit.php?award=<?php echo $res; ?>'>
+                                                            <button type='button' class='btn btn-warning'>
+                                                                <i class='feather icon-edit'></i> &nbsp;Edit Status
+                                                            </button>
+                                                        </a><br /></br />
+                                                    <?php } ?>
 
-
-                                ?>
-                                <?php
-
-
-
-                                $count = 1;
-
-                                echo "<tbody>";
-
-                                while ($row = mysqli_fetch_row($result)) {
-
-                                    echo "<tr class='record'>";
-                                    echo "<td><div class='custom-control custom-checkbox'>
-                                    <input type='checkbox' class='custom-control-input request_checkbox' id='customCheck" . $count . "' data-request-id='" . $row['9'] . "'>
-                                    <label class='custom-control-label' for='customCheck" . $count . "'>" . $count . "</label>
-                                    </div>
-                                    </td>";
-
-                                    echo "<td>Name -" . $row['0'] . "<br/> " . "<span style=''>Mail - " . $row['1'] . "</span>" . "<br/>"
-                                        . "<span style=''>M.No - " . $row['2'] . "</span>" . "<br/>" . "<span style=''>Firm - "
-                                        . $row['3'] . "</span>" . "</td>";
-                                    echo "<td>State - " . $row['16'] . "<br/> " . "<span style=''>City -  " . $row['17'] . "</span>" . "<br/>" . "</td>";
-                                    echo "<td>" . $row['4'] . "</td>";
-                                    echo "<td>" . $row['13'] . "</td>";
-                                    echo "<td>" . $row['15'] . "</td>";
-                                    echo "<td>" . $row['5'] . "</td>";
-                                    echo "<td>" . $row['10'] . "</td>";
-                                    echo "<td>" . $row['11'] . "</td>";
-                                    echo "<td>" . $row['12'] . "</td>";
-
-                                    echo "<td>" . $row['6'] . "</td>";
-
-
-                                    echo "<td>" . "Award Date :" . "<br/>" . date_format(date_create($row['7']), "d-m-Y h:i A") . "<br/>" . '<a href="../login/tender/' . $row['8'] . '"  target="_blank"/>View file </a>' . "</td>";
-
-                                    echo "<td>" . $row['14'] . "</td>";
-                                    $res = $row[9];
-                                    $res = base64_encode($res);
-                                    echo "<td>  <a href='award-edit.php?award=$res'><button type='button' class='btn btn-warning'>
-                                    <i class='feather icon-edit'></i> &nbsp;Edit Status</button></a><br/></br/> <a href='#'>
-                                    <button type='button' class='btn btn-success'><i class='feather icon-edit'></i> &nbsp;Awarded
-                                    </button></a> </td>";
-
-
-
-
-                                    echo "</tr>";
-                                    $count++;
-                                }
-
-
-                                echo "</tfoot>";
-                                echo "</table>";
-                                ?>
+                                                    <?php
+                                                    if ($isAdmin || hasPermission('Awarded Award Tender', $privileges, $roleData['role_name'])) {
+                                                        ?>
+                                                        <a href='#'>
+                                                            <button type='button' class='btn btn-success'>
+                                                                <i class='feather icon-edit'></i> &nbsp;Awarded
+                                                            </button>
+                                                        </a>
+                                                    <?php } ?>
+                                                </td>
+                                            </tr>
+                                            <?php
+                                            $count++;
+                                        }
+                                        ?>
+                                    </tbody>
+                                    <tfoot></tfoot>
+                                </table>
 
                             </div>
                         </div>

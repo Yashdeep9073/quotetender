@@ -334,9 +334,12 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['deleteRoleId'])) {
                             <div class="row">
                                 <div class="col-md-12">
                                     <div class="d-flex justify-content-end">
-                                        <a class="btn btn-primary rounded-sm" href="javascript:void(0);"
-                                            data-bs-toggle="modal" data-bs-target="#add-role-model" title="Create Role"
-                                            href="javascript:void(0);">Add Role</a>
+                                        <?php if ($isAdmin || hasPermission('Add Role', $privileges, $roleData['role_name'])) { ?>
+
+                                            <a class="btn btn-primary rounded-sm" href="javascript:void(0);"
+                                                data-bs-toggle="modal" data-bs-target="#add-role-model" title="Create Role"
+                                                href="javascript:void(0);">Add Role</a>
+                                        <?php } ?>
                                     </div>
                                 </div>
                             </div>
@@ -345,9 +348,11 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['deleteRoleId'])) {
                             <div class="dt-responsive table-responsive">
 
                                 <div class='col-md-4 col-l-4'>
-                                    <a href='#' id='delete_records' class='btn btn-danger btn-sm'>
-                                        <i class='feather icon-trash'></i> &nbsp; Delete Roles
-                                    </a>
+                                    <?php if ($isAdmin || hasPermission('Bulk Delete Role', $privileges, $roleData['role_name'])) { ?>
+                                        <a href='#' id='delete_records' class='btn btn-danger btn-sm'>
+                                            <i class='feather icon-trash'></i> &nbsp; Delete Roles
+                                        </a>
+                                    <?php } ?>
                                 </div>
                                 <br />
 
@@ -398,28 +403,36 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['deleteRoleId'])) {
                                                         <ul class="dropdown-menu"
                                                             aria-labelledby="actionMenu<?php echo $value['role_id']; ?>">
                                                             <li>
-                                                                <a class="dropdown-item edit-role-button"
-                                                                    href="javascript:void(0);" data-bs-toggle="modal"
-                                                                    data-bs-target="#edit-role-model" title="Edit Role"
-                                                                    data-role-id="<?php echo $value['role_id']; ?>"
-                                                                    data-role-name="<?php echo $value['role_name']; ?>"
-                                                                    data-role-status="<?php echo $value['role_status']; ?>">
-                                                                    <i class='feather icon-edit'></i> &nbsp;Edit
-                                                                </a>
+
+                                                                <?php if ($isAdmin || hasPermission('Edit Role', $privileges, $roleData['role_name'])) { ?>
+
+                                                                    <a class="dropdown-item edit-role-button"
+                                                                        href="javascript:void(0);" data-bs-toggle="modal"
+                                                                        data-bs-target="#edit-role-model" title="Edit Role"
+                                                                        data-role-id="<?php echo $value['role_id']; ?>"
+                                                                        data-role-name="<?php echo $value['role_name']; ?>"
+                                                                        data-role-status="<?php echo $value['role_status']; ?>">
+                                                                        <i class='feather icon-edit'></i> &nbsp;Edit
+                                                                    </a>
+                                                                <?php } ?>
                                                             </li>
                                                             <li>
-                                                                <a class="dropdown-item edit-role-button"
-                                                                    href="assign-permissions.php?id=<?= base64_encode($value['role_id']) ?>">
-                                                                    <i class='feather icon-plus-circle'></i> &nbsp;Assign
-                                                                    Permissions
-                                                                </a>
+                                                                <?php if ($isAdmin || hasPermission('Assign Permissions Role', $privileges, $roleData['role_name'])) { ?>
+                                                                    <a class="dropdown-item edit-role-button"
+                                                                        href="assign-permissions.php?id=<?= base64_encode($value['role_id']) ?>">
+                                                                        <i class='feather icon-plus-circle'></i> &nbsp;Assign
+                                                                        Permissions
+                                                                    </a>
+                                                                <?php } ?>
                                                             </li>
                                                             <li>
+                                                                 <?php if ($isAdmin || hasPermission('Delete Role', $privileges, $roleData['role_name'])) { ?>
                                                                 <a href='javascript:void(0);'
                                                                     data-role-id="<?php echo $value['role_id']; ?>"
                                                                     class='delbutton dropdown-item' title='Click To Delete'>
                                                                     <i class='feather icon-trash'></i> &nbsp; Delete
                                                                 </a>
+                                                                <?php } ?>
                                                             </li>
                                                         </ul>
                                                     </div>

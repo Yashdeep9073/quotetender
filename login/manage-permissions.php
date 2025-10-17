@@ -342,9 +342,11 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['deletePermissionId']))
                             <div class="row">
                                 <div class="col-md-12">
                                     <div class="d-flex justify-content-end">
-                                        <a class="btn btn-primary rounded-sm" href="javascript:void(0);"
-                                            data-bs-toggle="modal" data-bs-target="#add-permission-model"
-                                            title="Create Role" href="javascript:void(0);">Add Permission</a>
+                                        <?php if ($isAdmin || hasPermission('Add Permission', $privileges, $roleData['role_name'])) { ?>
+                                            <a class="btn btn-primary rounded-sm" href="javascript:void(0);"
+                                                data-bs-toggle="modal" data-bs-target="#add-permission-model"
+                                                title="Create Role" href="javascript:void(0);">Add Permission</a>
+                                        <?php } ?>
                                     </div>
                                 </div>
                             </div>
@@ -353,9 +355,12 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['deletePermissionId']))
                             <div class="dt-responsive table-responsive">
 
                                 <div class='col-md-4 col-l-4'>
-                                    <a href='#' id='delete_records' class='btn btn-danger btn-sm'>
-                                        <i class='feather icon-trash'></i> &nbsp; Delete Permissions
-                                    </a>
+
+                                    <?php if ($isAdmin || hasPermission('Bulk Delete Permission', $privileges, $roleData['role_name'])) { ?>
+                                        <a href='#' id='delete_records' class='btn btn-danger btn-sm'>
+                                            <i class='feather icon-trash'></i> &nbsp; Delete Permissions
+                                        </a>
+                                    <?php } ?>
                                 </div>
                                 <br />
 
@@ -397,21 +402,26 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['deletePermissionId']))
                                                 <td><?php echo $value['created_at']; ?></td>
 
                                                 <td>
-                                                    <a class="btn btn-primary rounded-sm edit-permission-button"
-                                                        data-bs-toggle="modal" data-bs-target="#edit-permission-model"
-                                                        title="Edit Role"
-                                                        data-permission-id="<?php echo $value['permission_id']; ?>"
-                                                        data-permission-name="<?php echo htmlspecialchars($value['permission_name']); ?>"
-                                                        data-permission-status="<?php echo $value['status']; ?>"
-                                                        href="javascript:void(0);">
-                                                        <i class='feather icon-edit'></i> &nbsp;Edit
-                                                    </a>
-                                                    &nbsp;
-                                                    <a href='javascript:void(0);'
-                                                        data-permission-id="<?php echo $value['permission_id']; ?>"
-                                                        class='delbutton btn btn-danger' title='Click To Delete'>
-                                                        <i class='feather icon-trash'></i> &nbsp; Delete
-                                                    </a>
+                                                    <?php if ($isAdmin || hasPermission('Edit Permission', $privileges, $roleData['role_name'])) { ?>
+                                                        <a class="btn btn-primary rounded-sm edit-permission-button"
+                                                            data-bs-toggle="modal" data-bs-target="#edit-permission-model"
+                                                            title="Edit Role"
+                                                            data-permission-id="<?php echo $value['permission_id']; ?>"
+                                                            data-permission-name="<?php echo htmlspecialchars($value['permission_name']); ?>"
+                                                            data-permission-status="<?php echo $value['status']; ?>"
+                                                            href="javascript:void(0);">
+                                                            <i class='feather icon-edit'></i> &nbsp;Edit
+                                                        </a>
+                                                        &nbsp;
+                                                    <?php } ?>
+
+                                                    <?php if ($isAdmin || hasPermission('Delete Permission', $privileges, $roleData['role_name'])) { ?>
+                                                        <a href='javascript:void(0);'
+                                                            data-permission-id="<?php echo $value['permission_id']; ?>"
+                                                            class='delbutton btn btn-danger' title='Click To Delete'>
+                                                            <i class='feather icon-trash'></i> &nbsp; Delete
+                                                        </a>
+                                                    <?php } ?>
                                                 </td>
                                             </tr>
                                             <?php

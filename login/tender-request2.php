@@ -66,6 +66,48 @@ $stmtCount = $db->prepare("SELECT last_sequence FROM reference_sequence WHERE id
 $stmtCount->execute();
 $lastCount = $stmtCount->get_result()->fetch_array();
 
+try {
+    $stmtFetchTenderRequested = $db->prepare("SELECT
+            ROW_NUMBER() OVER (ORDER BY ur.created_at) AS sno, 
+            COUNT(ur.id) OVER() as COUNT,  -- Window function instead of aggregate
+            ur.id, 
+            m.name, 
+            m.member_id, 
+            m.firm_name, 
+            m.mobile, 
+            m.email_id, 
+            department.department_name, 
+            ur.due_date, 
+            ur.file_name, 
+            ur.tenderID, 
+            ur.reference_code, 
+            ur.created_at, 
+            ur.file_name2 
+        FROM 
+            user_tender_requests ur
+        INNER JOIN 
+            members m ON ur.member_id = m.member_id
+        LEFT JOIN 
+            department ON ur.department_id = department.department_id
+        LEFT JOIN 
+            section s ON ur.section_id = s.section_id
+        LEFT JOIN 
+            division dv ON ur.division_id = dv.division_id
+        INNER JOIN 
+            (
+                SELECT MIN(id) AS min_id, tenderID
+                FROM user_tender_requests
+                WHERE status = 'Requested' AND delete_tender = '0'
+                GROUP BY tenderID
+            ) AS unique_tenders ON ur.id = unique_tenders.min_id
+        ORDER BY 
+    ur.created_at ASC");
+    $stmtFetchTenderRequested->execute();
+    $tenderRequestedCount = $stmtFetchTenderRequested->get_result()->fetch_array(MYSQLI_ASSOC);
+} catch (\Throwable $th) {
+    //throw $th;
+}
+
 
 
 if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['tender_id']) && isset($_POST['reference_code'])) {
@@ -309,8 +351,22 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
                     <div class="card bg-c-blue order-card">
                         <div class="card-body">
                             <h6 class="text-white">Tender Request</h6>
-                            <h2 class="text-right text-white"><i
-                                    class="feather icon-message-square float-left"></i><span id="new"></span></h2>
+                            <h2 class="text-right text-white"><i class="feather icon-message-square float-left"></i>
+                                <span id="new">
+
+                                    <?php
+                                    $tenderRequestedCountValue = 0; // Default value
+                                    
+                                    if ($isAdmin || hasPermission('Tender Requests Count', $privileges, $roleData['role_name'])) {
+                                        $tenderRequestedCountValue = $tenderRequestedCount['COUNT'] ?? 0;
+                                    } else {
+                                        $tenderRequestedCountValue = 0;
+                                    }
+                                    echo $tenderRequestedCountValue;
+                                    ?>
+
+                                </span>
+                            </h2>
 
                         </div>
                     </div>
@@ -320,7 +376,18 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
                         <div class="card-body">
                             <h6 class="text-white">Last Reference Code</h6>
                             <h2 class="text-right text-white"><i class="feather icon-bookmark float-left"></i><span
-                                    id="total"><?php echo $lastCount['last_sequence']; ?></span></h2>
+                                    id="total">
+                                    <?php
+                                    $lastReferenceCode = 0;
+                                    if ($isAdmin || hasPermission('Tender Requests Last Reference Code', $privileges, $roleData['role_name'])) {
+                                        $lastReferenceCode = $lastCount['last_sequence'] ?? 0;
+                                    } else {
+                                        $lastReferenceCode = 0;
+                                    }
+                                    echo $lastReferenceCode;
+                                    ?>
+                                </span>
+                            </h2>
 
                         </div>
                     </div>
@@ -356,33 +423,32 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
                                 ?>
                                 <br />
                                 <?php
-                                if ($isAdmin || hasPermission('Dashboard', $privileges, $roleData['role_name'])) {
+                                if ($isAdmin || hasPermission('Bulk Delete Tender Request', $privileges, $roleData['role_name'])) {
                                     echo "<a href='#' id='recycle_records' class='btn btn-danger me-3 rounded-sm'> 
                                     <i class='feather icon-trash'></i> &nbsp; Move to Bin
                                     </a>&nbsp&nbsp&nbsp&nbsp";
                                 }
-                                if ($isAdmin || hasPermission('Dashboard', $privileges, $roleData['role_name'])) {
-                                    echo "<a href='#' class='update_records'><button type='button' class='btn btn-warning me-3 rounded-sm'>
-                                    <i class='feather icon-edit'></i> &nbsp; Update 
-                                    </button></a>
-                                    ";
-                                } ?>
+                                ?>
                                 <div class="dt-buttons btn-group">
-                                    <button class="btn btn-secondary buttons-excel buttons-html5 btn-primary rounded-sm"
-                                        tabindex="0" aria-controls="basic-btn2" type="button"
-                                        onclick="exportTableToExcel()" title="Export to Excel"><span><i
-                                                class="fas fa-file-excel"></i>
-                                            Excel</span></button>
-                                    <button class="btn btn-secondary buttons-csv buttons-html5 btn-primary rounded-sm"
-                                        tabindex="0" aria-controls="basic-btn2" type="button"
-                                        onclick="exportTableToCSV()" title="Export to CSV"><span><i
-                                                class="fas fa-file-csv"></i> CSV</span></button>
-                                    <button class="btn btn-secondary buttons-copy buttons-html5 btn-primary rounded-sm"
-                                        tabindex="0" aria-controls="basic-btn2" type="button"
-                                        title="Copy to clipboard"><span><i class="fas fa-copy"></i> Copy</span></button>
-                                    <button class="btn btn-secondary buttons-print btn-primary rounded-sm" tabindex="0"
-                                        onclick="printTable()" aria-controls="basic-btn2" type="button"
-                                        title="Print"><span><i class="fas fa-print"></i> Print</span></button>
+                                    <?php if ($isAdmin || hasPermission('Tender Request Excel', $privileges, $roleData['role_name'])) { ?>
+                                        <button class="btn btn-secondary buttons-excel buttons-html5 btn-primary rounded-sm"
+                                            tabindex="0" aria-controls="basic-btn2" type="button"
+                                            onclick="exportTableToExcel()" title="Export to Excel"><span><i
+                                                    class="fas fa-file-excel"></i>
+                                                Excel</span></button>
+                                    <?php } ?>
+                                    <?php if ($isAdmin || hasPermission('Tender Request CSV', $privileges, $roleData['role_name'])) { ?>
+                                        <button class="btn btn-secondary buttons-csv buttons-html5 btn-primary rounded-sm"
+                                            tabindex="0" aria-controls="basic-btn2" type="button"
+                                            onclick="exportTableToCSV()" title="Export to CSV"><span><i
+                                                    class="fas fa-file-csv"></i> CSV</span></button>
+                                    <?php } ?>
+                                    <?php if ($isAdmin || hasPermission('Tender Request Print', $privileges, $roleData['role_name'])) { ?>
+                                        <button class="btn btn-secondary buttons-print btn-primary rounded-sm" tabindex="0"
+                                            onclick="printTable()" aria-controls="basic-btn2" type="button"
+                                            title="Print"><span><i class="fas fa-print"></i> Print</span></button>
+
+                                    <?php } ?>
                                 </div>
                                 <table id="basic-btn2" class="table table-striped table-bordered">
                                     <thead>
@@ -413,8 +479,12 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
                                                     </div>
                                                 </td>
                                                 <td>
-                                                    <a class='tender_id'
-                                                        href='tender-request3.php?tender_id=<?php echo base64_encode($row['tenderID']) ?>'><?php echo $row['tenderID'] ?></a>
+                                                    <?php if ($isAdmin || hasPermission('Tender Requests View', $privileges, $roleData['role_name'])) { ?>
+                                                        <a class='tender_id'
+                                                            href='tender-request3.php?tender_id=<?php echo base64_encode($row['tenderID']) ?>'><?php echo $row['tenderID'] ?></a>
+                                                    <?php } else { ?>
+                                                        <?php echo $row['tenderID'] ?>
+                                                    <?php } ?>
                                                 </td>
                                                 <td>
                                                     <?php echo $row['reference_code'] ?>
@@ -439,48 +509,51 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
                                                 ?>
 
                                                 <td>
-                                                    <?php if ($isAdmin || hasPermission('Dashboard', $privileges, $roleData['role_name'])) { ?>
-                                                        <div class="dropdown">
-                                                            <button class="btn btn-secondary " type="button"
-                                                                id="actionMenu<?php echo $row['id']; ?>"
-                                                                data-bs-toggle="dropdown" aria-expanded="false">
-                                                                <i class="feather icon-more-vertical"></i>
-                                                            </button>
-                                                            <ul class="dropdown-menu"
-                                                                aria-labelledby="actionMenu<?php echo $row['id']; ?>">
-                                                                <?php if ($isAdmin || hasPermission('Dashboard', $privileges, $roleData['role_name'])) { ?>
-                                                                    <li>
-                                                                        <a class="dropdown-item"
-                                                                            href="tender-edit.php?id=<?php echo $res; ?>">
-                                                                            <i class="feather icon-edit me-2"></i>Update
-                                                                        </a>
-                                                                    </li>
-                                                                <?php } ?>
 
-                                                                <?php if ($isAdmin || hasPermission('Dashboard', $privileges, $roleData['role_name'])) { ?>
-                                                                    <!-- <li>
+                                                    <div class="dropdown">
+                                                        <button class="btn btn-secondary " type="button"
+                                                            id="actionMenu<?php echo $row['id']; ?>"
+                                                            data-bs-toggle="dropdown" aria-expanded="false">
+                                                            <i class="feather icon-more-vertical"></i>
+                                                        </button>
+                                                        <ul class="dropdown-menu"
+                                                            aria-labelledby="actionMenu<?php echo $row['id']; ?>">
+                                                            <?php if ($isAdmin || hasPermission('Edit Tender Request', $privileges, $roleData['role_name'])) { ?>
+                                                                <li>
+                                                                    <a class="dropdown-item"
+                                                                        href="tender-edit.php?id=<?php echo $res; ?>">
+                                                                        <i class="feather icon-edit me-2"></i>Update
+                                                                    </a>
+                                                                </li>
+                                                            <?php } ?>
+
+                                                            <?php if ($isAdmin || hasPermission('Delete Tender Request', $privileges, $roleData['role_name'])) { ?>
+                                                                <!-- <li>
                                                                         <hr class="dropdown-divider">
                                                                     </li> -->
-                                                                    <li>
-                                                                        <a class="dropdown-item recyclebutton" href="#"
-                                                                            data-id="<?php echo $row['id']; ?>" title="Move to Bin">
-                                                                            <i class="feather icon-trash me-2"></i>Move to Bin
-                                                                        </a>
-                                                                    </li>
-                                                                    <li>
-                                                                        <a class="dropdown-item update-Reference"
-                                                                            href="javascript:void(0);"
-                                                                            data-tender-id="<?php echo $row['id']; ?>"
-                                                                            data-reference-code="<?php echo $row['reference_code']; ?>"
-                                                                            data-bs-toggle="modal" data-bs-target="#edit-units"
-                                                                            title="Change Reference Number">
-                                                                            <i class="feather icon-book me-2"></i>Reference No
-                                                                        </a>
-                                                                    </li>
-                                                                <?php } ?>
-                                                            </ul>
-                                                        </div>
-                                                    <?php } ?>
+                                                                <li>
+                                                                    <a class="dropdown-item recyclebutton" href="#"
+                                                                        data-id="<?php echo $row['id']; ?>" title="Move to Bin">
+                                                                        <i class="feather icon-trash me-2"></i>Move to Bin
+                                                                    </a>
+                                                                </li>
+                                                            <?php } ?>
+
+                                                            <?php if ($isAdmin || hasPermission('Reference Tender Request', $privileges, $roleData['role_name'])) { ?>
+                                                                <li>
+                                                                    <a class="dropdown-item update-Reference"
+                                                                        href="javascript:void(0);"
+                                                                        data-tender-id="<?php echo $row['id']; ?>"
+                                                                        data-reference-code="<?php echo $row['reference_code']; ?>"
+                                                                        data-bs-toggle="modal" data-bs-target="#edit-units"
+                                                                        title="Change Reference Number">
+                                                                        <i class="feather icon-book me-2"></i>Reference No
+                                                                    </a>
+                                                                </li>
+                                                            <?php } ?>
+                                                        </ul>
+                                                    </div>
+
                                                 </td>
                                             </tr>
 
@@ -788,11 +861,11 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
                 searching: true
             });
 
-            // Fetch the number of entries
-            var info = table.page.info();
-            var totalEntries = info.recordsTotal;
+            // // Fetch the number of entries
+            // var info = table.page.info();
+            // var totalEntries = info.recordsTotal;
 
-            $('#new').text(totalEntries);
+            // $('#new').text(totalEntries);
         });
     </script>
 

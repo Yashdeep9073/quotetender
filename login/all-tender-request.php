@@ -51,10 +51,28 @@ LEFT JOIN
 WHERE ur.delete_tender = 0
 ORDER BY 
     ur.created_at ASC;
-
     ";
 
 $resultMain = mysqli_query($db, $queryMain);
+
+
+$stmtFetchAllTender = $db->prepare("SELECT COUNT(*) AS COUNT
+FROM (
+    SELECT 
+        ur.id
+    FROM 
+        user_tender_requests ur
+    LEFT JOIN (
+        SELECT MIN(id) AS min_id, tenderID
+        FROM user_tender_requests
+        GROUP BY tenderID
+    ) AS unique_tenders ON ur.id = unique_tenders.min_id
+    WHERE ur.delete_tender = 0
+) AS subquery;
+");
+$stmtFetchAllTender->execute();
+$allTenderData = $stmtFetchAllTender->get_result()->fetch_array(MYSQLI_ASSOC);
+
 
 ?>
 
@@ -244,7 +262,20 @@ $resultMain = mysqli_query($db, $queryMain);
                         <div class="card-body">
                             <h6 class="text-white">All Tender Request</h6>
                             <h2 class="text-right text-white"><i
-                                    class="feather icon-message-square float-left"></i><span id="total"></span></h2>
+                                    class="feather icon-message-square float-left"></i><span id="total">
+                                    <?php
+                                    $allTenderCountValue = 0; // Default value
+                                    
+                                    if ($isAdmin || hasPermission('View All Tenders Count', $privileges, $roleData['role_name'])) {
+                                        $allTenderCountValue = $allTenderData['COUNT'] ?? 0;
+                                    } else {
+                                        $allTenderCountValue = 0;
+                                    }
+                                    echo $allTenderCountValue;
+                                    ?>
+
+
+                                </span></h2>
 
                         </div>
                     </div>
@@ -278,122 +309,138 @@ $resultMain = mysqli_query($db, $queryMain);
                                 ?>
                                 <br />
                                 <?php
-                                if ($isAdmin || hasPermission('Dashboard', $privileges, $roleData['role_name'])) {
+                                if ($isAdmin || hasPermission('Bulk Delete View All Tenders', $privileges, $roleData['role_name'])) {
                                     echo "<a href='#' id='recycle_records' class='btn btn-danger me-3 rounded-sm'> 
                                     <i class='feather icon-trash'></i> &nbsp; Move to Bin Selected Items
                                     </a>&nbsp&nbsp&nbsp&nbsp";
                                 }
-                                // if ((in_array('All', $permissions)) || (in_array('Update Tenders', $permissions)) || (in_array('Tender Request', $permissions))) {
-                                //     echo "<a href='#' class='update_records'><button type='button' class='btn btn-warning me-3 rounded-sm'>
-                                //     <i class='feather icon-edit'></i> &nbsp; Update Selected Items
-                                //     </button></a>
-                                //     ";
-                                // }
                                 ?>
 
                                 <div class="dt-buttons btn-group">
-                                    <button class="btn btn-secondary buttons-excel buttons-html5 btn-primary rounded-sm"
-                                        tabindex="0" aria-controls="basic-btn2" type="button"
-                                        onclick="exportTableToExcel()" title="Export to Excel"><span><i
-                                                class="fas fa-file-excel"></i>
-                                            Excel</span></button>
-                                    <button class="btn btn-secondary buttons-csv buttons-html5 btn-primary rounded-sm"
-                                        tabindex="0" aria-controls="basic-btn2" type="button"
-                                        onclick="exportTableToCSV()" title="Export to CSV"><span><i
-                                                class="fas fa-file-csv"></i> CSV</span></button>
-                                    <button class="btn btn-secondary buttons-copy buttons-html5 btn-primary rounded-sm"
-                                        tabindex="0" aria-controls="basic-btn2" type="button"
-                                        title="Copy to clipboard"><span><i class="fas fa-copy"></i> Copy</span></button>
-                                    <button class="btn btn-secondary buttons-print btn-primary rounded-sm" tabindex="0"
-                                        onclick="printTable()" aria-controls="basic-btn2" type="button"
-                                        title="Print"><span><i class="fas fa-print"></i> Print</span></button>
+                                    <?php
+                                    if ($isAdmin || hasPermission('View All Tender Excel', $privileges, $roleData['role_name'])) { ?>
+                                        <button class="btn btn-secondary buttons-excel buttons-html5 btn-primary rounded-sm"
+                                            tabindex="0" aria-controls="basic-btn2" type="button"
+                                            onclick="exportTableToExcel()" title="Export to Excel"><span><i
+                                                    class="fas fa-file-excel"></i>
+                                                Excel</span></button>
+                                    <?php } ?>
+
+                                    <?php if ($isAdmin || hasPermission('View All Tender CSV', $privileges, $roleData['role_name'])) { ?>
+                                        <button class="btn btn-secondary buttons-csv buttons-html5 btn-primary rounded-sm"
+                                            tabindex="0" aria-controls="basic-btn2" type="button"
+                                            onclick="exportTableToCSV()" title="Export to CSV"><span><i
+                                                    class="fas fa-file-csv"></i> CSV</span></button>
+                                    <?php } ?>
+
+                                    <?php if ($isAdmin || hasPermission('View All Tender Print', $privileges, $roleData['role_name'])) { ?>
+                                        <button class="btn btn-secondary buttons-print btn-primary rounded-sm" tabindex="0"
+                                            onclick="printTable()" aria-controls="basic-btn2" type="button"
+                                            title="Print"><span><i class="fas fa-print"></i> Print</span></button>
+                                    <?php } ?>
                                 </div>
-                                <?php
-                                echo '<table id="basic-btn2" class="table table-striped table-bordered">';
-                                echo "<thead>";
-                                echo "<tr>";
-                                echo '<th><label class="checkboxs">
+                                <table id="basic-btn2" class="table table-striped table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th>
+                                                <label class="checkboxs">
                                                     <input type="checkbox" id="select-all">
                                                     <span class="checkmarks"></span>
-                                                </label> SNO</th>';
-                                echo "<th>Status</th>";
-                                echo "<th>Tender ID</th>";
-                                echo "<th>Tender No</th>";
-                                echo "<th>Department</th>";
-                                echo "<th>Division</th>";
-                                echo "<th>Sub-Division</th>";
-                                echo "<th>Section</th>";
-                                echo "<th>Tentative Cost</th>";
-                                echo "<th>REF.Code</th>";
-                                echo "<th>Due Date</th>";
-                                echo "<th>Add Date </th>";
+                                                </label> SNO
+                                            </th>
+                                            <th>Status</th>
+                                            <th>Tender ID</th>
+                                            <th>Tender No</th>
+                                            <th>Department</th>
+                                            <th>Division</th>
+                                            <th>Sub-Division</th>
+                                            <th>Section</th>
+                                            <th>Tentative Cost</th>
+                                            <th>REF.Code</th>
+                                            <th>Due Date</th>
+                                            <th>Add Date </th>
+                                            <th>Edit</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php
+                                        $count = 1;
+                                        while ($row = mysqli_fetch_assoc($resultMain)) {
+                                            ?>
+                                            <tr class='record'>
+                                                <td>
+                                                    <div class='custom-control custom-checkbox'>
+                                                        <input type='checkbox' class='custom-control-input request_checkbox'
+                                                            id='customCheck<?php echo $row['sno']; ?>'
+                                                            data-request-id='<?php echo $row['userTenderId']; ?>'>
+                                                        <label class='custom-control-label'
+                                                            for='customCheck<?php echo $row['sno']; ?>'><?php echo $row['sno']; ?></label>
+                                                    </div>
+                                                </td>
 
-                                echo "<th>Edit</th>";
-                                echo "</tr>";
-                                echo "</thead>";
-                                ?>
-                                <?php
-                                $count = 1;
-                                echo "<tbody>";
-                                while ($row = mysqli_fetch_assoc($resultMain)) {
+                                                <td><?php echo $row['tenderStatus']; ?></td>
+                                                <td>
+                                                    <a class='tender_id'
+                                                        href='sent-tender3.php?tender_id=<?php echo base64_encode($row['tenderID']); ?>'>
+                                                        <?php echo $row['tenderID']; ?>
+                                                    </a>
+                                                </td>
+                                                <td><?php echo $row['tender_no']; ?></td>
+                                                <td><?php echo $row['department_name']; ?></td>
+                                                <td><?php echo $row['division_name']; ?></td>
+                                                <td><?php echo $row['subdivision']; ?></td>
+                                                <td><?php echo $row['section_name']; ?></td>
+                                                <td><?php echo $row['tentative_cost']; ?></td>
+                                                <td><?php echo $row['reference_code']; ?></td>
 
-                                    echo "<tr class='record'>";
-                                    echo "<td><div class='custom-control custom-checkbox'>
-                                    <input type='checkbox' class='custom-control-input request_checkbox' id='customCheck" . $row['sno'] . "' data-request-id='" . $row['userTenderId'] . "'>
-                                    <label class='custom-control-label' for='customCheck" . $row['sno'] . "'>" . $row['sno'] . "</label>
-                                    </div>
-                                    </td>";
+                                                <?php
+                                                $dueDate = new DateTime($row['due_date']);
+                                                $formattedDueDate = $dueDate->format('d-m-Y');
+                                                ?>
+                                                <td><?php echo $row['due_date']; ?></td>
 
-                                    // echo "<td><span style='color:red;'> " . $row['name'] . " </span></td>";
-                                    // echo "<td>  <span style='color:green;'>" . $row['email_id'] . " </span></td>";
-                                    // echo "<td>" . $row['firm_name'] . "</td>";
-                                    echo "<td>" . $row['tenderStatus'] . "</td>";
-                                    echo "<td><a class='tender_id' href='sent-tender3.php?tender_id=" . base64_encode($row['tenderID']) . "'>" . $row['tenderID'] . "</a></td>";
-                                    echo "<td>" . $row['tender_no'] . "</td>";
-                                    echo "<td>" . $row['department_name'] . "</td>";
-                                    echo "<td>" . $row['division_name'] . "</td>";
-                                    echo "<td>" . $row['subdivision'] . "</td>";
-                                    echo "<td>" . $row['section_name'] . "</td>";
-                                    echo "<td>" . $row['tentative_cost'] . "</td>";
-                                    echo "<td>" . $row['reference_code'] . "</td>";
-                                    $dueDate = new DateTime($row['due_date']);
-                                    $formattedDueDate = $dueDate->format('d-m-Y');
-                                    echo "<td>" . $row['due_date'] . "</td>";
-                                    $createdDate = new DateTime($row['created_at']);
-                                    $formattedCreatedDate = $createdDate->format('d-m-Y H:i:s');
-                                    echo "<td>" . $row['created_at'] . "</td>";
-                                    // echo "<td>" . $row['due_date'] . "</td>";
-                                    // if (!empty($row['file_name'])) {
-                                    //     echo "<td>" . '<a href="../login/tender/' . $row['file_name'] . '" target="_blank" style="padding:6px 15.2px;" />View </a>' . "</br>";
-                                    // } else {
-                                    //     echo "<td>" . '<a href="../login/tender/' . $row['file_name'] . '" class="btn disabled" target="_blank"/>No file </a>' . "</br>";
-                                    // }
-                                    // if (!empty($row['file_name2'])) {
-                                    //     echo '<a href="../login/tender/' . $row['file_name2'] . '" target="_blank" style="padding:6px 15.2px;" />View </a>' . "</td>";
-                                    // } else {
-                                    //     echo '<a href="../login/tender/' . $row['file_name2'] . '" class="btn disabled" target="_blank"/>No file </a>' . "</td>";
-                                    // }
-                                    $res = isset($row['id']) ? base64_encode($row['id']) : '';
+                                                <?php
+                                                $createdDate = new DateTime($row['created_at']);
+                                                $formattedCreatedDate = $createdDate->format('d-m-Y H:i:s');
+                                                ?>
+                                                <td><?php echo $row['created_at']; ?></td>
 
+                                                <td>
+                                                    <?php
+                                                    $res = isset($row['id']) ? base64_encode($row['id']) : '';
 
-                                    if ($isAdmin || hasPermission('Dashboard', $privileges, $roleData['role_name'])) {
-                                        echo "<td>  <a href='sent-edit.php?id=$res'><button type='button' class='btn btn-warning rounded-sm'><i class='feather icon-edit'></i>
-                                    &nbsp;Alot</button></a>  &nbsp;";
-                                    }
+                                                    if ($isAdmin || hasPermission('Alot View All Tender', $privileges, $roleData['role_name'])) {
+                                                        ?>
+                                                        <a href='sent-edit.php?id=<?php echo $res; ?>'>
+                                                            <button type='button' class='btn btn-warning rounded-sm'>
+                                                                <i class='feather icon-edit'></i> &nbsp;Alot
+                                                            </button>
+                                                        </a> &nbsp;
+                                                        <?php
+                                                    }
 
-                                    echo "<br/>";
-                                    echo "<br/>";
+                                                    echo "<br/>";
+                                                    echo "<br/>";
 
-                                    if ($isAdmin || hasPermission('Dashboard', $privileges, $roleData['role_name'])) {
-                                        echo "<a href='#' id='" . $row['id'] . "'class='recyclebutton btn btn-danger rounded-sm' title='Click To Delete'> 
-                                    <i class='feather icon-trash'></i>  &nbsp; Move to Bin</a></td>";
-                                    }
-                                    echo "</tr>";
-                                    $count++;
-                                }
-                                echo "</tfoot>";
-                                echo "</table>";
-                                ?>
+                                                    if ($isAdmin || hasPermission('Delete View All Tenders', $privileges, $roleData['role_name'])) {
+                                                        ?>
+                                                        <a href='#' id='<?php echo $row['id']; ?>'
+                                                            class='recyclebutton btn btn-danger rounded-sm'
+                                                            title='Click To Delete'>
+                                                            <i class='feather icon-trash'></i> &nbsp; Move to Bin
+                                                        </a>
+                                                        <?php
+                                                    }
+                                                    ?>
+                                                </td>
+                                            </tr>
+                                            <?php
+                                            $count++;
+                                        }
+                                        ?>
+                                    </tbody>
+                                    <tfoot></tfoot>
+                                </table>
                             </div>
                         </div>
                     </div>
@@ -687,14 +734,14 @@ $resultMain = mysqli_query($db, $queryMain);
             });
 
             // Fetch the number of entries
-            var info = table.page.info();
-            var totalEntries = info.recordsTotal;
+            // var info = table.page.info();
+            // var totalEntries = info.recordsTotal;
 
             // Display the number of entries
             // console.log('Total number of entries:', totalEntries);
 
             // Optionally, you can display the number of entries in an HTML element
-            $('#total').text(totalEntries);
+            // $('#total').text(totalEntries);
         });
     </script>
 

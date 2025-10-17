@@ -172,50 +172,58 @@ $result = mysqli_query($db, $query);
 
                                 ?>
                                 <br />
-                                <?php
+                                <table id="basic-btn2" class="table table-striped table-bordered nowrap">
+                                    <thead>
+                                        <tr>
+                                            <th>SNO</th>
+                                            <th>Link</th>
+                                            <th>Image</th>
+                                            <th>Edit</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php
+                                        $count = 1;
+                                        while ($row = mysqli_fetch_row($result)) {
+                                            ?>
+                                            <tr class='record'>
+                                                <td><?php echo $count; ?></td>
+                                                <td><?php echo $row['1']; ?></td>
+                                                <td>
+                                                    <img src="banner/<?php echo $row['2']; ?>"
+                                                        style="width:200px;height:150px" />
+                                                </td>
 
-                                echo '<table id="basic-btn" class="table table-striped table-bordered nowrap">';
-                                echo "<thead>";
-                                echo "<tr>";
-                                echo "<th>SNO</th>";
-                                echo "<th>Link</th>";
-                                echo "<th>Image</th>";
-                                echo "<th>Edit</th>";
+                                                <td>
+                                                    <?php
+                                                    if ($isAdmin || hasPermission('Edit Banner', $privileges, $roleData['role_name'])) {
+                                                        $res = $row[0];
+                                                        $res = base64_encode($res);
+                                                        ?>
+                                                        <a href='banner-edit.php?banner=<?php echo $res; ?>'>
+                                                            <button type='button' class='btn btn-warning'>
+                                                                <i class='feather icon-edit'></i> &nbsp;Edit
+                                                            </button>
+                                                        </a> &nbsp;
+                                                    <?php } ?>
 
-
-                                echo "</tr>";
-                                echo "</thead>";
-
-
-                                ?>
-                                <?php
-
-                                $count = 1;
-                                echo "<tbody>";
-                                while ($row = mysqli_fetch_row($result)) {
-
-                                    echo "<tr class='record'>";
-                                    echo "<td> $count </td>";
-                                    echo "<td>" . $row['1'] . "</td>";
-                                    echo "<td>" . '<img src="banner/' . $row['2'] . '" style="width:200px;height:150px" />' . "</td>";
-
-                                    $res = $row[0];
-                                    $res = base64_encode($res);
-
-
-                                    echo "<td>  <a href='banner-edit.php?banner=$res'><button type='button' class='btn btn-warning'><i class='feather icon-edit'></i> &nbsp;Edit</button></a>  &nbsp;   <a href='#' id='" . $row['0'] . "'class='delbutton btn btn-danger' title='Click To Delete'> <i class='feather icon-trash'></i>  &nbsp; delete</a></td>";
-
-
-                                    echo "</tr>";
-
-                                    $count++;
-                                }
-
-
-                                echo "</tfoot>";
-                                echo "</table>";
-                                ?>
-
+                                                    <?php
+                                                    if ($isAdmin || hasPermission('Delete Banner', $privileges, $roleData['role_name'])) {
+                                                        ?>
+                                                        <a href='#' id='<?php echo $row['0']; ?>'
+                                                            class='delbutton btn btn-danger' title='Click To Delete'>
+                                                            <i class='feather icon-trash'></i> &nbsp; delete
+                                                        </a>
+                                                    <?php } ?>
+                                                </td>
+                                            </tr>
+                                            <?php
+                                            $count++;
+                                        }
+                                        ?>
+                                    </tbody>
+                                    <tfoot></tfoot>
+                                </table>
                             </div>
                         </div>
                     </div>
@@ -254,38 +262,54 @@ $result = mysqli_query($db, $query);
     <script src="assets/js/pages/data-export-custom.js"></script>
 
     <script>
-    $(document).ready(function() {
-        $("#gold").delay(5000).slideUp(300);
-    });
+        $(document).ready(function () {
+            $("#gold").delay(5000).slideUp(300);
+        });
     </script>
 
 
     <script type="text/javascript">
-    $(function() {
-        $(".delbutton").click(function() {
+        $(function () {
+            $(".delbutton").click(function () {
 
-            var element = $(this);
+                var element = $(this);
 
-            var del_id = element.attr("id");
+                var del_id = element.attr("id");
 
-            var info = 'id=' + del_id;
-            if (confirm("Are you sure you want to delete this Record?")) {
-                $.ajax({
-                    type: "GET",
-                    url: "deletegold.php",
-                    data: info,
-                    success: function() {}
-                });
-                $(this).parents(".record").animate({
+                var info = 'id=' + del_id;
+                if (confirm("Are you sure you want to delete this Record?")) {
+                    $.ajax({
+                        type: "GET",
+                        url: "deletegold.php",
+                        data: info,
+                        success: function () { }
+                    });
+                    $(this).parents(".record").animate({
                         backgroundColor: "#FF3"
                     }, "fast")
-                    .animate({
-                        opacity: "hide"
-                    }, "slow");
-            }
-            return false;
+                        .animate({
+                            opacity: "hide"
+                        }, "slow");
+                }
+                return false;
+            });
         });
-    });
+    </script>
+
+    <script type="text/javascript">
+        $(document).ready(function () {
+            // Initialize the DataTable with buttons
+            var table = $('#basic-btn2').DataTable({
+                pageLength: 100,
+                lengthMenu: [25, 50, 100, 200, 500, 1000], // Custom dropdown options
+                responsive: true,
+                ordering: true,
+                searching: true
+            });
+
+            // Fetch the number of entries
+
+        });
     </script>
 </body>
 
