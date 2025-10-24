@@ -144,7 +144,7 @@ if (isset($_POST['submit'])) {
 
                 //Provide username and password
 
-                $mail->Username = "info@quotetender.in";
+                $mail->Username = "quotetenderindia@gmail.com";
 
                 $mail->Password = "Zxcv@123";
 
@@ -156,11 +156,11 @@ if (isset($_POST['submit'])) {
 
                 $mail->Port = 465;
 
-                $mail->From = "info@quotetender.in";
+                $mail->From = "quotetenderindia@gmail.com";
 
 
                 $mail->FromName = "Quote Tender  ";
-                $adminEmail = "info@quotetender.in";
+                $adminEmail = "quotetenderindia@gmail.com";
 
                 $mail->addAddress($adminEmail);
                 $mail->IsHTML(true);

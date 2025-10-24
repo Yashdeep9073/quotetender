@@ -116,7 +116,7 @@ function otpGenerate($adminId, $db, $mail)
                         <strong>Thanks & Regards,</strong><br/>
                         <span style='color: #4CBB17;'>Admin, Quote Tender</span><br/>
                         <span>Mobile: <a href='tel:+919417601244' style='color: #4CBB17; text-decoration: none;'>+91-9417601244</a></span><br/>
-                        <span>Email: <a href='mailto:help@quotetender.in' style='color: #4CBB17; text-decoration: none;'>help@quotetender.in</a></span>
+                        <span>Email: <a href='mailto:quotetenderindia@gmail.com' style='color: #4CBB17; text-decoration: none;'>quotetenderindia@gmail.com</a></span>
                     </p>
 
                     <hr style='border: none; border-top: 1px solid #ddd; margin: 20px 0;'>
