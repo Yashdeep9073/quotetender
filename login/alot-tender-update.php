@@ -330,6 +330,15 @@ $members = mysqli_query($db, $memberQuery);
                                 </h5>
                             </div>
 
+                             <ul class="breadcrumb">
+                                <li class="breadcrumb-item">
+                                    <a href="index.php"><i class="feather icon-home"></i> Home</a>
+                                </li>
+                                <li class="breadcrumb-item active"><a
+                                        href="alot-tender.php">Alot Tender</a>
+                                </li>
+                            </ul>
+
                         </div>
                     </div>
                 </div>
