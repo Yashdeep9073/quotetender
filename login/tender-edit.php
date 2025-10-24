@@ -443,7 +443,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
     
     <p style='margin-top: 20px;'>
         <strong>Thanks & Regards,</strong><br/>
-        <span style='color: #4CBB17;'>Admin, Quote Tender</span><br/>
+        <span style='color: #4CBB17;'>Admin, DVEPL</span><br/>
         <span>Mobile: <a href='tel:+919417601244' style='color: #4CBB17; text-decoration: none;'>+91-9417601244</a></span><br/>
         <span>Email: <a href='mailto:help@quotetender.in' style='color: #4CBB17; text-decoration: none;'>help@quotetender.in</a></span>
     </p>
@@ -788,6 +788,15 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
                                 <h5 class="m-b-10">Tender Update - Tender ID : <?php echo $tenderData['tenderID']; ?>
                                 </h5>
                             </div>
+
+                            <ul class="breadcrumb">
+                                <li class="breadcrumb-item">
+                                    <a href="index.php"><i class="feather icon-home"></i> Home</a>
+                                </li>
+                                <li class="breadcrumb-item active"><a
+                                        href="<?= isset($_GET['is_update']) && $_GET['is_update'] == 1 ? "sent-tender2.php" : "tender-request2.php" ?>"><?= isset($_GET['is_update']) && $_GET['is_update'] == 1 ? "Sent-tender" : "Tender Request" ?></a>
+                                </li>
+                            </ul>
 
                         </div>
                     </div>

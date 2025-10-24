@@ -129,7 +129,7 @@ INNER JOIN members ON user_tender_requests.member_id =members.member_id WHERE id
     
     <p style='margin-top: 20px;'>
         <strong>Thanks & Regards,</strong><br/>
-        <span style='color: #4CBB17;'>Admin, Quote Tender</span><br/>
+        <span style='color: #4CBB17;'>Admin, DVEPL</span><br/>
         <span>Mobile: <a href='tel:+919417601244' style='color: #4CBB17; text-decoration: none;'>+91-9417601244</a></span><br/>
         <span>Email: <a href='mailto:info@quotender.com' style='color: #4CBB17; text-decoration: none;'>info@quotender.com</a></span>
     </p>
@@ -137,7 +137,7 @@ INNER JOIN members ON user_tender_requests.member_id =members.member_id WHERE id
     <hr style='border: none; border-top: 1px solid #ddd; margin: 20px 0;'>
 
     <p style='text-align: center; font-size: 12px; color: #888;'>
-        © 2025 DVEPL. All Rights Reserved.
+        &#169 2025 DVEPL. All Rights Reserved.
     </p>
 </div>";
 

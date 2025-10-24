@@ -235,7 +235,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['submit'])) {
 
                 $mail->From = getenv('SMTP_USER_NAME');
 
-                $mail->FromName = "Quote Tender";
+                $mail->FromName = "DVEPL";
 
                 $mail->addAddress($email, "Recepient Name");
                 $mail->addAddress($adminEmail);
@@ -272,7 +272,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['submit'])) {
 
     <p style='margin-top: 20px;'>
         <strong>Thanks & Regards,</strong><br/>
-        <span style='color: #4CBB17;'>Admin, Quote Tender</span><br/>
+        <span style='color: #4CBB17;'>Admin, DVEPL</span><br/>
         <span>Mobile: <a href='tel:+919417601244' style='color: #4CBB17; text-decoration: none;'>+91-94176-01244</a></span><br/>
         <span>Email: <a href='mailto:help@quotetender.in' style='color: #4CBB17; text-decoration: none;'>help@quotetender.in</a></span>
     </p>
@@ -280,7 +280,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['submit'])) {
     <hr style='border: none; border-top: 1px solid #ddd; margin: 20px 0;'>
 
     <p style='text-align: center; font-size: 12px; color: #888;'>
-        © 2025 DVEPL. All Rights Reserved.
+        &#169 2025 DVEPL. All Rights Reserved.
     </p>
 </div>";
 
