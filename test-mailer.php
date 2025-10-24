@@ -87,7 +87,7 @@ $mail->Body = "
     <hr style='border: none; border-top: 1px solid #ddd; margin: 20px 0;'>
 
     <p style='text-align: center; font-size: 12px; color: #888;'>
-        &#169 2025 DVEPL. All Rights Reserved.
+       Copyright 2025 DVEPL. All Rights Reserved.
     </p>
 </div>";
 
