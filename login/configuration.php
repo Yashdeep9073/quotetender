@@ -1056,7 +1056,7 @@ try {
                                     <h4>Email Template Settings</h4>
                                     <hr />
                                     <!-- Button to trigger modal -->
-                                    <button type="button" class="btn btn-primary" data-toggle="modal"
+                                    <button type="button" class="btn btn-primary" data-bs-toggle="modal"
                                         data-bs-target="#emailTemplateModal">
                                         <i class="feather icon-plus"></i> Add New Template
                                     </button>
