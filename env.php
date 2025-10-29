@@ -1,8 +1,8 @@
 <?php
 
-putenv('SMTP_HOST=smtp.hostinger.com');
-putenv('SMTP_USER_NAME=mailerbot@vibrantick.in');
-putenv('SMTP_PASSCODE=Mailerbot@123');
+putenv('SMTP_HOST=smtp.gmail.com');
+putenv('SMTP_USER_NAME=enquiry@dvepl.com');
+putenv('SMTP_PASSCODE=ncxwbxdyetgnjezh');
 putenv('SMTP_PORT=465');
 
 //localhost:
