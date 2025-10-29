@@ -35,12 +35,12 @@ try {
     $result = $stmtFetchMembers->get_result()->fetch_array(MYSQLI_ASSOC);
 
     // Fetch unique, non-empty cities only
-    $stmtFetchStates = $db->prepare("SELECT * FROM state ");
+    $stmtFetchStates = $db->prepare("SELECT * FROM state WHERE is_active = 1 ");
     $stmtFetchStates->execute();
     $states = $stmtFetchStates->get_result()->fetch_all(MYSQLI_ASSOC);
 
     // Fetch unique, non-empty cities only
-    $stmtFetchCities = $db->prepare("SELECT * FROM cities");
+    $stmtFetchCities = $db->prepare("SELECT * FROM cities is_active = 1");
     $stmtFetchCities->execute();
     $cities = $stmtFetchCities->get_result()->fetch_all(MYSQLI_ASSOC);
 
@@ -155,7 +155,7 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
         $db->begin_transaction();
 
         // Fetch unique, non-empty cities only
-        $stmtFetchCities = $db->prepare("SELECT * FROM cities WHERE state_code = ?");
+        $stmtFetchCities = $db->prepare("SELECT * FROM cities WHERE state_code = ? AND is_active = 1");
         $stmtFetchCities->bind_param("s", $stateCode);
         $stmtFetchCities->execute();
         $cities = $stmtFetchCities->get_result()->fetch_all(MYSQLI_ASSOC);

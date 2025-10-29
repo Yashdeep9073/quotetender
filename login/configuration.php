@@ -709,51 +709,51 @@ try {
 
 <body class="">
     <?php if (isset($_SESSION['success'])) { ?>
-            <script>
-                const notyf = new Notyf({
-                    position: {
-                        x: 'center',
-                        y: 'top'
-                    },
-                    types: [
-                        {
-                            type: 'success',
-                            background: '#26c975', // Change background color
-                            textColor: '#FFFFFF',  // Change text color
-                            dismissible: true,
-                            duration: 10000
-                        }
-                    ]
-                });
-                notyf.success("<?php echo $_SESSION['success']; ?>");
-            </script>
-            <?php
-            unset($_SESSION['success']);
-            ?>
+        <script>
+            const notyf = new Notyf({
+                position: {
+                    x: 'center',
+                    y: 'top'
+                },
+                types: [
+                    {
+                        type: 'success',
+                        background: '#26c975', // Change background color
+                        textColor: '#FFFFFF',  // Change text color
+                        dismissible: true,
+                        duration: 10000
+                    }
+                ]
+            });
+            notyf.success("<?php echo $_SESSION['success']; ?>");
+        </script>
+        <?php
+        unset($_SESSION['success']);
+        ?>
     <?php } ?>
 
     <?php if (isset($_SESSION['error'])) { ?>
-            <script>
-                const notyf = new Notyf({
-                    position: {
-                        x: 'center',
-                        y: 'top'
-                    },
-                    types: [
-                        {
-                            type: 'error',
-                            background: '#ff1916',
-                            textColor: '#FFFFFF',
-                            dismissible: true,
-                            duration: 10000
-                        }
-                    ]
-                });
-                notyf.error("<?php echo $_SESSION['error']; ?>");
-            </script>
-            <?php
-            unset($_SESSION['error']);
-            ?>
+        <script>
+            const notyf = new Notyf({
+                position: {
+                    x: 'center',
+                    y: 'top'
+                },
+                types: [
+                    {
+                        type: 'error',
+                        background: '#ff1916',
+                        textColor: '#FFFFFF',
+                        dismissible: true,
+                        duration: 10000
+                    }
+                ]
+            });
+            notyf.error("<?php echo $_SESSION['error']; ?>");
+        </script>
+        <?php
+        unset($_SESSION['error']);
+        ?>
     <?php } ?>
 
 
@@ -852,22 +852,34 @@ try {
                             <div class="nav flex-column nav-pills" id="v-pills-tab" role="tablist"
                                 aria-orientation="vertical">
 
-                                <a class="nav-link active" id="recaptcha-setting-tab" data-toggle="pill"
-                                    href="#recaptcha-setting" role="tab">
-                                    <i class="feather icon-shield"></i> Captcha Settings
-                                </a>
-                                <a class="nav-link" id="smtp-setting-tab" data-toggle="pill" href="#smtp-setting"
-                                    role="tab">
-                                    <i class="feather icon-mail"></i> SMTP Settings
-                                </a>
-                                <a class="nav-link" id="email-template-setting-tab" data-toggle="pill"
-                                    href="#email-template-setting" role="tab">
-                                    <i class="feather icon-file-text"></i> Email Templates
-                                </a>
-                                <a class="nav-link" id="reference-setting-tab" data-toggle="pill"
-                                    href="#reference-setting" role="tab">
-                                    <i class="feather icon-hash"></i> Reference Code
-                                </a>
+                                <?php if ($isAdmin || hasPermission('Captcha Settings', $privileges, $roleData['role_name'])) { ?>
+                                    <a class="nav-link active" id="recaptcha-setting-tab" data-toggle="pill"
+                                        href="#recaptcha-setting" role="tab">
+                                        <i class="feather icon-shield"></i> Captcha Settings
+                                    </a>
+                                <?php } ?>
+
+                                <?php if ($isAdmin || hasPermission('SMTP Settings', $privileges, $roleData['role_name'])) { ?>
+
+                                    <a class="nav-link" id="smtp-setting-tab" data-toggle="pill" href="#smtp-setting"
+                                        role="tab">
+                                        <i class="feather icon-mail"></i> SMTP Settings
+                                    </a>
+                                <?php } ?>
+                                <?php if ($isAdmin || hasPermission('Email Templates', $privileges, $roleData['role_name'])) { ?>
+
+                                    <a class="nav-link" id="email-template-setting-tab" data-toggle="pill"
+                                        href="#email-template-setting" role="tab">
+                                        <i class="feather icon-file-text"></i> Email Templates
+                                    </a>
+                                <?php } ?>
+                                <?php if ($isAdmin || hasPermission('Reference Code', $privileges, $roleData['role_name'])) { ?>
+
+                                    <a class="nav-link" id="reference-setting-tab" data-toggle="pill"
+                                        href="#reference-setting" role="tab">
+                                        <i class="feather icon-hash"></i> Reference Code
+                                    </a>
+                                <?php } ?>
                             </div>
                         </div>
                     </div>
@@ -929,10 +941,12 @@ try {
                                 <div class="card-header table-card-header">
                                     <h4>SMTP Settings</h4>
                                     <hr />
-                                    <button type="button" class="btn btn-primary" data-bs-toggle="modal"
-                                        data-bs-target="#smtpSettingsModal">
-                                        <i class="feather icon-plus"></i> Add New SMTP Configuration
-                                    </button>
+                                    <?php if ($isAdmin || hasPermission('Add SMTP Configuration', $privileges, $roleData['role_name'])) { ?>
+                                        <button type="button" class="btn btn-primary" data-bs-toggle="modal"
+                                            data-bs-target="#smtpSettingsModal">
+                                            <i class="feather icon-plus"></i> Add New SMTP Configuration
+                                        </button>
+                                    <?php } ?>
                                 </div>
                                 <div class="card-body">
                                     <!-- SMTP Settings Table -->
@@ -969,73 +983,73 @@ try {
                                                             <td>
                                                                 <?php
                                                                 if (isset($emailSettingData['email_settings_id'])) { ?>
-                                                                        <div class="dropdown">
-                                                                            <button class="btn btn-primary" type="button"
-                                                                                id="actionMenu" data-bs-toggle="dropdown"
-                                                                                aria-expanded="false">
-                                                                                <i class="feather icon-more-vertical"></i>
-                                                                            </button>
-                                                                            <ul class="dropdown-menu"
-                                                                                aria-labelledby="actionMenu">
-                                                                                <?php if ($isAdmin || hasPermission('Edit Tender Request', $privileges, $roleData['role_name'])) { ?>
-                                                                                        <li>
-                                                                                            <a class="dropdown-item updateSmtpSettingsButton"
-                                                                                                href="javascript:void(0);"
-                                                                                                data-settings-id="<?= $emailSettingData['email_settings_id'] ?? "" ?>"
-                                                                                                data-email-title="<?= $emailSettingData['email_from_title'] ?? "" ?>"
-                                                                                                data-email-address="<?= $emailSettingData['email_address'] ?? "" ?>"
-                                                                                                data-email-password="<?= $emailSettingData['email_password'] ?? "" ?>"
-                                                                                                data-email-host="<?= $emailSettingData['email_host'] ?? "" ?>"
-                                                                                                data-email-port="<?= $emailSettingData['email_port'] ?? "" ?>"
-                                                                                                data-email-status="<?= $emailSettingData['is_active'] ?? "" ?>"
-                                                                                                data-email-logoUrl="<?= $emailSettingData['logo_url'] ?? "" ?>"
-                                                                                                data-support-email="<?= $emailSettingData['support_email'] ?? "" ?>"
-                                                                                                data-support-phone="<?= $emailSettingData['phone'] ?? "" ?>"
-                                                                                                data-support-addressLine="<?= $emailSettingData['address_line1'] ?? "" ?>"
-                                                                                                data-email-igUrl="<?= $emailSettingData['ig_url'] ?? "" ?>"
-                                                                                                data-email-fbUrl="<?= $emailSettingData['fb_url'] ?? "" ?>"
-                                                                                                data-email-linkedinUrl="<?= $emailSettingData['linkedin_url'] ?? "" ?>"
-                                                                                                data-bs-toggle="modal"
-                                                                                                data-bs-target="#updateSmtpSettingsModal"
-                                                                                                title="Update Smtp Configuration">
-                                                                                                <i
-                                                                                                    class="feather icon-edit me-2"></i>Update
-                                                                                            </a>
-                                                                                        </li>
-                                                                                <?php } ?>
+                                                                    <div class="dropdown">
+                                                                        <button class="btn btn-primary" type="button"
+                                                                            id="actionMenu" data-bs-toggle="dropdown"
+                                                                            aria-expanded="false">
+                                                                            <i class="feather icon-more-vertical"></i>
+                                                                        </button>
+                                                                        <ul class="dropdown-menu"
+                                                                            aria-labelledby="actionMenu">
+                                                                            <?php if ($isAdmin || hasPermission('Edit SMTP Configuration', $privileges, $roleData['role_name'])) { ?>
+                                                                                <li>
+                                                                                    <a class="dropdown-item updateSmtpSettingsButton"
+                                                                                        href="javascript:void(0);"
+                                                                                        data-settings-id="<?= $emailSettingData['email_settings_id'] ?? "" ?>"
+                                                                                        data-email-title="<?= $emailSettingData['email_from_title'] ?? "" ?>"
+                                                                                        data-email-address="<?= $emailSettingData['email_address'] ?? "" ?>"
+                                                                                        data-email-password="<?= $emailSettingData['email_password'] ?? "" ?>"
+                                                                                        data-email-host="<?= $emailSettingData['email_host'] ?? "" ?>"
+                                                                                        data-email-port="<?= $emailSettingData['email_port'] ?? "" ?>"
+                                                                                        data-email-status="<?= $emailSettingData['is_active'] ?? "" ?>"
+                                                                                        data-email-logoUrl="<?= $emailSettingData['logo_url'] ?? "" ?>"
+                                                                                        data-support-email="<?= $emailSettingData['support_email'] ?? "" ?>"
+                                                                                        data-support-phone="<?= $emailSettingData['phone'] ?? "" ?>"
+                                                                                        data-support-addressLine="<?= $emailSettingData['address_line1'] ?? "" ?>"
+                                                                                        data-email-igUrl="<?= $emailSettingData['ig_url'] ?? "" ?>"
+                                                                                        data-email-fbUrl="<?= $emailSettingData['fb_url'] ?? "" ?>"
+                                                                                        data-email-linkedinUrl="<?= $emailSettingData['linkedin_url'] ?? "" ?>"
+                                                                                        data-bs-toggle="modal"
+                                                                                        data-bs-target="#updateSmtpSettingsModal"
+                                                                                        title="Update Smtp Configuration">
+                                                                                        <i
+                                                                                            class="feather icon-edit me-2"></i>Update
+                                                                                    </a>
+                                                                                </li>
+                                                                            <?php } ?>
 
-                                                                                <?php if ($isAdmin || hasPermission('Delete Tender Request', $privileges, $roleData['role_name'])) { ?>
-                                                                                        <!-- <li>
+                                                                            <?php if ($isAdmin || hasPermission('Delete SMTP Configuration', $privileges, $roleData['role_name'])) { ?>
+                                                                                <!-- <li>
                                                                                <hr class="dropdown-divider">
                                                                         </li> -->
-                                                                                        <li>
-                                                                                            <a class="dropdown-item deleteSmtpSettingButton"
-                                                                                                href="javascript:void(0);"
-                                                                                                data-settings-id="<?= $emailSettingData['email_settings_id'] ?? "" ?>"
-                                                                                                title="Move to Bin">
-                                                                                                <i
-                                                                                                    class="feather icon-trash me-2"></i>Delete
-                                                                                                Settings
-                                                                                            </a>
-                                                                                        </li>
-                                                                                <?php } ?>
+                                                                                <li>
+                                                                                    <a class="dropdown-item deleteSmtpSettingButton"
+                                                                                        href="javascript:void(0);"
+                                                                                        data-settings-id="<?= $emailSettingData['email_settings_id'] ?? "" ?>"
+                                                                                        title="Move to Bin">
+                                                                                        <i
+                                                                                            class="feather icon-trash me-2"></i>Delete
+                                                                                        Settings
+                                                                                    </a>
+                                                                                </li>
+                                                                            <?php } ?>
 
-                                                                                <?php if ($isAdmin || hasPermission('Reference Tender Request', $privileges, $roleData['role_name'])) { ?>
-                                                                                        <li>
-                                                                                            <a class="dropdown-item updateSmtpStatusButton"
-                                                                                                href="javascript:void(0);"
-                                                                                                data-settings-id="<?= $emailSettingData['email_settings_id'] ?? "" ?>"
-                                                                                                data-email-status="<?= $emailSettingData['is_active'] ?? "" ?>"
-                                                                                                data-bs-toggle="modal"
-                                                                                                data-bs-target="#updateSmtpStatusModel"
-                                                                                                title="Change Reference Number">
-                                                                                                <i
-                                                                                                    class="feather icon-eye me-2"></i>Status
-                                                                                            </a>
-                                                                                        </li>
-                                                                                <?php } ?>
-                                                                            </ul>
-                                                                        </div>
+                                                                            <?php if ($isAdmin || hasPermission('Edit SMTP Configuration', $privileges, $roleData['role_name'])) { ?>
+                                                                                <li>
+                                                                                    <a class="dropdown-item updateSmtpStatusButton"
+                                                                                        href="javascript:void(0);"
+                                                                                        data-settings-id="<?= $emailSettingData['email_settings_id'] ?? "" ?>"
+                                                                                        data-email-status="<?= $emailSettingData['is_active'] ?? "" ?>"
+                                                                                        data-bs-toggle="modal"
+                                                                                        data-bs-target="#updateSmtpStatusModel"
+                                                                                        title="Change Reference Number">
+                                                                                        <i
+                                                                                            class="feather icon-eye me-2"></i>Status
+                                                                                    </a>
+                                                                                </li>
+                                                                            <?php } ?>
+                                                                        </ul>
+                                                                    </div>
                                                                 <?php } ?>
                                                             </td>
                                                         </tr>
@@ -1055,11 +1069,13 @@ try {
                                 <div class="card-header table-card-header">
                                     <h4>Email Template Settings</h4>
                                     <hr />
-                                    <!-- Button to trigger modal -->
-                                    <button type="button" class="btn btn-primary" data-bs-toggle="modal"
-                                        data-bs-target="#emailTemplateModal">
-                                        <i class="feather icon-plus"></i> Add New Template
-                                    </button>
+                                    <?php if ($isAdmin || hasPermission('Add Template', $privileges, $roleData['role_name'])) { ?>
+                                        <!-- Button to trigger modal -->
+                                        <button type="button" class="btn btn-primary" data-bs-toggle="modal"
+                                            data-bs-target="#emailTemplateModal">
+                                            <i class="feather icon-plus"></i> Add New Template
+                                        </button>
+                                    <?php } ?>
                                 </div>
                                 <div class="card-body">
                                     <!-- Templates Table -->
@@ -1083,73 +1099,73 @@ try {
                                                         <?php $count = 1;
                                                         foreach ($emailTemplates as $template):
                                                             ?>
-                                                                <tr>
-                                                                    <td><?= $count ?></td>
-                                                                    <td><?= $template['email_template_title'] ?></td>
-                                                                    <td><?= $template['email_template_subject'] ?></td>
-                                                                    <td><?= $template['type'] ?></td>
-                                                                    <td>
+                                                            <tr>
+                                                                <td><?= $count ?></td>
+                                                                <td><?= $template['email_template_title'] ?></td>
+                                                                <td><?= $template['email_template_subject'] ?></td>
+                                                                <td><?= $template['type'] ?></td>
+                                                                <td>
 
-                                                                        <?php
-                                                                        if (isset($template['is_active'])) {
-                                                                            echo $template['is_active'] == 1 ? "Active" : "Inactive";
-                                                                        } else {
-                                                                            echo "";
-                                                                        }
-                                                                        ?>
+                                                                    <?php
+                                                                    if (isset($template['is_active'])) {
+                                                                        echo $template['is_active'] == 1 ? "Active" : "Inactive";
+                                                                    } else {
+                                                                        echo "";
+                                                                    }
+                                                                    ?>
 
-                                                                    </td>
-                                                                    <td><?= $template['created_at'] ?></td>
-                                                                    <td>
-                                                                        <div class="dropdown">
-                                                                            <button class="btn btn-primary" type="button"
-                                                                                id="actionMenu" data-bs-toggle="dropdown"
-                                                                                aria-expanded="false">
-                                                                                <i class="feather icon-more-vertical"></i>
-                                                                            </button>
-                                                                            <ul class="dropdown-menu"
-                                                                                aria-labelledby="actionMenu">
-                                                                                <?php if ($isAdmin || hasPermission('Edit Tender Request', $privileges, $roleData['role_name'])) { ?>
-                                                                                        <li>
-                                                                                            <a class="dropdown-item updateEmailTemplateButton"
-                                                                                                href="javascript:void(0);"
-                                                                                                data-template-id="<?= $template['idemail_template'] ?? "" ?>"
-                                                                                                data-template-title="<?= $template['email_template_title'] ?? "" ?>"
-                                                                                                data-template-subject="<?= $template['email_template_subject'] ?? "" ?>"
-                                                                                                data-template-content1="<?= base64_encode($template['content_1']) ?? "" ?>"
-                                                                                                data-template-content2="<?= base64_encode($template['content_2']) ?? "" ?>"
-                                                                                                data-template-type="<?= $template['type'] ?? "" ?>"
-                                                                                                data-template-status="<?= $template['is_active'] ?? "" ?>"
-                                                                                                data-bs-toggle="modal"
-                                                                                                data-bs-target="#updateEmailTemplateModal"
-                                                                                                title="Update Email Template">
-                                                                                                <i
-                                                                                                    class="feather icon-edit me-2"></i>Update
-                                                                                            </a>
-                                                                                        </li>
-                                                                                <?php } ?>
+                                                                </td>
+                                                                <td><?= $template['created_at'] ?></td>
+                                                                <td>
+                                                                    <div class="dropdown">
+                                                                        <button class="btn btn-primary" type="button"
+                                                                            id="actionMenu" data-bs-toggle="dropdown"
+                                                                            aria-expanded="false">
+                                                                            <i class="feather icon-more-vertical"></i>
+                                                                        </button>
+                                                                        <ul class="dropdown-menu"
+                                                                            aria-labelledby="actionMenu">
+                                                                            <?php if ($isAdmin || hasPermission('Edit Template', $privileges, $roleData['role_name'])) { ?>
+                                                                                <li>
+                                                                                    <a class="dropdown-item updateEmailTemplateButton"
+                                                                                        href="javascript:void(0);"
+                                                                                        data-template-id="<?= $template['idemail_template'] ?? "" ?>"
+                                                                                        data-template-title="<?= $template['email_template_title'] ?? "" ?>"
+                                                                                        data-template-subject="<?= $template['email_template_subject'] ?? "" ?>"
+                                                                                        data-template-content1="<?= base64_encode($template['content_1']) ?? "" ?>"
+                                                                                        data-template-content2="<?= base64_encode($template['content_2']) ?? "" ?>"
+                                                                                        data-template-type="<?= $template['type'] ?? "" ?>"
+                                                                                        data-template-status="<?= $template['is_active'] ?? "" ?>"
+                                                                                        data-bs-toggle="modal"
+                                                                                        data-bs-target="#updateEmailTemplateModal"
+                                                                                        title="Update Email Template">
+                                                                                        <i
+                                                                                            class="feather icon-edit me-2"></i>Update
+                                                                                    </a>
+                                                                                </li>
+                                                                            <?php } ?>
 
-                                                                                <?php if ($isAdmin || hasPermission('Delete Tender Request', $privileges, $roleData['role_name'])) { ?>
-                                                                                        <!-- <li>
+                                                                            <?php if ($isAdmin || hasPermission('Delete Template', $privileges, $roleData['role_name'])) { ?>
+                                                                                <!-- <li>
                                                                                <hr class="dropdown-divider">
                                                                         </li> -->
-                                                                                        <li>
-                                                                                            <a class="dropdown-item deleteEmailTemplateButton"
-                                                                                                href="javascript:void(0);"
-                                                                                                data-template-id="<?= $template['idemail_template'] ?? "" ?>"
-                                                                                                title="Move to Bin">
-                                                                                                <i
-                                                                                                    class="feather icon-trash me-2"></i>Delete
-                                                                                                Template
-                                                                                            </a>
-                                                                                        </li>
-                                                                                <?php } ?>
-                                                                            </ul>
-                                                                        </div>
+                                                                                <li>
+                                                                                    <a class="dropdown-item deleteEmailTemplateButton"
+                                                                                        href="javascript:void(0);"
+                                                                                        data-template-id="<?= $template['idemail_template'] ?? "" ?>"
+                                                                                        title="Move to Bin">
+                                                                                        <i
+                                                                                            class="feather icon-trash me-2"></i>Delete
+                                                                                        Template
+                                                                                    </a>
+                                                                                </li>
+                                                                            <?php } ?>
+                                                                        </ul>
+                                                                    </div>
 
-                                                                    </td>
-                                                                </tr>
-                                                                <?php $count++;
+                                                                </td>
+                                                            </tr>
+                                                            <?php $count++;
                                                         endforeach; ?>
                                                     </tbody>
                                                 </table>

@@ -102,7 +102,7 @@ $isAdmin = strtolower($roleData['role_name']) === 'admin';
                 <?php if ($isAdmin || hasPermission('Section', $privileges, $roleData['role_name'])): ?>
                     <!-- Section Menu -->
                     <li class="nav-item pcoded-hasmenu">
-                        <a href="#!" class="nav-link "><span class="pcoded-micon"><i
+                        <a href="javascript:void(0);" class="nav-link "><span class="pcoded-micon"><i
                                     class="feather icon-file"></i></span><span class="pcoded-mtext">Section</span></a>
                         <ul class="pcoded-submenu">
                             <?php if ($isAdmin || hasPermission('Add Section', $privileges, $roleData['role_name'])): ?>
@@ -137,7 +137,7 @@ $isAdmin = strtolower($roleData['role_name']) === 'admin';
                 <?php if ($isAdmin || hasPermission('Category', $privileges, $roleData['role_name'])): ?>
                     <!-- Category Menu -->
                     <li class="nav-item pcoded-hasmenu">
-                        <a href="#!" class="nav-link "><span class="pcoded-micon"><i
+                        <a href="javascript:void(0);" class="nav-link "><span class="pcoded-micon"><i
                                     class="feather icon-edit"></i></span><span class="pcoded-mtext">Category</span></a>
                         <ul class="pcoded-submenu">
                             <?php if ($isAdmin || hasPermission('Add Category', $privileges, $roleData['role_name'])): ?>
@@ -153,7 +153,7 @@ $isAdmin = strtolower($roleData['role_name']) === 'admin';
                 <?php if ($isAdmin || hasPermission('Brands', $privileges, $roleData['role_name'])): ?>
                     <!-- Brands Menu -->
                     <li class="nav-item pcoded-hasmenu">
-                        <a href="#!" class="nav-link "><span class="pcoded-micon"><i
+                        <a href="javascript:void(0);" class="nav-link "><span class="pcoded-micon"><i
                                     class="feather icon-file"></i></span><span class="pcoded-mtext">Brands</span></a>
                         <ul class="pcoded-submenu">
 
@@ -170,7 +170,7 @@ $isAdmin = strtolower($roleData['role_name']) === 'admin';
                 <?php if ($isAdmin || hasPermission('Departments', $privileges, $roleData['role_name'])): ?>
                     <!-- Departments Menu -->
                     <li class="nav-item pcoded-hasmenu">
-                        <a href="#!" class="nav-link "><span class="pcoded-micon"><i
+                        <a href="javascript:void(0);" class="nav-link "><span class="pcoded-micon"><i
                                     class="feather icon-home"></i></span><span class="pcoded-mtext">Departments</span></a>
                         <ul class="pcoded-submenu">
                             <?php if ($isAdmin || hasPermission('Add Department', $privileges, $roleData['role_name'])): ?>
@@ -187,7 +187,7 @@ $isAdmin = strtolower($roleData['role_name']) === 'admin';
                 <?php if ($isAdmin || hasPermission('Price', $privileges, $roleData['role_name'])): ?>
                     <!-- Price List Menu -->
                     <li class="nav-item pcoded-hasmenu">
-                        <a href="#!" class="nav-link "><span class="pcoded-micon"><i
+                        <a href="javascript:void(0);" class="nav-link "><span class="pcoded-micon"><i
                                     class="feather icon-credit-card"></i></span><span class="pcoded-mtext">Price
                                 List</span></a>
                         <ul class="pcoded-submenu">
@@ -202,10 +202,30 @@ $isAdmin = strtolower($roleData['role_name']) === 'admin';
                     </li>
                 <?php endif; ?>
 
+                <?php if ($isAdmin || hasPermission('Locations', $privileges, $roleData['role_name'])): ?>
+                    <!-- Location List Menu -->
+                    <li class="nav-item pcoded-hasmenu location-menu">
+                        <a href="javascript:void(0);" class="nav-link">
+                            <span class="pcoded-micon"><i class="feather icon-map-pin"></i></span>
+                            <span class="pcoded-mtext">Location</span>
+                        </a>
+                        <ul class="pcoded-submenu">
+                            <?php if ($isAdmin || hasPermission('State', $privileges, $roleData['role_name'])): ?>
+                                <li><a href='manage-state.php'>State</a></li>
+                            <?php endif; ?>
+
+                            <?php if ($isAdmin || hasPermission('City', $privileges, $roleData['role_name'])): ?>
+                                <li><a href='manage-city.php'>City</a></li>
+                            <?php endif; ?>
+                        </ul>
+                    </li>
+                <?php endif; ?>
+
+
                 <?php if ($isAdmin || hasPermission('User Management', $privileges, $roleData['role_name'])): ?>
                     <!-- Staff User Menu -->
                     <li class="nav-item pcoded-hasmenu">
-                        <a href="#!" class="nav-link "><span class="pcoded-micon"><i
+                        <a href="javascript:void(0);" class="nav-link "><span class="pcoded-micon"><i
                                     class="feather icon-users"></i></span><span class="pcoded-mtext">User
                                 Management</span></a>
                         <ul class="pcoded-submenu">
@@ -227,7 +247,7 @@ $isAdmin = strtolower($roleData['role_name']) === 'admin';
                 <?php if ($isAdmin || hasPermission('Tenders', $privileges, $roleData['role_name'])): ?>
                     <!-- Tenders Menu -->
                     <li class="nav-item pcoded-hasmenu">
-                        <a href="#!" class="nav-link "><span class="pcoded-micon"><i
+                        <a href="javascript:void(0);" class="nav-link "><span class="pcoded-micon"><i
                                     class="feather icon-briefcase"></i></span><span class="pcoded-mtext">Tenders
                             </span></a>
                         <ul class="pcoded-submenu">
@@ -272,7 +292,7 @@ $isAdmin = strtolower($roleData['role_name']) === 'admin';
                 <?php if ($isAdmin || hasPermission('Website', $privileges, $roleData['role_name'])): ?>
                     <!-- Website Menu -->
                     <li class="nav-item pcoded-hasmenu">
-                        <a href="#!" class="nav-link "><span class="pcoded-micon"><i
+                        <a href="javascript:void(0);" class="nav-link "><span class="pcoded-micon"><i
                                     class="feather icon-credit-card"></i></span><span class="pcoded-mtext">Website
                             </span></a>
                         <ul class="pcoded-submenu">

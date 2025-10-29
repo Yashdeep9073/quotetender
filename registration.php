@@ -18,7 +18,7 @@ $q = mysqli_query($db, $q);
 
 try {
     // Fetch unique, non-empty cities only
-    $stmtFetchStates = $db->prepare("SELECT * FROM state ");
+    $stmtFetchStates = $db->prepare("SELECT * FROM state WHERE is_active = 1 ");
     $stmtFetchStates->execute();
     $states = $stmtFetchStates->get_result()->fetch_all(MYSQLI_ASSOC);
 } catch (\Throwable $th) {
@@ -218,7 +218,7 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
         $db->begin_transaction();
 
         // Fetch unique, non-empty cities only
-        $stmtFetchCities = $db->prepare("SELECT * FROM cities WHERE state_code = ?");
+        $stmtFetchCities = $db->prepare("SELECT * FROM cities WHERE state_code = ? AND is_active = 1");
         $stmtFetchCities->bind_param("s", $stateCode);
         $stmtFetchCities->execute();
         $cities = $stmtFetchCities->get_result()->fetch_all(MYSQLI_ASSOC);
@@ -269,6 +269,9 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
 
     <!-- Select2 JS -->
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.js"></script>
 
     <style>
         /* Force Select2 to take full width */
