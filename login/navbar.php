@@ -263,7 +263,7 @@ $isAdmin = strtolower($roleData['role_name']) === 'admin';
                                 <li><a href='alot-tender.php'> Alot Tenders</a></li>
                             <?php endif; ?>
                             <?php if ($isAdmin || hasPermission('Award Tenders', $privileges, $roleData['role_name'])): ?>
-                                <li><a href='award-tender.php'> Award Tenders</a></li>
+                                <li><a href='award-tender.php'> Confirm Order</a></li>
                             <?php endif; ?>
                             <?php if ($isAdmin || hasPermission('View All Tenders', $privileges, $roleData['role_name'])): ?>
                                 <li><a href='all-tender-request.php'>View All Tenders</a></li>
