@@ -195,66 +195,14 @@ $members = mysqli_query($db, $memberQuery);
     <meta name="author" content="#" />
 
     <link rel="shortcut icon" href="../assets/images/x-icon.png" type="image/x-icon">
+
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <link rel="stylesheet" href="assets/css/plugins/dataTables.bootstrap4.min.css">
+
     <link rel="stylesheet" href="assets/css/style.css">
-
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="assets/js/vendor-all.min.js"></script>
-    <script src="assets/js/plugins/bootstrap.min.js"></script>
-    <script src="assets/js/pcoded.min.js"></script>
-    <!--<script src="assets/js/menu-setting.min.js"></script>-->
-    <script src="assets/js/plugins/jquery.dataTables.min.js"></script>
-    <script src="assets/js/plugins/dataTables.bootstrap4.min.js"></script>
-    <script src="assets/js/plugins/buttons.colVis.min.js"></script>
-    <script src="assets/js/plugins/buttons.print.min.js"></script>
-    <script src="assets/js/plugins/pdfmake.min.js"></script>
-    <script src="assets/js/plugins/jszip.min.js"></script>
-    <script src="assets/js/plugins/dataTables.buttons.min.js"></script>
-    <script src="assets/js/plugins/buttons.html5.min.js"></script>
-    <script src="assets/js/plugins/buttons.bootstrap4.min.js"></script>
-    <script src="assets/js/pages/data-export-custom.js"></script>
-
-    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/selectize.js/0.12.6/js/standalone/selectize.min.js" integrity="sha256-+C0A5Ilqmu4QcSPxrlGpaZxJ04VjsRjKu+G82kl5UJk=" crossorigin="anonymous"></script> -->
-    <!-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/selectize.js/0.12.6/css/selectize.bootstrap3.min.css" integrity="sha256-ze/OEYGcFbPRmvCnrSeKbRTtjG4vGLHXgOqsyLFTRjg=" crossorigin="anonymous" /> -->
-
-    <!-- Include Select2 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    <!-- Include Select2 JS -->
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-
-
-
-
-    <script>
-        $(document).ready(function () {
-
-            // $('#myDropdown').selectize({
-            //     sortField: 'text'
-            // });
-            $('#myDropdown').select2({
-                placeholder: "Select User",
-                allowClear: true
-            });
-
-            // Select the dropdown and the other fields
-            var $dropdown = $('#myDropdown');
-            var $otherFields = $('#otherFields');
-
-            // Listen for changes in the dropdown selection
-            $dropdown.on('change', function () {
-                var selectedValue = $dropdown.val();
-
-                // If "Other" is selected, show the text boxes; otherwise, hide them
-                if (selectedValue === 'other') {
-                    $otherFields.show();
-                } else {
-                    $otherFields.hide();
-                }
-            });
-        });
-    </script>
-
-
 </head>
 
 <body class="">
@@ -539,6 +487,65 @@ $members = mysqli_query($db, $memberQuery);
 
         </div>
     </section>
+
+    <!-- jQuery first -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <script src="assets/js/vendor-all.min.js"></script>
+    <script src="assets/js/plugins/bootstrap.min.js"></script>
+    <script src="assets/js/pcoded.min.js"></script>
+    <!--<script src="assets/js/menu-setting.min.js"></script>-->
+
+    <script src="assets/js/plugins/jquery.dataTables.min.js"></script>
+    <script src="assets/js/plugins/dataTables.bootstrap4.min.js"></script>
+    <script src="assets/js/plugins/dataTables.buttons.min.js"></script>
+    <script src="assets/js/plugins/buttons.colVis.min.js"></script>
+    <script src="assets/js/plugins/buttons.print.min.js"></script>
+    <script src="assets/js/plugins/pdfmake.min.js"></script>
+    <script src="assets/js/plugins/jszip.min.js"></script>
+    <script src="assets/js/plugins/buttons.html5.min.js"></script>
+    <script src="assets/js/plugins/buttons.bootstrap4.min.js"></script>
+    <script src="assets/js/pages/data-export-custom.js"></script>
+
+    <!-- Excel Generate  -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <!-- CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+    <!-- Select2 (must come AFTER jQuery) -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+
+
+    <script>
+        $(document).ready(function () {
+
+            // $('#myDropdown').selectize({
+            //     sortField: 'text'
+            // });
+            $('#myDropdown').select2({
+                placeholder: "Select User",
+                allowClear: true
+            });
+
+            // Select the dropdown and the other fields
+            var $dropdown = $('#myDropdown');
+            var $otherFields = $('#otherFields');
+
+            // Listen for changes in the dropdown selection
+            $dropdown.on('change', function () {
+                var selectedValue = $dropdown.val();
+
+                // If "Other" is selected, show the text boxes; otherwise, hide them
+                if (selectedValue === 'other') {
+                    $otherFields.show();
+                } else {
+                    $otherFields.hide();
+                }
+            });
+        });
+    </script>
 </body>
 
 </html>
