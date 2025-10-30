@@ -9,6 +9,8 @@ use PHPMailer\PHPMailer\Exception;
 require("login/db/config.php");
 require 'env.php';
 
+
+
 $web = "SELECT * FROM web_content  ";
 $contet = mysqli_query($db, $web);
 $cont = mysqli_fetch_row($contet);

@@ -40,7 +40,7 @@ try {
     $states = $stmtFetchStates->get_result()->fetch_all(MYSQLI_ASSOC);
 
     // Fetch unique, non-empty cities only
-    $stmtFetchCities = $db->prepare("SELECT * FROM cities is_active = 1");
+    $stmtFetchCities = $db->prepare("SELECT * FROM cities WHERE is_active = 1");
     $stmtFetchCities->execute();
     $cities = $stmtFetchCities->get_result()->fetch_all(MYSQLI_ASSOC);
 
