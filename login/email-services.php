@@ -35,7 +35,7 @@ if (isset($_POST['submit'])) {
     $mail->isSMTP();
 
     //Set SMTP host name                      
-    $mail->Host = "smtp.hostinger.com";
+    $mail->Host = getenv('SMTP_HOST');
 
     //Set this to true if SMTP host requires authentication to send email
 
@@ -43,21 +43,18 @@ if (isset($_POST['submit'])) {
 
     //Provide username and password
 
-    $mail->Username = "quotetenderindia@gmail.com";
+    $mail->Username = getenv('SMTP_USER_NAME');
 
-    $mail->Password = "Zxcv@123";
-
+    $mail->Password = getenv('SMTP_PASSCODE');
     //If SMTP requires TLS encryption then set it
 
     $mail->SMTPSecure = "ssl";
 
     //Set TCP port to connect to
 
-    $mail->Port = 465;
+    $mail->Port = getenv('SMTP_PORT');
 
-    $mail->From = "quotetenderindia@gmail.com";
-
-    $mail->FromName = "Quote Tender  ";
+    $mail->setFrom(getenv('SMTP_USER_NAME'), $emailSettingData['email_from_title'] ?? "Dvepl");
 
     $mail->addAddress($admin_email, "Recepient Name");
     $mail->addAddress($cc);
@@ -66,7 +63,7 @@ if (isset($_POST['submit'])) {
 
     $mail->Subject = "Regarding Tender Information";
 
-    $mail->Body =  " $address";
+    $mail->Body = " $address";
 
 
 
@@ -149,7 +146,8 @@ if (isset($_POST['submit'])) {
                     </div>
                 </li>
                 <li class="nav-item">
-                    <a href="#!" class="full-screen" onClick="javascript:toggleFullScreen()"><i class="feather icon-maximize"></i></a>
+                    <a href="#!" class="full-screen" onClick="javascript:toggleFullScreen()"><i
+                            class="feather icon-maximize"></i></a>
                 </li>
             </ul>
 
@@ -219,7 +217,7 @@ if (isset($_POST['submit'])) {
 
 
                             <?php
-                            if(!empty($msg)){
+                            if (!empty($msg)) {
                                 echo $msg;
                             }
                             ?>
@@ -240,7 +238,11 @@ if (isset($_POST['submit'])) {
                                                             <label class="sr-only control-label" for="name">To *
                                                                 *<span class=" ">
                                                                 </span></label>
-                                                            <input id="name" name="email" type="email" placeholder=" Enter Email to Address   *" class="form-control input-md" required oninvalid="this.setCustomValidity('Please Enter Email  *')" oninput="setCustomValidity('')">
+                                                            <input id="name" name="email" type="email"
+                                                                placeholder=" Enter Email to Address   *"
+                                                                class="form-control input-md" required
+                                                                oninvalid="this.setCustomValidity('Please Enter Email  *')"
+                                                                oninput="setCustomValidity('')">
                                                         </div>
                                                     </div>
 
@@ -248,10 +250,15 @@ if (isset($_POST['submit'])) {
 
                                                     <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-6">
                                                         <div class="form-group">CC*
-                                                            <label class="sr-only control-label" for="name">Email Hosts *
+                                                            <label class="sr-only control-label" for="name">Email Hosts
+                                                                *
                                                                 *<span class=" ">
                                                                 </span></label>
-                                                            <input id="name" name="cc" type="email" placeholder=" Enter Email Hosts  *" class="form-control input-md" required oninvalid="this.setCustomValidity('Please Enter CC Email *')" oninput="setCustomValidity('')">
+                                                            <input id="name" name="cc" type="email"
+                                                                placeholder=" Enter Email Hosts  *"
+                                                                class="form-control input-md" required
+                                                                oninvalid="this.setCustomValidity('Please Enter CC Email *')"
+                                                                oninput="setCustomValidity('')">
                                                         </div>
                                                     </div>
 
@@ -260,25 +267,28 @@ if (isset($_POST['submit'])) {
 
 
 
-                                                            <textarea name="address" class="form-control" placeholder="Enter Address" required> </textarea>
+                                                            <textarea name="address" class="form-control"
+                                                                placeholder="Enter Address" required> </textarea>
 
                                                         </div>
                                                     </div>
-                                                    
-                                                    
-                                                     <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-6">
+
+
+                                                    <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-6">
                                                         <div class="form-group">Upload Quotation*
 
 
 
-                                        <input name="uploaded_file" type="file" class="form-control input-md" accept="application/pdf" >
+                                                            <input name="uploaded_file" type="file"
+                                                                class="form-control input-md" accept="application/pdf">
 
                                                         </div>
                                                     </div>
 
                                                     <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
 
-                                                        <button type="submit" class="btn btn-secondary" name="submit" id="submit">
+                                                        <button type="submit" class="btn btn-secondary" name="submit"
+                                                            id="submit">
                                                             <i class="feather icon-save lg"></i>&nbsp; Sent Email
                                                         </button>
 
@@ -319,7 +329,7 @@ if (isset($_POST['submit'])) {
     <script src="assets/js/pages/data-export-custom.js"></script>
 
     <script>
-        $(document).ready(function() {
+        $(document).ready(function () {
             $("#goldmessage").delay(5000).slideUp(300);
         });
     </script>
