@@ -9,8 +9,6 @@ if (!isset($_SESSION["login_user"])) {
 }
 
 $name = $_SESSION['login_user'];
-
-
 $adminID = $_SESSION['login_user_id'];
 
 

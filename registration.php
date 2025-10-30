@@ -33,7 +33,7 @@ if (isset($_POST['firmName']) && $_SERVER['REQUEST_METHOD'] == "POST") {
         // Validate required fields
         $required_fields = ['name', 'firmName', 'email', 'mobile', 'state', 'city', 'password'];
         foreach ($required_fields as $field) {
-            if (empty($_POST[$field])) {
+            if (!isset($_POST[$field])) {
                 echo json_encode([
                     "status" => 400,
                     "error" => "Missing required field: " . $field
@@ -47,7 +47,7 @@ if (isset($_POST['firmName']) && $_SERVER['REQUEST_METHOD'] == "POST") {
         $firmname = trim($_POST['firmName']);
         $email = trim($_POST['email']);
         $phone = trim($_POST['mobile']);
-        $state = trim($_POST['state']);
+        $state = trim($_POST['state']); // Assuming this is the state_code
         $city = trim($_POST['city']);
         $password = trim($_POST['password']);
 
@@ -78,122 +78,158 @@ if (isset($_POST['firmName']) && $_SERVER['REQUEST_METHOD'] == "POST") {
         date_default_timezone_set('Asia/Kolkata');
         $created_date = date('Y-m-d H:i:s A');
 
+        // Start transaction to ensure atomicity: insert only if email sends
+        mysqli_autocommit($db, FALSE); // Turn off auto-commit
+        $transaction_started = true; // Flag to track transaction state
+
         // Check if email already exists - USING PREPARED STATEMENT
         $check_query = "SELECT email_id FROM members WHERE email_id = ?";
         $check_stmt = mysqli_prepare($db, $check_query);
+        if (!$check_stmt) {
+            throw new Exception("Prepare check query failed: " . mysqli_error($db));
+        }
         mysqli_stmt_bind_param($check_stmt, "s", $email);
         mysqli_stmt_execute($check_stmt);
         $result = mysqli_stmt_get_result($check_stmt);
 
         if (mysqli_num_rows($result) > 0) {
+            mysqli_stmt_close($check_stmt);
+            mysqli_rollback($db); // Rollback if transaction was started
+            mysqli_autocommit($db, TRUE); // Re-enable auto-commit
             echo json_encode([
                 "status" => 400,
                 "error" => "Email ID already exists in our records"
             ]);
             exit;
         }
+        mysqli_stmt_close($check_stmt);
 
-        // Insert new member - USING PREPARED STATEMENT
-        $password_hash = md5($password);
+
+        // Prepare activation token and hash password
+        $password_hash = md5($password); // Consider using password_hash() instead
         $activationToken = bin2hex(random_bytes(16));
         $status = '0'; // Default status
 
-        $insert_query = "INSERT INTO members (name, firm_name, email_id, mobile, city_state,state_code, password, created_date, activation_token, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?,?)";
-
+        // Prepare the insert statement
+        $insert_query = "INSERT INTO members (name, firm_name, email_id, mobile, city_state, state_code, password, created_date, activation_token, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         $insert_stmt = mysqli_prepare($db, $insert_query);
+        if (!$insert_stmt) {
+            throw new Exception("Prepare insert query failed: " . mysqli_error($db));
+        }
         mysqli_stmt_bind_param($insert_stmt, "ssssssssss", $name, $firmname, $email, $phone, $city, $state, $password_hash, $created_date, $activationToken, $status);
 
-        if (mysqli_stmt_execute($insert_stmt)) {
-            // Email sending code
-            $mail = new PHPMailer(true);
-            try {
-                // SMTP configuration
-                $mail->SMTPDebug = 0;
-                $mail->isSMTP();
-                $mail->Host = getenv('SMTP_HOST');
-                $mail->SMTPAuth = true;
-                $mail->Username = getenv('SMTP_USER_NAME');
-                $mail->Password = getenv('SMTP_PASSCODE');
-                $mail->SMTPSecure = "ssl";
-                $mail->Port = getenv('SMTP_PORT');
-                $mail->setFrom(getenv('SMTP_USER_NAME'), "Quote Tender");
-                $mail->addAddress($email, $name);
-                $mail->isHTML(true);
-                $mail->addAddress('quotetenderindia@gmail.com');
+        // Attempt to send email first
+        $mail = new PHPMailer(true);
+        $emailSent = false;
+        try {
+            // SMTP configuration
+            $mail->SMTPDebug = 0;
+            $mail->isSMTP();
+            $mail->Host = getenv('SMTP_HOST');
+            $mail->SMTPAuth = true;
+            $mail->Username = getenv('SMTP_USER_NAME');
+            $mail->Password = getenv('SMTP_PASSCODE');
+            $mail->SMTPSecure = "ssl";
+            $mail->Port = getenv('SMTP_PORT');
+            $mail->setFrom(getenv('SMTP_USER_NAME'), $emailSettingData['email_from_title'] ?? "Dvepl");
+            $mail->addAddress($email, $name); // Primary recipient
+            $mail->isHTML(true);
 
+            // Add CC recipients dynamically
+            foreach ($ccEmailData as $ccEmail) { // Use the fetched array
+                $mail->addCC($ccEmail['cc_email']); // Use addCC, not addAddress
+            }
 
-                $activationLink = getenv('BASE_URL') . '/activate.php?token=' . $activationToken;
-                $mail->Subject = "Account Activation";
-                $mail->Body = "
-                <div style='font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;'>
-                    <div style='text-align: center; margin-bottom: 30px;'>
-                        <img src='https://dvepl.com/assets/images/logo/dvepl-logo.png' alt='Quote Tender Logo' style='max-width: 200px; height: auto; display: block; margin: 0 auto;'>
+            // Assuming $emailSettingData['email_from_title'] is defined somewhere relevant
+            $activationLink = getenv('BASE_URL') . '/activate.php?token=' . $activationToken;
+            // Corrected version with proper precedence
+            $logo = getenv('BASE_URL') . "/login/" . ($emailSettingData['logo_url'] ?? "https://dvepl.com/assets/images/logo/dvepl-logo.png");
+            $mail->Subject = "Account Activation";
+            $mail->Body = "
+            <div style='font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;'>
+                <div style='text-align: center; margin-bottom: 30px;'>
+                    <img src='" . $logo . "' alt='Quote Tender Logo' style='max-width: 200px; height: auto; display: block; margin: 0 auto;'>
+                </div>
+
+                <div style='background-color: #f9f9f9; border-radius: 10px; padding: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border: 1px solid #eee;'>
+                    <h2 style='color: #4CBB17; text-align: center; margin-bottom: 25px; font-size: 24px;'>Account Activation</h2>
+
+                    <p style='font-size: 16px; color: #555; margin-bottom: 20px;'>
+                        Dear <strong>" . htmlspecialchars($name) . "</strong>,
+                    </p>
+
+                    <p style='margin-bottom: 25px; font-size: 16px;'>
+                        Thank you for registering with Quote Tender. Your registration process is completed.
+                        Please click the button below to activate your account:
+                    </p>
+
+                    <div style='text-align: center; margin: 30px 0;'>
+                        <a href='" . htmlspecialchars($activationLink) . "'
+                        style='background-color: #4CBB17; color: #ffffff; padding: 15px 30px; text-decoration: none;
+                                border-radius: 5px; font-weight: bold; display: inline-block;
+                                box-shadow: 0 4px 6px rgba(0,0,0,0.1); font-size: 16px; border: none; cursor: pointer;'>
+                            Activate Account
+                        </a>
                     </div>
-                    
-                    <div style='background-color: #f9f9f9; border-radius: 10px; padding: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border: 1px solid #eee;'>
-                        <h2 style='color: #4CBB17; text-align: center; margin-bottom: 25px; font-size: 24px;'>Account Activation</h2>
-                        
-                        <p style='font-size: 16px; color: #555; margin-bottom: 20px;'>
-                            Dear <strong>" . htmlspecialchars($name) . "</strong>,
-                        </p>
-                        
-                        <p style='margin-bottom: 25px; font-size: 16px;'>
-                            Thank you for registering with Quote Tender. Your registration process is completed. 
-                            Please click the button below to activate your account:
-                        </p>
-                        
-                        <div style='text-align: center; margin: 30px 0;'>
-                            <a href='" . htmlspecialchars($activationLink) . "' 
-                            style='background-color: #4CBB17; color: #ffffff; padding: 15px 30px; text-decoration: none; 
-                                    border-radius: 5px; font-weight: bold; display: inline-block; 
-                                    box-shadow: 0 4px 6px rgba(0,0,0,0.1); font-size: 16px; border: none; cursor: pointer;'>
-                                Activate Account
-                            </a>
-                        </div>
-                        
-                        <div style='text-align: center; margin: 20px 0;'>
-                            <p style='margin-bottom: 15px; font-size: 14px; color: #666;'>
-                                <strong>Activation Link:</strong>
-                            </p>
-                            <p style='font-size: 12px; color: #666; word-break: break-all; background-color: #f0f0f0; padding: 10px; border-radius: 4px;'>
-                                " . htmlspecialchars($activationLink) . "
-                            </p>
-                        </div>
-                    </div>
-                </div>";
 
-                if ($mail->send()) {
-                    echo json_encode([
-                        "status" => 201,
-                        "message" => "Thank you for completing the registration process. Please check your email to activate your account."
-                    ]);
-                } else {
-                    echo json_encode([
-                        "status" => 201, // Still successful registration, just email failed
-                        "message" => "Registration successful but email could not be sent. Please contact support."
-                    ]);
-                }
-            } catch (Exception $e) {
-                // Registration successful but email failed
+                    <div style='text-align: center; margin: 20px 0;'>
+                        <p style='margin-bottom: 15px; font-size: 14px; color: #666;'>
+                            <strong>Activation Link:</strong>
+                        </p>
+                        <p style='font-size: 12px; color: #666; word-break: break-all; background-color: #f0f0f0; padding: 10px; border-radius: 4px;'>
+                            " . htmlspecialchars($activationLink) . "
+                        </p>
+                    </div>
+                </div>
+            </div>";
+
+            $emailSent = $mail->send();
+
+        } catch (Exception $e) {
+            error_log("PHPMailer Error: " . $e->getMessage());
+            // Email failed to send
+        }
+
+        if ($emailSent) {
+            // If email sent successfully, execute the insert
+            if (mysqli_stmt_execute($insert_stmt)) {
+                mysqli_commit($db); // Commit the transaction
                 echo json_encode([
                     "status" => 201,
-                    "message" => "Registration successful but email could not be sent. Please contact support."
+                    "message" => "Thank you for completing the registration process. Please check your email (and CC recipients) to activate your account."
+                ]);
+            } else {
+                mysqli_rollback($db); // Rollback on insert failure
+                echo json_encode([
+                    "status" => 500,
+                    "error" => "Registration failed during database save after email sent: " . mysqli_error($db)
                 ]);
             }
         } else {
+            // Email failed to send, rollback the transaction
+            mysqli_rollback($db);
             echo json_encode([
                 "status" => 500,
-                "error" => "Error in registration process: " . mysqli_error($db)
+                "error" => "Registration failed: Could not send activation email."
             ]);
         }
 
-        // Close statements
-        if (isset($check_stmt))
-            mysqli_stmt_close($check_stmt);
-        if (isset($insert_stmt))
+        // Close the insert statement
+        if (isset($insert_stmt)) {
             mysqli_stmt_close($insert_stmt);
+        }
+
+        // Re-enable auto-commit if transaction was started
+        if (isset($transaction_started)) {
+            mysqli_autocommit($db, TRUE);
+        }
 
     } catch (Exception $e) {
+        // Rollback in case of other exceptions during the process
+        if (isset($transaction_started)) {
+            mysqli_rollback($db);
+            mysqli_autocommit($db, TRUE);
+        }
         echo json_encode([
             "status" => 500,
             "error" => "An error occurred: " . $e->getMessage()

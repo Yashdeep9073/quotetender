@@ -452,6 +452,64 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['deleteSmtpSettingsId']
     }
 }
 
+// Add Cc
+if ($_SERVER['REQUEST_METHOD'] == "POST" && $_POST['action'] === "addCc") {
+    try {
+        $settingsId = $_POST['settingsId'];
+        $email = $_POST['email'];
+
+        $db->begin_transaction();
+
+        $stmtAddCcEmail = $db->prepare("INSERT INTO  email_cc (setting_id,cc_email) VALUES(?,?)");
+        $stmtAddCcEmail->bind_param('is', $settingsId, $email);
+        $stmtAddCcEmail->execute();
+
+        $db->commit(); // Commit the transaction
+        echo json_encode([
+            "status" => 201,
+            "message" => "Cc Mail Added successfully",
+        ]);
+        exit;
+
+    } catch (\Throwable $th) {
+        $db->rollback(); // Rollback on error
+        echo json_encode([
+            "status" => 500,
+            "error" => "Database error: " . $th->getMessage(),
+        ]);
+        exit;
+    }
+}
+
+// Remove Cc
+if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['deleteEmailId'])) {
+    try {
+        $deleteEmailId = $_POST['deleteEmailId'];
+
+
+        $db->begin_transaction();
+
+        $stmtDeleteCcEmail = $db->prepare("DELETE FROM email_cc WHERE idemail_cc = ?");
+        $stmtDeleteCcEmail->bind_param('i', $deleteEmailId);
+        $stmtDeleteCcEmail->execute();
+
+        $db->commit(); // Commit the transaction
+        echo json_encode([
+            "status" => 200,
+            "message" => "Cc Mail Remove successfully",
+        ]);
+        exit;
+
+    } catch (\Throwable $th) {
+        $db->rollback(); // Rollback on error
+        echo json_encode([
+            "status" => 500,
+            "error" => "Database error: " . $th->getMessage(),
+        ]);
+        exit;
+    }
+}
+
 
 // Create Email template
 if ($_SERVER['REQUEST_METHOD'] == "POST" && $_POST['action'] === "create-email-template") {
@@ -623,6 +681,11 @@ try {
     $stmtFetchEmailSettingData = $db->prepare("SELECT * FROM email_settings");
     $stmtFetchEmailSettingData->execute();
     $emailSettingData = $stmtFetchEmailSettingData->get_result()->fetch_array(MYSQLI_ASSOC);
+
+    $stmtFetchCcEmail = $db->prepare("SELECT * FROM email_cc");
+    $stmtFetchCcEmail->execute();
+    $ccEmailData = $stmtFetchCcEmail->get_result()->fetch_all(MYSQLI_ASSOC);
+
 
     $stmtFetchEmailTemplates = $db->prepare("SELECT * FROM email_template");
     $stmtFetchEmailTemplates->execute();
@@ -1020,8 +1083,8 @@ try {
 
                                                                             <?php if ($isAdmin || hasPermission('Delete SMTP Configuration', $privileges, $roleData['role_name'])) { ?>
                                                                                 <!-- <li>
-                                                                               <hr class="dropdown-divider">
-                                                                        </li> -->
+                                                                                <hr class="dropdown-divider">
+                                                                                </li> -->
                                                                                 <li>
                                                                                     <a class="dropdown-item deleteSmtpSettingButton"
                                                                                         href="javascript:void(0);"
@@ -1045,6 +1108,21 @@ try {
                                                                                         title="Change Reference Number">
                                                                                         <i
                                                                                             class="feather icon-eye me-2"></i>Status
+                                                                                    </a>
+                                                                                </li>
+                                                                            <?php } ?>
+                                                                            <?php if ($isAdmin || hasPermission('Manage Cc', $privileges, $roleData['role_name'])) { ?>
+                                                                                <li>
+                                                                                    <a class="dropdown-item manageCcButton"
+                                                                                        href="javascript:void(0);"
+                                                                                        data-settings-id="<?= $emailSettingData['email_settings_id'] ?? "" ?>"
+                                                                                        data-email-status="<?= $emailSettingData['is_active'] ?? "" ?>"
+                                                                                        data-bs-toggle="modal"
+                                                                                        data-bs-target="#manageCcSmtpModel"
+                                                                                        title="Manage Cc">
+                                                                                        <i
+                                                                                            class="feather icon-mail me-2"></i>Manage
+                                                                                        Cc
                                                                                     </a>
                                                                                 </li>
                                                                             <?php } ?>
@@ -1455,6 +1533,91 @@ try {
                         </button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Manage CC Modal with Tabs -->
+    <div class="modal fade" id="manageCcSmtpModel" tabindex="-1" role="dialog" aria-labelledby="manageCcSmtpModelLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-md" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="manageCcSmtpModelLabel">Manage Cc</h5>
+                    <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <!-- Nav tabs -->
+                    <ul class="nav nav-tabs" id="ccTab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link active" id="add-cc-tab" data-bs-toggle="tab" href="#addCcTabContent"
+                                role="tab" aria-controls="addCcTabContent" aria-selected="true">Add CC</a>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link" id="manage-cc-tab" data-bs-toggle="tab" href="#manageCcTabContent"
+                                role="tab" aria-controls="manageCcTabContent" aria-selected="false">Manage CCs</a>
+                        </li>
+                    </ul>
+
+                    <!-- Tab panes -->
+                    <div class="tab-content mt-3">
+                        <!-- Add CC Form Tab -->
+                        <div class="tab-pane fade show active" id="addCcTabContent" role="tabpanel"
+                            aria-labelledby="add-cc-tab">
+                            <form class="add-cc-form" id="addCcForm">
+                                <input type="hidden" id="emailSettingIdForCc" name="settings_id" value="">
+                                <div class="row">
+                                    <div class="col-xl-12 col-lg-12 col-md-6 col-sm-12 col-12">
+                                        <div class="form-group">
+                                            <label for="ccEmail">Email <span class="text-danger">*</span></label>
+                                            <input type="email" class="form-control" id="ccEmail" name="cc_email"
+                                                required>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Manage CC Table Tab -->
+                        <div class="tab-pane fade" id="manageCcTabContent" role="tabpanel"
+                            aria-labelledby="manage-cc-tab">
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Email</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="ccListTableBody">
+                                        <?php foreach ($ccEmailData as $email): ?>
+                                            <tr>
+                                                <td><?= $email['cc_email'] ?></td>
+                                                <td>
+                                                    <a class="btn btn-danger removeCc" href="javascript:void(0);"
+                                                        style="background-color: #dc3545; border-color: #dc3545;"
+                                                        data-ccemail-id="<?= $email['idemail_cc'] ?>" title="Remove">
+                                                        <i class="feather icon-trash me-2"></i>Remove
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <!-- Submit button only in the Add CC tab -->
+                    <button type="submit" class="btn btn-primary" id="saveCcBtn" form="addCcForm">
+                        <i class="feather icon-save"></i>&nbsp; Save
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -2392,10 +2555,158 @@ try {
             });
 
 
+            $(document).on("click", ".manageCcButton", function (e) {
+                e.preventDefault();
+
+                let emailSettingId = $(this).data("settings-id");
+
+                $("#emailSettingIdForCc").val(emailSettingId);
+
+            })
+
+
+            $(document).on("submit", ".add-cc-form", async function (e) {
+                e.preventDefault();
+
+
+                let settingsId = $(this).find('input[name="settings_id"]').val().trim();
+                let email = $(this).find('input[name="cc_email"]').val().trim();
+
+
+                // Basic validation
+                if (!email) {
+                    Swal.fire("Error", "All fields are required. Please fill out the form completely.", "error");
+                    return;
+                }
+
+                // Email validation
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(email)) {
+                    Swal.fire("Error", "Please enter a valid email address", "error");
+                    return;
+                }
+
+                // Store original button text and disable button during processing
+                const $submitBtn = $(this).find('#saveCcBtn');
+                const originalBtnText = $submitBtn.html();
+                $submitBtn.prop('disabled', true).html('<i class="feather icon-loader"></i>&nbsp;Saving...');
+
+                let formData = {
+                    settingsId: settingsId,
+                    email: email,
+                    action: "addCc"
+                };
+
+
+                await $.ajax({
+                    url: window.location.href,
+                    type: 'POST',
+                    data: formData,
+                    dataType: 'json',
+                    success: function (response) {
+                        if (response.status == 201) {
+                            // Restore button state
+                            $submitBtn.prop('disabled', false).html(originalBtnText);
+
+                            // Show success message
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Success!',
+                                text: `${response.message}`,
+                                // confirmButtonText: 'OK',
+                                confirmButtonColor: "#33cc33",
+                                timer: 1500,
+                                timerProgressBar: true,
+                                showConfirmButton: false
+                            }).then(() => {
+                                // // ✅ Correct Bootstrap 5 way to hide the modal
+                                // const smtpModalEl = document.getElementById('smtpSettingsModal');
+                                // const smtpModal = bootstrap.Modal.getInstance(smtpModalEl);
+                                // smtpModal.hide();
+
+                                window.location.reload();
+                            });
+                        }
+                        else {
+                            $submitBtn.prop('disabled', false).html(originalBtnText);
+                            Swal.fire("Error", response.error || "An error occurred", "error");
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        // Restore button state
+                        $submitBtn.prop('disabled', false).html(originalBtnText);
+
+                        console.error("AJAX Error:", status, error);
+                        console.error("Raw Response:", xhr.responseText);
+                        Swal.fire("Error", "An error occurred while processing your request. Please try again.", "error");
+                    }
+                });
+            });
 
 
 
+            $(document).on("click", ".removeCc", function (e) {
+                e.preventDefault();
 
+                let ccemailId = $(this).data("ccemail-id");
+                Swal.fire({
+                    title: "Are you sure?",
+                    text: "You won't be able to revert this Record!",
+                    icon: "warning",
+                    showCancelButton: true,
+                    confirmButtonColor: "#33cc33",
+                    cancelButtonColor: "#ff5471",
+                    confirmButtonText: "Yes, delete it!",
+                    cancelButtonText: "Cancel"
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            url: window.location.href, // Change to your actual endpoint
+                            method: 'POST',
+                            data: {
+                                deleteEmailId: ccemailId,
+                            },
+                            success: function (response) {
+
+                                // Show success message
+                                Swal.fire({
+                                    title: 'Deleted!',
+                                    text: 'The record has been deleted.',
+                                    icon: 'success',
+                                    confirmButtonColor: "#33cc33",
+                                    timer: 1000,
+                                    timerProgressBar: true,
+                                    showConfirmButton: false
+                                }).then(() => {
+                                    // Animate and remove the record
+                                    $(".record").animate({
+                                        backgroundColor: "#FF3"
+                                    }, "fast")
+                                        .animate({
+                                            opacity: "hide"
+                                        }, "slow");
+
+                                    // Reload page after animation
+                                    setTimeout(function () {
+                                        window.location.reload();
+                                    }, 1500);
+                                });
+                            },
+                            error: function (error) {
+                                console.log(error);
+                                Swal.fire({
+                                    title: 'Error!',
+                                    text: 'Something went wrong while deleting the record.',
+                                    icon: 'error',
+                                    confirmButtonColor: "#33cc33"
+                                });
+                            }
+                        });
+                    }
+                });
+
+                return false;
+            });
         });
     </script>
 

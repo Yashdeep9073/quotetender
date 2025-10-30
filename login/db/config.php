@@ -17,6 +17,17 @@ $stmtFetchEmailSettingData = $db->prepare("SELECT * FROM email_settings");
 $stmtFetchEmailSettingData->execute();
 $emailSettingData = $stmtFetchEmailSettingData->get_result()->fetch_array(MYSQLI_ASSOC);
 
+$stmtFetchCcEmail = $db->prepare("SELECT * FROM email_cc");
+$stmtFetchCcEmail->execute();
+$ccEmailData = $stmtFetchCcEmail->get_result()->fetch_all(MYSQLI_ASSOC);
+
+
+$logo = getenv('BASE_URL') . "/login/" . ($emailSettingData['logo_url'] ?? "https://dvepl.com/assets/images/logo/dvepl-logo.png");
+$smtpTitleForMail = $emailSettingData['email_from_title'] ?? "Dvepl";
+$enquiryMail = $emailSettingData['email_from_title'] ?? "Dvepl";
+$supportEmail = $emailSettingData['support_email'] ?? "dvepl@yaaho.in";
+$supportPhone = $emailSettingData['phone'] ?? "7894561230";
+
 if ($emailSettingData) {
     // Set environment variables dynamically from database
     putenv("SMTP_HOST=" . $emailSettingData['email_host']);

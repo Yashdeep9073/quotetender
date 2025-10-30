@@ -99,7 +99,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['username'])) {
         $mail->Password = getenv('SMTP_PASSCODE');
         $mail->SMTPSecure = "ssl";
         $mail->Port = getenv('SMTP_PORT');
-        $mail->setFrom(getenv('SMTP_USER_NAME'), "Quote Tender");
+        $mail->setFrom(getenv('SMTP_USER_NAME'), $emailSettingData['email_from_title'] ?? "Dvepl");
         $mail->addAddress($email, $name);
         $mail->isHTML(true);
         $mail->addAddress('quotetenderindia@gmail.com');

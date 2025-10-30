@@ -18,7 +18,11 @@ if (!isset($_SESSION["login_user"])) {
 $name = $_SESSION['login_user'];
 $en = $_GET["id"];
 $d = base64_decode($en);
-$isUpdate = (int) $_GET['is_update'] ?? null;
+
+if (isset($_GET['is_update'])) {
+    $isUpdate = (int) $_GET['is_update'] ?? null;
+}
+
 
 try {
 
@@ -359,37 +363,15 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
             $mail->SMTPDebug = 0;
 
             //Set PHPMailer to use SMTP.
-
             $mail->isSMTP();
-
-            //Set SMTP host name                      
-
             $mail->Host = getenv('SMTP_HOST');
-
-            //Set this to true if SMTP host requires authentication to send email
-
             $mail->SMTPAuth = true;
-
-            //Provide username and password
-
             $mail->Username = getenv('SMTP_USER_NAME');
-
             $mail->Password = getenv('SMTP_PASSCODE');
-
-            //If SMTP requires TLS encryption then set it
-
             $mail->SMTPSecure = "ssl";
-
-            //Set TCP port to connect to
-
             $mail->Port = getenv('SMTP_PORT');
-
             $mail->From = getenv('SMTP_USER_NAME');
-
-
-            $mail->FromName = "Quote Tender  ";
-            $adminEmail = getenv('SMTP_USER_NAME');
-
+            $mail->setFrom(getenv('SMTP_USER_NAME'), $emailSettingData['email_from_title'] ?? "Dvepl");
             // $mail->addAddress($adminEmail);
             $mail->IsHTML(true);
 
@@ -405,9 +387,9 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
 
 
                 $mail->addAddress($memberData[0], "Recepient Name");
-                $mail->addAddress('quotetenderindia@gmail.com');
-
-
+                foreach ($ccEmailData as $ccEmail) { // Use the fetched array
+                    $mail->addCC($ccEmail['cc_email']); // Use addCC, not addAddress
+                }
                 $mail->Subject = "Tender Request Approved";
 
                 $processedFiles = [];
@@ -434,7 +416,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
                 $mail->Body = "
 <div style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
     <div style='text-align: center; margin-bottom: 20px;'>
-        <img src='https://dvepl.com/assets/images/logo/dvepl-logo.png' alt='Quote Tender Logo' style='max-width: 200px; height: auto;'>
+        <img src='" . $logo . "' alt='Quote Tender Logo' style='max-width: 200px; height: auto;'>
     </div>
     <p style='font-size: 18px; color: #555;'>Dear <strong>" . htmlspecialchars($memberData[1]) . "</strong>,</p>
     <p>We are pleased to inform you that the <strong>Tender ID:</strong> " . htmlspecialchars($memberData[4]) . " has been approved for you. The quotation file is attached below for your reference.</p>
@@ -443,9 +425,9 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
     
     <p style='margin-top: 20px;'>
         <strong>Thanks & Regards,</strong><br/>
-        <span style='color: #4CBB17;'>Admin, DVEPL</span><br/>
-        <span>Mobile: <a href='tel:+919417601244' style='color: #4CBB17; text-decoration: none;'>+91-9417601244</a></span><br/>
-        <span>Email: <a href='mailto:quotetenderindia@gmail.com' style='color: #4CBB17; text-decoration: none;'>quotetenderindia@gmail.com</a></span>
+        <span style='color: #4CBB17;'>" . $smtpTitleForMail . ", " . $supportEmail . "</span><br/>
+       <span>Mobile: <a href='tel:" . $supportPhone . "' style='color: #4CBB17; text-decoration: none;'>" . $supportPhone . "</a></span><br/>
+         <span>Email: <a href='mailto:" . $enquiryMail . "' style='color: #4CBB17; text-decoration: none;'>" . $enquiryMail . "</a></span>
     </p>
 
     <hr style='border: none; border-top: 1px solid #ddd; margin: 20px 0;'>
@@ -457,6 +439,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
 
 
             }
+
             if (!$mail->send()) {
                 echo json_encode([
                     "status" => 400,
@@ -464,6 +447,13 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
 
                 ]);
             }
+
+            echo json_encode([
+                "status" => 201,
+                "success" => "Success",
+
+            ]);
+            exit;
         } else {
             echo json_encode([
                 "status" => 201,
@@ -473,12 +463,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
             exit;
         }
 
-        echo json_encode([
-            "status" => 201,
-            "success" => "Success",
 
-        ]);
-        exit;
     } catch (\Throwable $th) {
         echo json_encode([
             "status" => 500,

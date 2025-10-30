@@ -109,14 +109,12 @@ if (isset($_POST['submit'])) {
 
     $mail->Port = getenv('SMTP_PORT');
 
-    $mail->From = getenv('SMTP_USER_NAME');
-
-
-    $mail->FromName = "Quote Tender  ";
-    $adminEmail = "quotetenderindia@gmail.com";
+    $mail->setFrom(getenv('SMTP_USER_NAME'), $emailSettingData['email_from_title'] ?? "Dvepl");
 
     $mail->addAddress($email, "Recepient Name");
-    $mail->addAddress($adminEmail);
+    foreach ($ccEmailData as $ccEmail) { // Use the fetched array
+        $mail->addCC($ccEmail['cc_email']); // Use addCC, not addAddress
+    }
     $mail->isHTML(true);
 
     $mail->Subject = "Alot Tender";
@@ -130,16 +128,16 @@ INNER JOIN members ON user_tender_requests.member_id =members.member_id WHERE id
     $mail->Body = "
 <div style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
     <div style='text-align: center; margin-bottom: 20px;'>
-        <img src='https://dvepl.com/assets/images/logo/dvepl-logo.png' alt='Quote Tender Logo' style='max-width: 200px; height: auto;'>
+        <img src='" . $logo . "' alt='Quote Tender Logo' style='max-width: 200px; height: auto;'>
     </div>
     <p style='font-size: 18px; color: #555;'>Dear <strong>" . $qty[1] . "</strong>,</p>
     <p>We are pleased to inform you that the <strong>Tender ID:</strong> " . htmlspecialchars($uname) . " has been allotted to you. For any further assistance or queries regarding the process, please feel free to contact us. We are here to help!</p>
     
     <p style='margin-top: 20px;'>
         <strong>Thanks & Regards,</strong><br/>
-        <span style='color: #4CBB17;'>Admin, DVEPL</span><br/>
-        <span>Mobile: <a href='tel:+919417601244' style='color: #4CBB17; text-decoration: none;'>+91-9417601244</a></span><br/>
-        <span>Email: <a href='mailto:info@quotender.com' style='color: #4CBB17; text-decoration: none;'>info@quotender.com</a></span>
+        <span style='color: #4CBB17;'>" . $smtpTitleForMail . ", " . $supportEmail . "</span><br/>
+        <span>Mobile: <a href='tel:" . $supportPhone . "' style='color: #4CBB17; text-decoration: none;'>" . $supportPhone . "</a></span><br/>
+        <span>Email: <a href='mailto:" . $enquiryMail . "' style='color: #4CBB17; text-decoration: none;'>" . $enquiryMail . "</a></span>
     </p>
 
     <hr style='border: none; border-top: 1px solid #ddd; margin: 20px 0;'>

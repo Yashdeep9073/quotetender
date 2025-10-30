@@ -57,18 +57,21 @@ if (isset($en)) {
         //Set TCP port to connect to
         $mail->Port = getenv('SMTP_PORT');
 
-        $mail->From = getenv('SMTP_USER_NAME');
-        $mail->FromName = "DVEPL";
+        $mail->setFrom(getenv('SMTP_USER_NAME'), $emailSettingData['email_from_title'] ?? "Dvepl");
 
         $mail->addAddress($data["email_id"], "Recepient Name");
 
         $mail->IsHTML(true);
 
+        foreach ($ccEmailData as $ccEmail) { // Use the fetched array
+            $mail->addCC($ccEmail['cc_email']); // Use addCC, not addAddress
+        }
+
         $mail->Subject = "Tender Request Approved";
         $mail->Body = "
 <div style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
     <div style='text-align: center; margin-bottom: 20px;'>
-        <img src='https://dvepl.com/assets/images/logo/dvepl-logo.png' alt='Quote Tender Logo' style='max-width: 200px; height: auto;'>
+        <img src='" . $logo . "' alt='Quote Tender Logo' style='max-width: 200px; height: auto;'>
     </div>
     <p style='font-size: 18px; color: #555;'>Dear <strong>" . htmlspecialchars($data["name"]) . "</strong>,</p>
     <p>We are pleased to inform you that the <strong>Tender ID:</strong> " . htmlspecialchars($data["tenderID"]) . " has been approved for you. The quotation file is attached below for your reference.</p>
@@ -77,9 +80,9 @@ if (isset($en)) {
     
     <p style='margin-top: 20px;'>
         <strong>Thanks & Regards,</strong><br/>
-        <span style='color: #4CBB17;'>Admin, DVEPL</span><br/>
-        <span>Mobile: <a href='tel:+919417601244' style='color: #4CBB17; text-decoration: none;'>+91-9417601244</a></span><br/>
-        <span>Email: <a href='mailto:quotetenderindia@gmail.com' style='color: #4CBB17; text-decoration: none;'>quotetenderindia@gmail.com</a></span>
+        <span style='color: #4CBB17;'>" . $smtpTitleForMail . ", " . $supportEmail . "</span><br/>
+        <span>Mobile: <a href='tel:" . $supportPhone . "' style='color: #4CBB17; text-decoration: none;'>" . $supportPhone . "</a></span><br/>
+        <span>Email: <a href='mailto:" . $enquiryMail . "' style='color: #4CBB17; text-decoration: none;'>" . $enquiryMail . "</a></span>
     </p>
 
     <hr style='border: none; border-top: 1px solid #ddd; margin: 20px 0;'>
@@ -152,14 +155,12 @@ if (isset($_GET['id'])) {
 
     $mail->Port = getenv('SMTP_PORT');
 
-    $mail->From = getenv('SMTP_USER_NAME');
+    $mail->setFrom(getenv('SMTP_USER_NAME'), $emailSettingData['email_from_title'] ?? "Dvepl");
 
+    foreach ($ccEmailData as $ccEmail) { // Use the fetched array
+        $mail->addCC($ccEmail['cc_email']); // Use addCC, not addAddress
+    }
 
-    $mail->FromName = "Quote Tender  ";
-    $adminEmail = getenv('SMTP_USER_NAME');
-
-    $mail->addAddress('quotetenderindia@gmail.com');
-    $mail->addAddress($adminEmail);
     $mail->IsHTML(true);
 
     $membersQuery = "SELECT m.email_id,  m.name, ur.file_name, ur.file_name2, ur.tenderID, ur.id,ur.additional_files FROM user_tender_requests ur 
@@ -194,7 +195,7 @@ if (isset($_GET['id'])) {
     $mail->Body = "
 <div style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
     <div style='text-align: center; margin-bottom: 20px;'>
-        <img src='https://dvepl.com/quotetender/assets/images/logo/logo.png' alt='Quote Tender Logo' style='max-width: 200px; height: auto;'>
+        <img src='" . $logo . "' alt='Quote Tender Logo' style='max-width: 200px; height: auto;'>
     </div>
     <p style='font-size: 18px; color: #555;'>Dear <strong>" . $memberData[1] . "</strong>,</p>
     <p>We are pleased to inform you that the <strong>Tender ID:</strong> " . htmlspecialchars($memberData[4]) . " has been approved for you. The quotation file is attached below for your reference.</p>
@@ -203,9 +204,9 @@ if (isset($_GET['id'])) {
     
     <p style='margin-top: 20px;'>
         <strong>Thanks & Regards,</strong><br/>
-        <span style='color: #4CBB17;'>Admin, DVEPL</span><br/>
-        <span>Mobile: <a href='tel:+919417601244' style='color: #4CBB17; text-decoration: none;'>+91-9417601244</a></span><br/>
-        <span>Email: <a href='mailto:info@quotender.com' style='color: #4CBB17; text-decoration: none;'>info@quotender.com</a></span>
+        <span style='color: #4CBB17;'>" . $smtpTitleForMail . ", " . $supportEmail . "</span><br/>
+        <span>Mobile: <a href='tel:" . $supportPhone . "' style='color: #4CBB17; text-decoration: none;'>" . $supportPhone . "</a></span><br/>
+        <span>Email: <a href='mailto:" . $enquiryMail . "' style='color: #4CBB17; text-decoration: none;'>" . $enquiryMail . "</a></span>
     </p>
 
     <hr style='border: none; border-top: 1px solid #ddd; margin: 20px 0;'>
