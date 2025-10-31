@@ -17,6 +17,16 @@ $stmtFetchEmailSettingData = $db->prepare("SELECT * FROM email_settings");
 $stmtFetchEmailSettingData->execute();
 $emailSettingData = $stmtFetchEmailSettingData->get_result()->fetch_array(MYSQLI_ASSOC);
 
+function emailTemplate($db, $type)
+{
+    $stmtFetchEmailTemplate = $db->prepare("SELECT * FROM email_template WHERE is_active = 1 AND type = ?");
+    $stmtFetchEmailTemplate->bind_param("s", $type);
+    $stmtFetchEmailTemplate->execute();
+    $emailSettingData = $stmtFetchEmailTemplate->get_result()->fetch_array(MYSQLI_ASSOC);
+    return $emailSettingData;
+}
+
+
 $stmtFetchCcEmail = $db->prepare("SELECT * FROM email_cc");
 $stmtFetchCcEmail->execute();
 $ccEmailData = $stmtFetchCcEmail->get_result()->fetch_all(MYSQLI_ASSOC);
