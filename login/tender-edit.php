@@ -355,14 +355,12 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
         $re = base64_encode($stat);
 
         if ($autoEmailResponse == 1) {
-
             $mail = new PHPMailer(true);
 
-            //Enable SMTP debugging.
-
+            // Enable SMTP debugging.
             $mail->SMTPDebug = 0;
 
-            //Set PHPMailer to use SMTP.
+            // Set PHPMailer to use SMTP.
             $mail->isSMTP();
             $mail->Host = getenv('SMTP_HOST');
             $mail->SMTPAuth = true;
@@ -373,27 +371,35 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
             $mail->From = getenv('SMTP_USER_NAME');
             $mail->setFrom(getenv('SMTP_USER_NAME'), $emailSettingData['email_from_title'] ?? "Dvepl");
             $mail->IsHTML(true);
-            // Add CC recipients dynamically
-            foreach ($ccEmailData as $ccEmail) { // Use the fetched array
-                $mail->addCC($ccEmail['cc_email']); // Use addCC, not addAddress
+
+            // Add CC recipients once (outside the loop)
+            foreach ($ccEmailData as $ccEmail) {
+                $mail->addCC($ccEmail['cc_email']);
             }
 
-            // $membersQuery = "SELECT m.email_id,  m.name, ur.file_name, ur.file_name2, ur.tenderID, ur.id FROM user_tender_requests ur 
-            // inner join members m on ur.member_id= m.member_id  WHERE ur.id='"  . $d . "'";
-
-            $membersQuery = "SELECT m.email_id,  m.name, ur.file_name, ur.file_name2, ur.tenderID, ur.id ,ur.additional_files FROM user_tender_requests ur 
-                    inner join members m on ur.member_id= m.member_id  WHERE ur.auto_quotation = '1' AND ur.tenderID='" . $tender2 . "' ";
+            $membersQuery = "SELECT m.email_id, m.name, ur.file_name, ur.file_name2, ur.tenderID, ur.id, ur.additional_files FROM user_tender_requests ur 
+                    inner join members m on ur.member_id= m.member_id  
+                    WHERE ur.auto_quotation = '1' AND ur.tenderID='" . $tender2 . "'";
             $membersResult = mysqli_query($db, $membersQuery);
 
-
+            $sentCount = 0; // Counter for successfully sent emails
 
             while ($memberData = mysqli_fetch_row($membersResult)) {
 
+                // Clear previous attachments and addresses (except CC which we set once)
+                $mail->clearAddresses();
+                $mail->clearAttachments();
 
+                // Add the primary recipient
+                $mail->addAddress($memberData[0], $memberData[1]); // email_id and name
 
+                // Add CC recipients again for each email (PHPMailer clears them with clearAddresses)
+                foreach ($ccEmailData as $ccEmail) {
+                    $mail->addCC($ccEmail['cc_email']);
+                }
 
                 $template = emailTemplate($db, "SENT_TENDER");
-                // Replace placeholders in template
+
                 $search = [
                     '{$name}',
                     '{$tenderId}',
@@ -407,70 +413,60 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
                     $supportPhone ?? 'N/A',
                     $enquiryMail ?? 'N/A',
                 ];
+
                 $emailBody = nl2br($template['content_1']) . "<br><br>" . nl2br($template['content_2']);
-                // Replace placeholders
                 $finalBody = str_replace($search, $replace, $emailBody);
                 $mail->Subject = $template['email_template_subject'] ?? "Tender Request Approved";
-                // echo json_encode([
-                //     "status" => 400,
-                //     "error" => "ASDa",
-                //     "data" => $finalBody,
-                // ]);
-                // exit;
 
-                // Corrected version with proper precedence
-                $processedFiles = [];
-                if (!empty($memberData['6'])) {
-                    $extraFiles = json_decode($memberData['6'], true);
+                // Handle attachments
+                if (!empty($memberData[6])) { // Use index 6 directly
+                    $extraFiles = json_decode($memberData[6], true);
                     if (is_array($extraFiles)) {
                         foreach ($extraFiles as $filePath) {
-                            $mail->addAttachment($filePath);
-                            $processedFiles[] = $filePath; // Store processed file
+                            if (file_exists($filePath)) { // Check if file exists before adding
+                                $mail->addAttachment($filePath);
+                            } else {
+                                error_log("Attachment file not found: " . $filePath);
+                            }
                         }
-
-                        // // Send response after processing all files
-                        // echo json_encode([
-                        //     "status" => 400,
-                        //     "error" => "auto mail",
-                        //     "data" => $processedFiles, // All files in array
-                        // ]);
-                        // exit;
                     }
                 }
 
-
-                // Email body
+                // Set email body
                 $mail->Body = "
-                        <div style='font-family: Arial, sans-serif; color:#333; line-height:1.6;'>
-                            <div style='text-align:center;'>
-                                <img src='" . $logo . "' alt='DVEPL Logo' style='max-width:150px; height:auto; margin-bottom:20px;'>
-                            </div>
-                            $finalBody
-                        </div>
-                    ";
+            <div style='font-family: Arial, sans-serif; color:#333; line-height:1.6;'>
+                <div style='text-align:center;'>
+                    <img src='" . $logo . "' alt='DVEPL Logo' style='max-width:150px; height:auto; margin-bottom:20px;'>
+                </div>
+                $finalBody
+            </div>
+        ";
 
+                // Send the email
+                if ($mail->send()) {
+                    $sentCount++;
+                } else {
+                    echo json_encode([
+                        "status" => 400,
+                        "error" => "Mailer Error for " . $memberData[0] . ": " . $mail->ErrorInfo,
+                        "sent_count" => $sentCount
+                    ]);
+                    exit;
+                }
 
-            }
-
-            if (!$mail->send()) {
-                echo json_encode([
-                    "status" => 400,
-                    "error" => "Mailer Error: " . $mail->ErrorInfo,
-
-                ]);
+                // Clear attachments for next iteration
+                $mail->clearAttachments();
             }
 
             echo json_encode([
                 "status" => 201,
-                "success" => "Success",
-
+                "success" => "Successfully sent $sentCount emails",
             ]);
             exit;
         } else {
             echo json_encode([
                 "status" => 201,
                 "success" => "Success",
-
             ]);
             exit;
         }
