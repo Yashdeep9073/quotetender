@@ -20,27 +20,6 @@ $sent_at = date('Y-m-d H:i:s');
 // Register user
 if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['submit'])) {
 
-
-
-    $recaptcha = $_POST['g-recaptcha-response'];
-
-    $secret_key = '6LeyShEqAAAAAKVRQAie1sCk9E5rBjvR9Ce0x5k_';
-
-    $url = 'https://www.google.com/recaptcha/api/siteverify?secret='
-        . $secret_key . '&response=' . $recaptcha;
-
-    // Making request to verify captcha
-    $response = file_get_contents($url);
-
-    $response = json_decode($response);
-
-    // Checking, if response is true or not
-    if ($response->success == true) {
-        $msg1 = "Google reCAPTACHA verified";
-    } else {
-        $msg1 = "Error in Google reCAPTACHA";
-    }
-
     if (!isset($_SESSION["login_register"])) {
         header("location: login.php");
     } else {
@@ -198,8 +177,6 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['submit'])) {
                     }
                 }
 
-
-
                 $mail = new PHPMailer(true);
                 $mail->SMTPDebug = 0;
                 $mail->isSMTP();
@@ -224,78 +201,85 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['submit'])) {
                 $membersResult = mysqli_query($db, $membersQuery);
                 $memberData = mysqli_fetch_row($membersResult);
 
-                if ($userExistResult == 0) {
+                $template = emailTemplate($db, "TENDER_REQUEST");
 
-                    $mail->Subject = "Tender Request";
+                // Replace placeholders in template
+                $search = [
+                    '{$name}',
+                    '{$tenderId}',
+                    '{$firmName}',
+                    '{$supportPhone}',
+                    '{$enquiryEmail}',
+                ];
+
+                $replace = [
+                    $memberData[1],         // name
+                    $tender,         // tender id
+                    $memberData[2],         // firm name
+                    $supportPhone ?? 'N/A',
+                    $enquiryMail ?? 'N/A',
+                ];
+
+                $emailBody = nl2br($template['content_1']) . "<br><br>" . nl2br($template['content_2']);
+                // Replace placeholders
+                $finalBody = str_replace($search, $replace, $emailBody);
+
+
+                // echo "<pre>";
+                // print_r($finalBody);
+                // exit;
+
+                if ($userExistResult == 0) {
+                    $mail->Subject = $template['email_template_subject'] ?? "Tender Request Notification";
                     // Corrected version with proper precedence
 
 
                     $mail->Body = "
-<div style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
-    <div style='text-align: center; margin-bottom: 20px;'>
-        <img src='" . $logo . "' alt='Quote Tender Logo' style='max-width: 200px; height: auto;'>
-    </div>
-    <p style='font-size: 18px; color: #555;'>Dear <strong>" . $memberData[1] . "</strong>,</p>
-    <p>Thank you for your valuable enquiry! We truly appreciate your interest. We will provide the pricing details within 3-5 working days for the following tender:</p>
-    
-    <div style='background-color: #f9f9f9; padding: 15px; border: 1px solid #ddd; border-radius: 5px; margin-top: 10px;'>
-        <p style='margin: 0;'><strong>Firm Name:</strong> " . $memberData[2] . "</p>
-        <p style='margin: 0;'><strong>Tender ID:</strong> " . $tender . "</p>
-    </div>
-
-    <p style='margin-top: 15px;'>If you have any questions or require further assistance, please don’t hesitate to contact us.</p>
-
-    <p style='margin-top: 20px;'>
-        <strong>Thanks & Regards,</strong><br/>
-        <span style='color: #4CBB17;'>" . $smtpTitleForMail . ", " . $supportEmail . "</span><br/>
-        <span>Mobile: <a href='tel:" . $supportPhone . "' style='color: #4CBB17; text-decoration: none;'>" . $supportPhone . "</a></span><br/>
-        <span>Email: <a href='mailto:" . $enquiryMail . "' style='color: #4CBB17; text-decoration: none;'>" . $enquiryMail . "</a></span>
-    </p>
-
-    <hr style='border: none; border-top: 1px solid #ddd; margin: 20px 0;'>
-
-    <p style='text-align: center; font-size: 12px; color: #888;'>
-       Copyright 2025 DVEPL. All Rights Reserved.
-    </p>
-</div>";
+                        <div style='font-family: Arial, sans-serif; color:#333; line-height:1.6;'>
+                            <div style='text-align:center;'>
+                                <img src='" . $logo . "' alt='DVEPL Logo' style='max-width:150px; height:auto; margin-bottom:20px;'>
+                            </div>
+                            $finalBody
+                        </div>
+                    ";
 
 
-                } else {
-
-                    $mail->Subject = "Tender Request Approved";
-
-                    $mail->addAttachment($upload_directory . $memberData[3]);
-                    if (!empty($memberData[4])) {
-                        $mail->addAttachment($upload_directory . $memberData[4]);
-                    }
-                    $mail->Body = "<p> Dear " . $memberData[1] . " , <br/>" .
-                        "The <b>Tender ID: </b> " . $tender . "</b>  has been approved. Quotation file is attached below. For the further process, feel free to contact us.<br/><br/>
-                <strong>Thanks, <br /> Admin Quote Tender</strong> <br/>
-                Mobile: +91-9417601244 | Email: info@quotender.com ";
                 }
+                // else {
 
-                $membersQuery2 = "SELECT m.email_id,  m.name, ur.file_name, ur.file_name2, ur.tenderID, ur.id FROM user_tender_requests ur 
-                inner join members m on ur.member_id= m.member_id  WHERE ur.auto_quotation = '1' AND ur.member_id='$member_id' AND ur.tenderID='" . $tender . "' ";
-                $membersResult2 = mysqli_query($db, $membersQuery2);
+                //     $mail->Subject = "Tender Request Approved";
 
-                while ($memberData2 = mysqli_fetch_row($membersResult2)) {
-                    $mail->addAddress($memberData2[0], "Recepient Name");
-                    $mail->Subject = "Tender Request Approved";
-                    $mail->addAttachment($upload_directory . $memberData2[2]);
-                    if (!empty($memberData2[3])) {
-                        $mail->addAttachment($upload_directory . $memberData2[3]);
-                    }
-                    $mail->Body = "<p> Dear, " . $memberData2[1] . " <br/>" .
-                        "The <b>Tender ID: </b> " . $memberData2[4] . "</b>  has been approved to you. Quotation file is attached below. For the further process, feel free to contact us.<br/><br/>
-                <strong>Thanks, <br /> Admin Quote Tender</strong> <br/>
-                Mobile: +91-9417601244 | Email: info@quotender.com ";
-                }
+                //     $mail->addAttachment($upload_directory . $memberData[3]);
+                //     if (!empty($memberData[4])) {
+                //         $mail->addAttachment($upload_directory . $memberData[4]);
+                //     }
+                //     $mail->Body = "<p> Dear " . $memberData[1] . " , <br/>" .
+                //         "The <b>Tender ID: </b> " . $tender . "</b>  has been approved. Quotation file is attached below. For the further process, feel free to contact us.<br/><br/>
+                // <strong>Thanks, <br /> Admin Quote Tender</strong> <br/>
+                // Mobile: +91-9417601244 | Email: info@quotender.com ";
+                // }
+
+                // $membersQuery2 = "SELECT m.email_id,  m.name, ur.file_name, ur.file_name2, ur.tenderID, ur.id FROM user_tender_requests ur 
+                // inner join members m on ur.member_id= m.member_id  WHERE ur.auto_quotation = '1' AND ur.member_id='$member_id' AND ur.tenderID='" . $tender . "' ";
+                // $membersResult2 = mysqli_query($db, $membersQuery2);
+
+                // while ($memberData2 = mysqli_fetch_row($membersResult2)) {
+                //     $mail->addAddress($memberData2[0], "Recepient Name");
+                //     $mail->Subject = "Tender Request Approved";
+                //     $mail->addAttachment($upload_directory . $memberData2[2]);
+                //     if (!empty($memberData2[3])) {
+                //         $mail->addAttachment($upload_directory . $memberData2[3]);
+                //     }
+                //     $mail->Body = "<p> Dear, " . $memberData2[1] . " <br/>" .
+                //         "The <b>Tender ID: </b> " . $memberData2[4] . "</b>  has been approved to you. Quotation file is attached below. For the further process, feel free to contact us.<br/><br/>
+                // <strong>Thanks, <br /> Admin Quote Tender</strong> <br/>
+                // Mobile: +91-9417601244 | Email: info@quotender.com ";
+                // }
 
 
 
 
                 if (!$mail->send()) {
-
                     echo "Mailer Error: " . $mail->ErrorInfo;
                 }
 
@@ -308,15 +292,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['submit'])) {
 
             }
         } else {
-            // $msg = "
-            // <div class='alert alert-danger alert-dismissible fade show' role='alert' style='font-size:16px;' id='goldmessage'>
-            // <strong><i class='feather icon-check'></i>Error !</strong>You have reached the maximum allowed requests. Please try again later.
-            // </div>
-            // ";
-
             $_SESSION['error'] = "Error ! You have reached the maximum allowed requests. Please try again later.";
-
-
         }
     }
 }

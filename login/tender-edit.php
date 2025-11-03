@@ -372,8 +372,11 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
             $mail->Port = getenv('SMTP_PORT');
             $mail->From = getenv('SMTP_USER_NAME');
             $mail->setFrom(getenv('SMTP_USER_NAME'), $emailSettingData['email_from_title'] ?? "Dvepl");
-            // $mail->addAddress($adminEmail);
             $mail->IsHTML(true);
+            // Add CC recipients dynamically
+            foreach ($ccEmailData as $ccEmail) { // Use the fetched array
+                $mail->addCC($ccEmail['cc_email']); // Use addCC, not addAddress
+            }
 
             // $membersQuery = "SELECT m.email_id,  m.name, ur.file_name, ur.file_name2, ur.tenderID, ur.id FROM user_tender_requests ur 
             // inner join members m on ur.member_id= m.member_id  WHERE ur.id='"  . $d . "'";
@@ -383,15 +386,39 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
             $membersResult = mysqli_query($db, $membersQuery);
 
 
+
             while ($memberData = mysqli_fetch_row($membersResult)) {
+                $mail->Subject = $template['email_template_subject'] ?? "Tender Request Approved";
 
 
-                $mail->addAddress($memberData[0], "Recepient Name");
-                foreach ($ccEmailData as $ccEmail) { // Use the fetched array
-                    $mail->addCC($ccEmail['cc_email']); // Use addCC, not addAddress
-                }
-                $mail->Subject = "Tender Request Approved";
 
+                $template = emailTemplate($db, "SENT_TENDER");
+                // Replace placeholders in template
+                $search = [
+                    '{$name}',
+                    '{$tenderId}',
+                    '{$supportPhone}',
+                    '{$enquiryEmail}',
+                ];
+
+                $replace = [
+                    $memberData[1],         // name
+                    $memberData[4],         // tender id
+                    $supportPhone ?? 'N/A',
+                    $enquiryMail ?? 'N/A',
+                ];
+                $emailBody = nl2br($template['content_1']) . "<br><br>" . nl2br($template['content_2']);
+                // Replace placeholders
+                $finalBody = str_replace($search, $replace, $emailBody);
+
+                // echo json_encode([
+                //     "status" => 400,
+                //     "error" => "ASDa",
+                //     "data" => $finalBody,
+                // ]);
+                // exit;
+
+                // Corrected version with proper precedence
                 $processedFiles = [];
                 if (!empty($memberData['6'])) {
                     $extraFiles = json_decode($memberData['6'], true);
@@ -414,28 +441,13 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
 
                 // Email body
                 $mail->Body = "
-<div style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
-    <div style='text-align: center; margin-bottom: 20px;'>
-        <img src='" . $logo . "' alt='Quote Tender Logo' style='max-width: 200px; height: auto;'>
-    </div>
-    <p style='font-size: 18px; color: #555;'>Dear <strong>" . htmlspecialchars($memberData[1]) . "</strong>,</p>
-    <p>We are pleased to inform you that the <strong>Tender ID:</strong> " . htmlspecialchars($memberData[4]) . " has been approved for you. The quotation file is attached below for your reference.</p>
-    
-    <p>If you have any questions or need further assistance regarding the process, feel free to reach out to us. We are here to help!</p>
-    
-    <p style='margin-top: 20px;'>
-        <strong>Thanks & Regards,</strong><br/>
-        <span style='color: #4CBB17;'>" . $smtpTitleForMail . ", " . $supportEmail . "</span><br/>
-       <span>Mobile: <a href='tel:" . $supportPhone . "' style='color: #4CBB17; text-decoration: none;'>" . $supportPhone . "</a></span><br/>
-         <span>Email: <a href='mailto:" . $enquiryMail . "' style='color: #4CBB17; text-decoration: none;'>" . $enquiryMail . "</a></span>
-    </p>
-
-    <hr style='border: none; border-top: 1px solid #ddd; margin: 20px 0;'>
-
-    <p style='text-align: center; font-size: 12px; color: #888;'>
-        © 2025 DVEPL. All Rights Reserved.
-    </p>
-</div>";
+                        <div style='font-family: Arial, sans-serif; color:#333; line-height:1.6;'>
+                            <div style='text-align:center;'>
+                                <img src='" . $logo . "' alt='DVEPL Logo' style='max-width:150px; height:auto; margin-bottom:20px;'>
+                            </div>
+                            $finalBody
+                        </div>
+                    ";
 
 
             }

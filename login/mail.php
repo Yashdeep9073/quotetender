@@ -161,6 +161,7 @@ if (isset($_GET['id'])) {
         $mail->addCC($ccEmail['cc_email']); // Use addCC, not addAddress
     }
 
+
     $mail->IsHTML(true);
 
     $membersQuery = "SELECT m.email_id,  m.name, ur.file_name, ur.file_name2, ur.tenderID, ur.id,ur.additional_files FROM user_tender_requests ur 
@@ -170,7 +171,39 @@ if (isset($_GET['id'])) {
 
     $mail->addAddress($memberData[0], "Recepient Name");
 
-    $mail->Subject = "Tender Request Approved";
+    $template = emailTemplate($db, "SENT_TENDER");
+    // Replace placeholders in template
+    $search = [
+        '{$name}',
+        '{$tenderId}',
+        '{$supportPhone}',
+        '{$enquiryEmail}',
+    ];
+
+    $replace = [
+        $memberData[1],         // name
+        $memberData[4],         // tender id
+        $supportPhone ?? 'N/A',
+        $enquiryMail ?? 'N/A',
+    ];
+    $emailBody = nl2br($template['content_1']) . "<br><br>" . nl2br($template['content_2']);
+    // Replace placeholders
+    $finalBody = str_replace($search, $replace, $emailBody);
+
+
+
+    // Replace placeholders in template
+    $searchInSubject = [
+        '{$tenderId}',
+    ];
+
+    $replaceInSubject = [
+        $memberData[4],         // tender id
+    ];
+
+    $emailSubject = nl2br($template['email_template_subject']);
+    $finalSubject = str_replace($searchInSubject, $replaceInSubject, $emailSubject);
+    $mail->Subject = $finalSubject ?? "Tender Request Approved";
 
 
     $processedFiles = [];
@@ -192,29 +225,15 @@ if (isset($_GET['id'])) {
         }
     }
 
+    // Email body
     $mail->Body = "
-<div style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
-    <div style='text-align: center; margin-bottom: 20px;'>
-        <img src='" . $logo . "' alt='Quote Tender Logo' style='max-width: 200px; height: auto;'>
-    </div>
-    <p style='font-size: 18px; color: #555;'>Dear <strong>" . $memberData[1] . "</strong>,</p>
-    <p>We are pleased to inform you that the <strong>Tender ID:</strong> " . htmlspecialchars($memberData[4]) . " has been approved for you. The quotation file is attached below for your reference.</p>
-    
-    <p>If you have any questions or need further assistance regarding the process, please don’t hesitate to contact us. We’re here to help!</p>
-    
-    <p style='margin-top: 20px;'>
-        <strong>Thanks & Regards,</strong><br/>
-        <span style='color: #4CBB17;'>" . $smtpTitleForMail . ", " . $supportEmail . "</span><br/>
-        <span>Mobile: <a href='tel:" . $supportPhone . "' style='color: #4CBB17; text-decoration: none;'>" . $supportPhone . "</a></span><br/>
-        <span>Email: <a href='mailto:" . $enquiryMail . "' style='color: #4CBB17; text-decoration: none;'>" . $enquiryMail . "</a></span>
-    </p>
-
-    <hr style='border: none; border-top: 1px solid #ddd; margin: 20px 0;'>
-
-    <p style='text-align: center; font-size: 12px; color: #888;'>
-       Copyright 2025 DVEPL. All Rights Reserved.
-    </p>
-</div>";
+                        <div style='font-family: Arial, sans-serif; color:#333; line-height:1.6;'>
+                            <div style='text-align:center;'>
+                                <img src='" . $logo . "' alt='DVEPL Logo' style='max-width:150px; height:auto; margin-bottom:20px;'>
+                            </div>
+                            $finalBody
+                        </div>
+                    ";
 
 
     if (!$mail->send()) {
