@@ -388,7 +388,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
 
 
             while ($memberData = mysqli_fetch_row($membersResult)) {
-                $mail->Subject = $template['email_template_subject'] ?? "Tender Request Approved";
+
 
 
 
@@ -410,7 +410,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
                 $emailBody = nl2br($template['content_1']) . "<br><br>" . nl2br($template['content_2']);
                 // Replace placeholders
                 $finalBody = str_replace($search, $replace, $emailBody);
-
+                $mail->Subject = $template['email_template_subject'] ?? "Tender Request Approved";
                 // echo json_encode([
                 //     "status" => 400,
                 //     "error" => "ASDa",
