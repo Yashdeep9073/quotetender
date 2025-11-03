@@ -117,7 +117,7 @@ if (isset($_POST['submit'])) {
     }
     $mail->isHTML(true);
 
-    $mail->Subject = "Alot Tender";
+
     $qt1 = "SELECT user_tender_requests.tenderID , members.name
 FROM user_tender_requests
 INNER JOIN members ON user_tender_requests.member_id =members.member_id WHERE id='" . $d . "'";
@@ -125,28 +125,37 @@ INNER JOIN members ON user_tender_requests.member_id =members.member_id WHERE id
     $qty = mysqli_fetch_row($qty);
     $uname = $qty[0];
 
+
+    $template = emailTemplate($db, "ALOT_TENDER");
+    // Replace placeholders in template
+    $search = [
+        '{$name}',
+        '{$tenderId}',
+        '{$supportPhone}',
+        '{$enquiryEmail}',
+    ];
+
+    $replace = [
+        $qty[1],         // name
+        $uname,         // tender id
+        $supportPhone ?? 'N/A',
+        $enquiryMail ?? 'N/A',
+    ];
+    $emailBody = nl2br($template['content_1']) . "<br><br>" . nl2br($template['content_2']);
+    // Replace placeholders
+    $finalBody = str_replace($search, $replace, $emailBody);
+
+    $mail->Subject = $template['email_template_subject'] ?? "Alot Tender";
+
+    // Email body
     $mail->Body = "
-<div style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
-    <div style='text-align: center; margin-bottom: 20px;'>
-        <img src='" . $logo . "' alt='Quote Tender Logo' style='max-width: 200px; height: auto;'>
-    </div>
-    <p style='font-size: 18px; color: #555;'>Dear <strong>" . $qty[1] . "</strong>,</p>
-    <p>We are pleased to inform you that the <strong>Tender ID:</strong> " . htmlspecialchars($uname) . " has been allotted to you. For any further assistance or queries regarding the process, please feel free to contact us. We are here to help!</p>
-    
-    <p style='margin-top: 20px;'>
-        <strong>Thanks & Regards,</strong><br/>
-        <span style='color: #4CBB17;'>" . $smtpTitleForMail . ", " . $supportEmail . "</span><br/>
-        <span>Mobile: <a href='tel:" . $supportPhone . "' style='color: #4CBB17; text-decoration: none;'>" . $supportPhone . "</a></span><br/>
-        <span>Email: <a href='mailto:" . $enquiryMail . "' style='color: #4CBB17; text-decoration: none;'>" . $enquiryMail . "</a></span>
-    </p>
-
-    <hr style='border: none; border-top: 1px solid #ddd; margin: 20px 0;'>
-
-    <p style='text-align: center; font-size: 12px; color: #888;'>
-       Copyright 2025 DVEPL. All Rights Reserved.
-    </p>
-</div>";
-
+                        <div style='font-family: Arial, sans-serif; color:#333; line-height:1.6;'>
+                            <div style='text-align:center;'>
+                                <img src='" . $logo . "' alt='DVEPL Logo' style='max-width:150px; height:auto; margin-bottom:20px;'>
+                            </div>
+                            $finalBody
+                        </div>
+                    ";
 
 
     if (!$mail->send()) {
