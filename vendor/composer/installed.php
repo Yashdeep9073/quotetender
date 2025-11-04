@@ -3,7 +3,7 @@
         'name' => 'dvepl/quotender',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'reference' => 'a204615f86c9a6c7041e7e75a4246d70e2ff76d2',
+        'reference' => '8ad2981487b2034d0edde90ce9f303cc734a726e',
         'type' => 'library',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -49,7 +49,7 @@
         'dvepl/quotender' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => 'a204615f86c9a6c7041e7e75a4246d70e2ff76d2',
+            'reference' => '8ad2981487b2034d0edde90ce9f303cc734a726e',
             'type' => 'library',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
