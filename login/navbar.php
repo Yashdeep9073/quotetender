@@ -342,7 +342,7 @@ $isAdmin = strtolower($roleData['role_name']) === 'admin';
                 <?php if ($isAdmin || hasPermission('Logs Report', $privileges, $roleData['role_name'])): ?>
                     <!-- Logs Report -->
                     <li class="nav-item">
-                        <a href="reports.php" class="nav-link "><span class="pcoded-micon"><i
+                        <a href="logs.php" class="nav-link "><span class="pcoded-micon"><i
                                     class="feather icon-file-plus"></i></span><span class="">Logs Report</span></a>
                     </li>
                 <?php endif; ?>

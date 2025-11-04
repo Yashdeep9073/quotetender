@@ -5,6 +5,7 @@ error_reporting(0);
 // username and password sent from form 
 require "./db/config.php";
 require './utility/otpGenerator.php';
+require './utility/logGenerator.php';
 require '../env.php';
 require '../vendor/autoload.php';
 
@@ -12,6 +13,96 @@ use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
 $mail = new PHPMailer(true);
+
+
+try {
+
+    function logRequestData($db, $requestInfo, $userId, $geoInfo)
+    {
+        // Prepare the SQL statement
+        $stmt = $db->prepare("
+        INSERT INTO logs (
+            request_type, browser_name, browser_version, platform, is_mobile,
+            user_agent, ip_address, request_method, request_uri, query_string,
+            headers, content_type, accept_header, referer, xhr_requested,
+            request_body, response_status, response_time,user_id, country, state, city
+        ) VALUES (
+            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+        )
+    ");
+
+        if ($stmt === false) {
+            error_log("Failed to prepare statement: " . $db->error);
+            return false;
+        }
+
+        // Prepare the values
+        $request_type = $requestInfo['type'] ?? null;
+        $browser_name = $requestInfo['browser']['name'] ?? 'Unknown';
+        $browser_version = $requestInfo['browser']['version'] ?? 'Unknown';
+        $platform = $requestInfo['browser']['platform'] ?? 'Unknown';
+        $is_mobile = $requestInfo['browser']['is_mobile'] ?? 0;
+        $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? null;
+        $ip_address = $_SERVER['REMOTE_ADDR'] ?? null;
+        $request_method = $_SERVER['REQUEST_METHOD'] ?? null;
+        $request_uri = $_SERVER['REQUEST_URI'] ?? null;
+        $query_string = $_SERVER['QUERY_STRING'] ?? null;
+        $headers = json_encode(getallheaders());
+        $content_type = $_SERVER['CONTENT_TYPE'] ?? null;
+        $accept_header = $_SERVER['HTTP_ACCEPT'] ?? null;
+        $referer = $_SERVER['HTTP_REFERER'] ?? null;
+        $xhr_requested = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) ? 1 : 0;
+        $request_body = file_get_contents('php://input');
+        $response_status = http_response_code();
+        $response_time = null; // Set this if measuring response time
+        $country = $geoInfo['country'];
+        $state = $geoInfo['state'];
+        $city = $geoInfo['city'];
+
+        // Bind parameters
+        $stmt->bind_param(
+            "ssssissssssssssiiiisss",
+            $request_type,
+            $browser_name,
+            $browser_version,
+            $platform,
+            $is_mobile,
+            $user_agent,
+            $ip_address,
+            $request_method,
+            $request_uri,
+            $query_string,
+            $headers,
+            $content_type,
+            $accept_header,
+            $referer,
+            $xhr_requested,
+            $request_body,
+            $response_status,
+            $response_time,
+            $userId,
+            $country,
+            $state,
+            $city
+        );
+
+        // Execute the statement
+        if ($stmt->execute()) {
+            $insert_id = $db->insert_id;
+            $stmt->close();
+            return $insert_id;
+        } else {
+            error_log("Failed to log request: " . $stmt->error);
+            $stmt->close();
+            return false;
+        }
+    }
+
+
+} catch (Exception $e) {
+    $_SESSION['error'] = $e->getMessage();
+}
+
 
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['username'])) {
     $myusername2 = mysqli_real_escape_string($db, $_POST['username']);
@@ -121,6 +212,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['username'])) {
         // $otpResponse = otpGenerate($adminData[9], $db, $mail);
         // $otp = $otpResponse['otp'];
         // $otpId = base64_encode($otpResponse['otpId']);
+
+
+        // Example usage 
+        $requestInfo = detectRequestType();
+        $geoInfo = $requestInfo['geo'];
+
+        // echo "<pre>";
+        // print_r($geoInfo);
+        // print_r($requestInfo);
+        // exit;
+        logRequestData($db, $requestInfo, $adminData[0], $geoInfo);
 
         echo json_encode([
             "success" => true,

@@ -11,11 +11,14 @@ require_once "./env.php";
 require "./login/utility/referenceCodeGenerator.php";
 
 
+
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
 date_default_timezone_set('Asia/Kolkata');
 $sent_at = date('Y-m-d H:i:s');
+
+
 
 // Register user
 if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['submit'])) {
@@ -320,6 +323,10 @@ $plist = mysqli_query($db, $plist);
 
 $q = "SELECT * FROM category where show_in_menu='yes'";
 $q = mysqli_query($db, $q);
+
+
+
+
 ?>
 
 <!DOCTYPE html>
