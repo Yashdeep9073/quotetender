@@ -19,5 +19,6 @@ return array(
     'Dompdf\\Cpdf' => $vendorDir . '/dompdf/dompdf/lib/Cpdf.php',
     'Override' => $vendorDir . '/symfony/polyfill-php83/Resources/stubs/Override.php',
     'SQLite3Exception' => $vendorDir . '/symfony/polyfill-php83/Resources/stubs/SQLite3Exception.php',
+    'Stringable' => $vendorDir . '/myclabs/php-enum/stubs/Stringable.php',
     '©' => $vendorDir . '/symfony/cache/Traits/ValueWrapper.php',
 );
