@@ -539,7 +539,7 @@ $result2 = mysqli_query($db, $query);
                                     } else {
                                         echo "<td><p class=''><i class='feather icon-repeat'></i>&nbsp;Auto Email ON</p></td>";
                                         echo "<td>  
-                                            <a href='#'><button type='button' id='" . $row['id'] . "' class= 'mail btn btn-success' rounded-sm disabled>
+                                            <a href='#'><button type='button' id='" . $row['id'] . "' class= 'mail btn btn-success' rounded-sm >
                                             <i class='feather icon-mail'></i>&nbsp;Mail Send</button></a>  &nbsp;";
                                         echo "<br/><br/>";
                                         echo "</td>";

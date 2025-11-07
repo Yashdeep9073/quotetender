@@ -24,6 +24,10 @@ try {
     $result = $stmtFetchMembers->get_result()->fetch_all();
     $db->commit();
 
+    // echo "<pre>";
+    // print_r($result );
+    // exit;
+
 } catch (\Throwable $th) {
     //throw $th;
 }
@@ -387,7 +391,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['memberIds'])) {
                                                 <td><?php echo $row['3']; ?></td>
                                                 <td><?php echo $row['4']; ?></td>
                                                 <td><?php echo $row['15']; ?></td>
-                                                <td><?php echo $row['19']; ?></td>
+                                                <td><?php echo $row['20']; ?></td>
                                                 <td><?php echo (($row['9'] == 1) ? "Enable" : "Disabled"); ?></td>
 
                                                 <td>
