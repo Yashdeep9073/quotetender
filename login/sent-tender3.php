@@ -676,28 +676,67 @@ $result2 = mysqli_query($db, $query);
                 $(".loading-message").hide();
             }
 
-            $(".mail").click(function () {
+            $(".mail").on("click", function (e) {
+                e.preventDefault();
 
                 let element = $(this);
                 let email_id = element.attr("id");
                 let info = 'id=' + email_id;
-                if (confirm("Are you sure you want to send Email to this Record?")) {
 
-                    showLoadingMessage();//show loading message
-                    $.ajax({
-                        type: "GET",
-                        url: "mail.php",
-                        data: info,
-                        success: function () {
-                            setTimeout(function () {
-                                hideLoadingMessage();
-                                location.reload();
-                            }, 2000);
-                        }
-                    });
-                }
-                return false;
+                Swal.fire({
+                    title: "Are you sure?",
+                    text: "You want to send an email to this record?",
+                    icon: "warning",
+                    showCancelButton: true,
+                    confirmButtonColor: "#33cc33",
+                    cancelButtonColor: "#ff5471",
+                    confirmButtonText: "Yes, send it!",
+                    cancelButtonText: "Cancel"
+                }).then((result) => {
+                    if (result.isConfirmed) {
+
+                        // Optional: show a loading message while sending
+                        Swal.fire({
+                            title: "Sending...",
+                            text: "Please wait while we send the email.",
+                            allowOutsideClick: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            }
+                        });
+
+                        $.ajax({
+                            type: "GET",
+                            url: "mail.php",
+                            data: info,
+                            success: function () {
+                                setTimeout(function () {
+                                    Swal.fire({
+                                        icon: "success",
+                                        title: "Email Sent!",
+                                        text: "The email has been sent successfully.",
+                                        confirmButtonColor: "#33cc33",
+                                        timer: 2000,
+                                        showConfirmButton: false
+                                    });
+                                    setTimeout(() => {
+                                        location.reload();
+                                    }, 2000);
+                                }, 1000);
+                            },
+                            error: function () {
+                                Swal.fire({
+                                    icon: "error",
+                                    title: "Failed!",
+                                    text: "Something went wrong while sending the email.",
+                                    confirmButtonColor: "#ff5471"
+                                });
+                            }
+                        });
+                    }
+                });
             });
+
 
             $('#recycle_records').on('click', function (e) {
                 e.preventDefault();
