@@ -122,6 +122,9 @@ if (isset($_POST['firmName']) && $_SERVER['REQUEST_METHOD'] == "POST") {
         $mail = new PHPMailer(true);
         $emailSent = false;
         try {
+
+            $template = emailTemplate($db, "VERIFICATION");
+
             // SMTP configuration
             $mail->SMTPDebug = 0;
             $mail->isSMTP();
@@ -142,46 +145,81 @@ if (isset($_POST['firmName']) && $_SERVER['REQUEST_METHOD'] == "POST") {
 
             // Assuming $emailSettingData['email_from_title'] is defined somewhere relevant
             $activationLink = getenv('BASE_URL') . '/activate.php?token=' . $activationToken;
+
+
+            // Replace placeholders in template
+            $search = [
+                '{$name}',
+                '{$supportPhone}',
+                '{$enquiryEmail}',
+                '{$link}',
+            ];
+
+
+            $replace = [
+                $name,         // name
+                $supportPhone ?? 'N/A',
+                $enquiryMail ?? 'N/A',
+                $activationLink ?? 'N/A',
+            ];
+
+
+            $emailBody = nl2br($template['content_1']) . "<br><br>" . nl2br($template['content_2']);
+            // Replace placeholders
+            $finalBody = str_replace($search, $replace, $emailBody);
+
+
             // Corrected version with proper precedence
             $logo = getenv('BASE_URL') . "/login/" . ($emailSettingData['logo_url'] ?? "https://dvepl.com/assets/images/logo/dvepl-logo.png");
-            $mail->Subject = "Account Activation";
+            $mail->Subject = $template['email_template_subject'] ?? "Account Activation";
+
+
             $mail->Body = "
-            <div style='font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;'>
-                <div style='text-align: center; margin-bottom: 30px;'>
-                    <img src='" . $logo . "' alt='Quote Tender Logo' style='max-width: 200px; height: auto; display: block; margin: 0 auto;'>
-                </div>
+                        <div style='font-family: Arial, sans-serif; color:#333; line-height:1.6;'>
+                            <div style='text-align:center;'>
+                                <img src='" . $logo . "' alt='DVEPL Logo' style='max-width:150px; height:auto; margin-bottom:20px;'>
+                            </div>
+                            $finalBody
+                        </div>
+                ";
 
-                <div style='background-color: #f9f9f9; border-radius: 10px; padding: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border: 1px solid #eee;'>
-                    <h2 style='color: #4CBB17; text-align: center; margin-bottom: 25px; font-size: 24px;'>Account Activation</h2>
+            // $mail->Body = "
+            // <div style='font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;'>
+            //     <div style='text-align: center; margin-bottom: 30px;'>
+            //         <img src='" . $logo . "' alt='Quote Tender Logo' style='max-width: 200px; height: auto; display: block; margin: 0 auto;'>
+            //     </div>
 
-                    <p style='font-size: 16px; color: #555; margin-bottom: 20px;'>
-                        Dear <strong>" . htmlspecialchars($name) . "</strong>,
-                    </p>
+            //     <div style='background-color: #f9f9f9; border-radius: 10px; padding: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border: 1px solid #eee;'>
+            //         <h2 style='color: #4CBB17; text-align: center; margin-bottom: 25px; font-size: 24px;'>Account Activation</h2>
 
-                    <p style='margin-bottom: 25px; font-size: 16px;'>
-                        Thank you for registering with Quote Tender. Your registration process is completed.
-                        Please click the button below to activate your account:
-                    </p>
+            //         <p style='font-size: 16px; color: #555; margin-bottom: 20px;'>
+            //             Dear <strong>" . htmlspecialchars($name) . "</strong>,
+            //         </p>
 
-                    <div style='text-align: center; margin: 30px 0;'>
-                        <a href='" . htmlspecialchars($activationLink) . "'
-                        style='background-color: #4CBB17; color: #ffffff; padding: 15px 30px; text-decoration: none;
-                                border-radius: 5px; font-weight: bold; display: inline-block;
-                                box-shadow: 0 4px 6px rgba(0,0,0,0.1); font-size: 16px; border: none; cursor: pointer;'>
-                            Activate Account
-                        </a>
-                    </div>
+            //         <p style='margin-bottom: 25px; font-size: 16px;'>
+            //             Thank you for registering with Quote Tender. Your registration process is completed.
+            //             Please click the button below to activate your account:
+            //         </p>
 
-                    <div style='text-align: center; margin: 20px 0;'>
-                        <p style='margin-bottom: 15px; font-size: 14px; color: #666;'>
-                            <strong>Activation Link:</strong>
-                        </p>
-                        <p style='font-size: 12px; color: #666; word-break: break-all; background-color: #f0f0f0; padding: 10px; border-radius: 4px;'>
-                            " . htmlspecialchars($activationLink) . "
-                        </p>
-                    </div>
-                </div>
-            </div>";
+            //         <div style='text-align: center; margin: 30px 0;'>
+            //             <a href='" . htmlspecialchars($activationLink) . "'
+            //             style='background-color: #4CBB17; color: #ffffff; padding: 15px 30px; text-decoration: none;
+            //                     border-radius: 5px; font-weight: bold; display: inline-block;
+            //                     box-shadow: 0 4px 6px rgba(0,0,0,0.1); font-size: 16px; border: none; cursor: pointer;'>
+            //                 Activate Account
+            //             </a>
+            //         </div>
+
+            //         <div style='text-align: center; margin: 20px 0;'>
+            //             <p style='margin-bottom: 15px; font-size: 14px; color: #666;'>
+            //                 <strong>Activation Link:</strong>
+            //             </p>
+            //             <p style='font-size: 12px; color: #666; word-break: break-all; background-color: #f0f0f0; padding: 10px; border-radius: 4px;'>
+            //                 " . htmlspecialchars($activationLink) . "
+            //             </p>
+            //         </div>
+            //     </div>
+            // </div>";
 
             $emailSent = $mail->send();
 
