@@ -34,7 +34,7 @@ $ccEmailData = $stmtFetchCcEmail->get_result()->fetch_all(MYSQLI_ASSOC);
 
 $logo = getenv('BASE_URL') . "/login/" . ($emailSettingData['logo_url'] ?? "https://dvepl.com/assets/images/logo/dvepl-logo.png");
 $smtpTitleForMail = $emailSettingData['email_from_title'] ?? "Dvepl";
-$enquiryMail = $emailSettingData['support_email'] ?? "enquiry@dvepl.com";
+$enquiryMail = $emailSettingData['email_address'] ?? "enquiry@dvepl.com";
 $supportEmail = $emailSettingData['support_email'] ?? "dvepl@yaaho.in";
 $supportPhone = $emailSettingData['phone'] ?? "7894561230";
 
