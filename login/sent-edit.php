@@ -133,6 +133,7 @@ INNER JOIN members ON user_tender_requests.member_id =members.member_id WHERE id
         '{$tenderId}',
         '{$supportPhone}',
         '{$enquiryEmail}',
+        '{$supportEmail}',
     ];
 
     $replace = [

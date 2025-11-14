@@ -153,6 +153,7 @@ if (isset($_POST['firmName']) && $_SERVER['REQUEST_METHOD'] == "POST") {
                 '{$supportPhone}',
                 '{$enquiryEmail}',
                 '{$link}',
+                '{$supportEmail}',
             ];
 
 

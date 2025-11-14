@@ -178,6 +178,7 @@ if (isset($_GET['id'])) {
         '{$tenderId}',
         '{$supportPhone}',
         '{$enquiryEmail}',
+        '{$supportEmail}',
     ];
 
     $replace = [

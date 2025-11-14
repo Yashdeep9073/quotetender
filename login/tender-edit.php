@@ -405,6 +405,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
                     '{$tenderId}',
                     '{$supportPhone}',
                     '{$enquiryEmail}',
+                    '{$supportEmail}',
                 ];
 
                 $replace = [
