@@ -1798,10 +1798,10 @@ try {
                                     <div class="alert alert-info">
                                         <strong>Variables:</strong> Use these variables in your
                                         template:
-                                        <code>{$customer_name}</code>, <code>{$company_name}</code>,
-                                        <code>{$invoice_number}</code>,
-                                        <code>{$amount}</code>, <code>{$date}</code>,
-                                        <code>{$link}</code>
+                                        <code>{$name}</code>, <code>{$firmName}</code>,
+                                        <code>{$registeredEmail}</code>,
+                                        <code>{$supportPhone}</code>, <code>{$enquiryEmail}</code>,
+                                        <code>{$supportEmail}</code>
                                     </div>
                                 </div>
                             </div>
@@ -1998,10 +1998,10 @@ try {
                                     <div class="alert alert-info">
                                         <strong>Variables:</strong> Use these variables in your
                                         template:
-                                        <code>{customer_name}</code>, <code>{company_name}</code>,
-                                        <code>{invoice_number}</code>,
-                                        <code>{amount}</code>, <code>{date}</code>,
-                                        <code>{link}</code>
+                                        <code>{$name}</code>, <code>{$firmName}</code>,
+                                        <code>{$registeredEmail}</code>,
+                                        <code>{$supportPhone}</code>, <code>{$enquiryEmail}</code>,
+                                        <code>{$supportEmail}</code>
                                     </div>
                                 </div>
                             </div>
