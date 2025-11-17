@@ -33,6 +33,7 @@ if ($row1 > 0) {
         '{$registeredEmail}',
         '{$supportPhone}',
         '{$enquiryEmail}',
+        '{$supportEmail}',
     ];
 
     $replace = [
@@ -41,6 +42,7 @@ if ($row1 > 0) {
         $row1[4],         // registered email
         $supportPhone ?? 'N/A',
         $enquiryMail ?? 'N/A',
+        $supportEmail ?? 'N/A',
     ];
     $emailBody = nl2br($template['content_1']) . "<br><br>" . nl2br($template['content_2']);
     // Replace placeholders

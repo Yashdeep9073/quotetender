@@ -222,6 +222,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['submit'])) {
                     $memberData[2],         // firm name
                     $supportPhone ?? 'N/A',
                     $enquiryMail ?? 'N/A',
+                    $supportEmail ?? 'N/A',
                 ];
 
                 $emailBody = nl2br($template['content_1']) . "<br><br>" . nl2br($template['content_2']);

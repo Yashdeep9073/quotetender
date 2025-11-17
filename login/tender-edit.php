@@ -413,6 +413,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
                     $memberData[4],         // tender id
                     $supportPhone ?? 'N/A',
                     $enquiryMail ?? 'N/A',
+                    $supportEmail ?? 'N/A'
                 ];
 
                 $emailBody = nl2br($template['content_1']) . "<br><br>" . nl2br($template['content_2']);

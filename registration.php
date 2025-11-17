@@ -162,6 +162,7 @@ if (isset($_POST['firmName']) && $_SERVER['REQUEST_METHOD'] == "POST") {
                 $supportPhone ?? 'N/A',
                 $enquiryMail ?? 'N/A',
                 $activationLink ?? 'N/A',
+                $supportEmail
             ];
 
 
@@ -249,7 +250,7 @@ if (isset($_POST['firmName']) && $_SERVER['REQUEST_METHOD'] == "POST") {
             mysqli_rollback($db);
             echo json_encode([
                 "status" => 500,
-                "error" => "Registration failed: Could not send activation email."
+                "error" => "" . $mail->ErrorInfo
             ]);
         }
 
