@@ -23,6 +23,52 @@ if (isset($_GET['is_update'])) {
     $isUpdate = (int) $_GET['is_update'] ?? null;
 }
 
+if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['departmentId'])) {
+
+    try {
+        $required_fields = ['departmentId'];
+        foreach ($required_fields as $field) {
+            if (!isset($_POST[$field])) {
+                echo json_encode([
+                    "status" => 400,
+                    "error" => "Missing required field: " . $field
+                ]);
+                exit;
+            }
+        }
+
+        $departmentId = trim($_POST['departmentId']);
+
+
+
+        $db->begin_transaction();
+
+        // Fetch unique, non-empty cities only
+        $stmtFetchSections = $db->prepare("SELECT * FROM section WHERE department_id = ? AND status = 1");
+        $stmtFetchSections->bind_param("i", $departmentId);
+        $stmtFetchSections->execute();
+        $sections = $stmtFetchSections->get_result()->fetch_all(MYSQLI_ASSOC);
+
+
+        echo json_encode([
+            "status" => 200,
+            "data" => $sections,
+        ]);
+
+        $db->commit();
+        exit;
+
+
+    } catch (\Throwable $th) {
+        //throw $th;
+        echo json_encode([
+            "status" => 500,
+            "error" => $th->getMessage(),
+        ]);
+        exit;
+    }
+
+}
 
 try {
 
@@ -97,7 +143,7 @@ ORDER BY
     $departmentQuery = "SELECT * FROM department ";
     $departments = mysqli_query($db, $departmentQuery);
 
-    $sectionQuery = "SELECT * FROM section where status=1";
+    $sectionQuery = "SELECT * FROM section where status= 1 ";
     $sections = mysqli_query($db, $sectionQuery);
 
     $stmtFetchDivision = $db->prepare("SELECT * FROM division ");
@@ -126,7 +172,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
 
         if (isset($isUpdate) && $isUpdate === 1) {
 
-            // echo json_encode([
+            // echo json_encode([ 
             //     "status" => 400,
             //     "error" => "debugging",
             //     "data" => $tenderData,
@@ -538,6 +584,8 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
     }
 }
 
+
+
 ?>
 
 <!DOCTYPE html>
@@ -569,6 +617,8 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.css" />
     <script src="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.js"></script>
+
+
     <script>
         function getstate(val) {
             //alert(val);
@@ -912,7 +962,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
                                                     </span></label>
                                                 <?php
 
-                                                echo "<select class='form-control' name='department' >";
+                                                echo "<select class='form-control' name='department' id='department' >";
                                                 while ($row = mysqli_fetch_row($departments)) {
                                                     $selected = $tenderData['division_id'] == $row['1'] ? "selected=''" : '';
 
@@ -1199,6 +1249,41 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
                     }
                 });
             });
+
+            console.log('working');
+            $(document).on("change", "#department", async function (e) {
+                let departmentId = $(this).val();
+
+
+                await $.ajax({
+                    url: window.location.href,
+                    type: 'POST',
+                    data: { departmentId: departmentId },
+                    dataType: 'json',
+                    success: function (response) {
+                        if (response.status == 200) {
+                            let sectionSelect = $("#section");
+                            sectionSelect.empty(); // clear old options
+                            sectionSelect.append('<option value="">Select Section</option>');
+                            console.log(response.data);
+
+                            $.each(response.data, function (index, section) {
+                                sectionSelect.append(
+                                    `<option value="${section.section_id}">${section.section_name}</option>`
+                                );
+                            });
+                        } else {
+                            Swal.fire("No Data", "No Sections found.", "warning");
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        console.error("AJAX Error:", status, error);
+                        console.error("Raw Response:", xhr.responseText);
+                        Swal.fire("Error", "An error occurred while processing your request. Please try again.", "error");
+                    }
+                });
+            });
+
         })
     </script>
 

@@ -11,8 +11,9 @@ $name = $_SESSION['login_user'];
 // Register user
 if (isset($_POST['submit'])) {
     $sect = $_POST['sect'];
+    $department = $_POST['department'];
 
-    $query = "insert into section (section_name) values('$sect')";
+    $query = "insert into section (section_name,department_id) values('$sect','$department')";
     mysqli_query($db, $query);
     if ($query) {
         $msg = "
@@ -26,6 +27,17 @@ if (isset($_POST['submit'])) {
     }
 }
 
+try {
+    //code...
+
+    $stmtFetchDepartment = $db->prepare("Select * From department Where status = 1");
+    $stmtFetchDepartment->execute();
+    $departments = $stmtFetchDepartment->get_result()->fetch_all(MYSQLI_ASSOC);
+
+
+} catch (\Throwable $th) {
+    //throw $th;
+}
 
 
 ?>
@@ -49,9 +61,26 @@ if (isset($_POST['submit'])) {
 
     <link rel="shortcut icon" href="../assets/images/x-icon.png" type="image/x-icon">
 
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link rel="stylesheet" href="assets/css/plugins/dataTables.bootstrap4.min.css">
-
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <link rel="stylesheet" href="assets/css/style.css">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.js"></script>
+    
+    <style>
+        .select2-container--default .select2-selection--multiple .select2-selection__choice__display {
+            color: black !important;
+        } .select2-container--default .select2-selection--single {
+            height: auto !important;
+            min-height: 35px;
+            border: 1px solid #d8d8d8 !important;
+            /* border-radius: 2px !important; */
+            width: 100% !important;
+        }
+    </style>
 
 </head>
 
@@ -64,7 +93,7 @@ if (isset($_POST['submit'])) {
     </div>
 
 
-   
+
     <?php include 'navbar.php'; ?>
 
     <header class="navbar pcoded-header navbar-expand-lg navbar-light headerpos-fixed header-blue">
@@ -153,14 +182,13 @@ if (isset($_POST['submit'])) {
 
                         <div class="card-header table-card-header">
 
-                           <?php
+                            <?php
                             echo $msg;
                             ?>
 
                             <br />
 
-                            <form class="contact-us" method="post" action="" 
-                                autocomplete="off">
+                            <form class="contact-us" method="post" action="" autocomplete="off">
                                 <div class=" ">
                                     <!-- Text input-->
                                     <div class="row">
@@ -175,11 +203,24 @@ if (isset($_POST['submit'])) {
                                                     oninput="setCustomValidity('')">
                                             </div>
                                         </div>
+                                        <div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 col-12">
+                                            <div class="form-group"> Department
+                                                <label class="sr-only control-label" for="name">Department<span
+                                                        class=" ">
+                                                    </span></label>
+                                                <select name="department" id="department-input">
+                                                    <option value=""></option>
+                                                    <?php foreach ($departments as $department) { ?>
+                                                        <option value="<?= $department['department_id'] ?>"><?= $department['department_name'] ?></option>
+                                                    <?php } ?>
+                                                </select>
+                                            </div>
+                                        </div>
 
                                         <!-- Button -->
                                         <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
 
-<button type="submit" class="btn btn-secondary" name="submit" id="submit">
+                                            <button type="submit" class="btn btn-secondary" name="submit" id="submit">
                                                 <i class="feather icon-save"></i>&nbsp; Add Section
                                             </button>
                                         </div>
@@ -208,7 +249,10 @@ if (isset($_POST['submit'])) {
         </div>
     </section>
 
-   <script src="assets/js/vendor-all.min.js"></script>
+    <!-- jQuery first -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <script src="assets/js/vendor-all.min.js"></script>
     <script src="assets/js/plugins/bootstrap.min.js"></script>
     <script src="assets/js/pcoded.min.js"></script>
     <!--<script src="assets/js/menu-setting.min.js"></script>-->
@@ -223,10 +267,19 @@ if (isset($_POST['submit'])) {
     <script src="assets/js/plugins/buttons.html5.min.js"></script>
     <script src="assets/js/plugins/buttons.bootstrap4.min.js"></script>
     <script src="assets/js/pages/data-export-custom.js"></script>
+
+    <!-- CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+    <!-- Select2 (must come AFTER jQuery) -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
-    $(document).ready(function() {
-        $("#goldmessage").delay(5000).slideUp(300);
-    });
+        $(document).ready(function () {
+            $('#department-input').select2({
+                placeholder: "Select Department",
+                width: "100%"
+            });
+        });
     </script>
 
 </body>
