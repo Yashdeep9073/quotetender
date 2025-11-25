@@ -151,6 +151,8 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['tender_id']) && isset(
 
 
     <link rel="stylesheet" href="assets/css/plugins/dataTables.bootstrap4.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <link rel="stylesheet" href="assets/css/style.css">
 
@@ -412,9 +414,9 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['tender_id']) && isset(
             echo '<div class="card">';
             echo '<div class="card-body">';
 
-            echo "<div class='col-md row'>";
+            echo "<div class=''>";
             if ($isAdmin || hasPermission('Dashboard', $privileges, $roleData['role_name'])) {
-                echo "<a href='#' id='recycle_records' class='btn btn-danger rounded-sm'> <i class='feather icon-trash'></i>  &nbsp;
+                echo "<a href='#' id='recycle_records' class='btn btn-danger btn-md rounded-sm'> <i class='feather icon-trash'></i>  &nbsp;
             Move to Bin Selected Items</a>";
             }
             echo "&nbsp; &nbsp; &nbsp";
@@ -445,9 +447,6 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['tender_id']) && isset(
             echo '</div>';
             ?>
 
-            <?php
-            // $_count = 1;
-            // foreach ($tenders2 as $tenderID => $tenderRequests) { ?>
             <div class="row">
                 <div class="col-sm-12">
                     <div class="card">
