@@ -3,7 +3,7 @@
 session_start();
 
 require "db/config.php";
-
+require "./utility/referenceCodeGenerator.php";
 if (!isset($_SESSION["login_user"])) {
     header("location: index.php");
 }
@@ -16,6 +16,7 @@ $adminID = $_SESSION['login_user_id'];
 $tenderID = base64_decode($_GET['tender_id']);
 
 $query = "SELECT 
+ ur.id as t_id, 
     m.name, 
     m.firm_name, 
     m.mobile, 
@@ -64,6 +65,72 @@ ORDER BY
 
 $result2 = mysqli_query($db, $query);
 
+if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
+
+    // Use a transaction to ensure atomicity
+    try {
+        $prefix = "REF";
+        $response = referenceCode($db, $prefix);
+        $refNumber = $response['data'];
+        echo json_encode([
+            "status" => 201,
+            "data" => $refNumber
+        ]);
+        exit;
+    } catch (Exception $e) {
+        echo json_encode([
+            "status" => 500,
+            "error" => $e->getMessage()
+        ]);
+        exit;
+    }
+}
+
+if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['tender_id']) && isset($_POST['reference_code'])) {
+    try {
+        $tenderId = $_POST['tender_id'];
+        $referenceCode = $_POST['reference_code'];
+
+        $db->begin_transaction();
+
+        $stmtExistingTenderId = $db->prepare("SELECT * FROM user_tender_requests WHERE id = ?");
+        $stmtExistingTenderId->bind_param("i", $tenderId);
+        $stmtExistingTenderId->execute();
+
+        $result = $stmtExistingTenderId->get_result();
+
+        if ($result->num_rows == 0) {  // Fixed: should be == 0, not < 0
+            echo json_encode([
+                "status" => 400,
+                "error" => "Tender id is invalid",
+            ]);
+            $db->rollback(); // Add rollback
+            exit;
+        }
+
+        // Fixed: bind parameters and execute the update statement
+        $stmtUpdateReference = $db->prepare("UPDATE user_tender_requests SET reference_code = ? WHERE id = ?");
+        $stmtUpdateReference->bind_param("si", $referenceCode, $tenderId); // Fixed: added bind_param
+        $stmtUpdateReference->execute(); // Fixed: added execute
+
+        $db->commit(); // Commit the transaction
+
+        echo json_encode([
+            "status" => 200,
+            "message" => "Reference code updated successfully",
+        ]);
+        exit;
+
+    } catch (\Throwable $th) {
+        $db->rollback(); // Rollback on error
+        echo json_encode([
+            "status" => 500,
+            "error" => "Database error: " . $th->getMessage(),
+        ]);
+        exit;
+    }
+}
+
 ?>
 
 <!DOCTYPE html>
@@ -84,7 +151,7 @@ $result2 = mysqli_query($db, $query);
 
 
     <link rel="stylesheet" href="assets/css/plugins/dataTables.bootstrap4.min.css">
-
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <link rel="stylesheet" href="assets/css/style.css">
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -388,177 +455,181 @@ $result2 = mysqli_query($db, $query);
                         </div>
                         <div class="card-body">
                             <div class="dt-responsive table-responsive">
-                                <br />
+                                <table id="basic-btn2" class="table table-striped table-bordered nowrap">
+                                    <thead>
+                                        <tr>
+                                            <th>
+                                                <label class="checkboxs">
+                                                    <input type="checkbox" id="select-all">
+                                                    <span class="checkmarks"></span>
+                                                </label>
+                                                SNO
+                                            </th>
+                                            <th>User</th>
+                                            <th>Firm Name</th>
+                                            <th>Mobile</th>
+                                            <th>Ref. Code</th>
+                                            <th>Tender No</th>
+                                            <th>Department</th>
+                                            <th>Section</th>
+                                            <th>Division</th>
+                                            <th>Sub-division</th>
+                                            <th>Work Name</th>
+                                            <th>Tentative Cost</th>
+                                            <th>Due Date</th>
+                                            <th>Date Added</th>
+                                            <th>Time Added</th>
+                                            <th>Sent Date</th>
 
-                                <?php
+                                            <?php if ($isAdmin || hasPermission('Dashboard', $privileges, $roleData['role_name'])): ?>
+                                                <th>Email Status</th>
+                                                <th>Action</th>
+                                            <?php endif; ?>
+                                        </tr>
+                                    </thead>
 
+                                    <tbody>
+                                        <?php $count = 1; ?>
+                                        <?php while ($row = mysqli_fetch_assoc($result2)): ?>
+                                            <tr>
+                                                <td>
+                                                    <div class="custom-control custom-checkbox">
+                                                        <input type="checkbox" class="custom-control-input request_checkbox"
+                                                            id="row<?= $row['id'] ?>" data-request-id="<?= $row['id'] ?>">
+                                                        <label class="custom-control-label" for="row<?= $row['id'] ?>">
+                                                            <?= $count ?>
+                                                        </label>
+                                                    </div>
+                                                </td>
 
-                                echo '<table id="basic-btn2" class="table table-striped table-bordered nowrap">';
-                                echo "<thead>";
-                                // echo "<tr class='table-success thead-light'>";
-                                // echo "<th colspan='20' class='text-center'><h4 class='text-light'>S.NO : " . "   Tender ID : <span class='text-light'>" . $tenderID . "</span></h4></th>";
-                                // echo "</tr>";
-                                // echo "<tr>";
-                                echo '<th><label class="checkboxs">
-                                    <input type="checkbox" id="select-all">
-                                    <span class="checkmarks"></span>
-                                </label>  SNO</th>';
-                                echo "<th>User</th>";
-                                echo "<th>Firm Name</th>";
-                                echo "<th>Mobile</th>";
-                                echo "<th>Ref. Code </th>";
-                                echo "<th>Tender No</th>";
-                                echo "<th>Department</th>";
-                                echo "<th>Section</th>";
-                                echo "<th>Division</th>";
-                                echo "<th>Sub-division</th>";
-                                echo "<th>Work Name</th>";
-                                echo "<th>Tentative Cost</th>";
-                                echo "<th>Due Date</th>";
-                                echo "<th>Date Added</th>";
-                                echo "<th>TIME Added</th>";
-                                echo "<th>Sent Date</th>";
-                                if ($isAdmin || hasPermission('Dashboard', $privileges, $roleData['role_name'])) {
-                                    echo "<th>Edit</th>";
-                                    echo "<th>Email Sent Status</th>";
-                                    echo "<th>Action</th>";
-                                }
+                                                <td class="text-danger"><?= $row['name'] ?></td>
+                                                <td class="text-success"><?= $row['firm_name'] ?></td>
+                                                <td><?= $row['mobile'] ?></td>
+                                                <td><?= $row['reference_code'] ?></td>
+                                                <td><?= $row['tender_no'] ?></td>
+                                                <td><?= $row['department_name'] ?></td>
+                                                <td><?= $row['section_name'] ?></td>
+                                                <td><?= $row['division_name'] ?></td>
+                                                <td><?= $row['subdivision'] ?></td>
 
-                                echo "</tr>";
-                                echo "</thead>";
-                                ?>
+                                                <td style="white-space:pre-wrap; max-width:100rem;">
+                                                    <?= $row['name_of_work'] ?>
+                                                </td>
 
-                                <?php
-                                $count = 1;
-                                // foreach ($tenderRequests as $row) {
-                                echo "<tbody>";
-                                while ($row = mysqli_fetch_assoc($result2)) {
+                                                <td><?= $row['tentative_cost'] ?: "-" ?></td>
 
+                                                <td><?= date("d-m-Y", strtotime($row['due_date'])) ?></td>
 
-
-                                    echo "<tr class='record'>";
-                                    echo "<td>
-                                    <div class='custom-control custom-checkbox'>
-                                    <input type='checkbox' class='custom-control-input request_checkbox' id='customCheck" . $row['id'] . "'  data-request-id='" . $row['id'] . "'>
-                                    <label class='custom-control-label' for='customCheck" . $row['id'] . "'>" . $count . "</label>
-                                    </div>
-                                    </td>";
-                                    echo "<td> <span style='color:red;'>" . $row['name'] . "</td>";
-                                    echo "<td> <span style='color:green;'> " . $row['firm_name'] . "</td>";
-                                    echo "<td>" . $row['mobile'] . "</td>";
-                                    // echo "<td>" . $row['tenderID'] . "</td>";
-                                    echo "<td>" . $row['reference_code'] . "</td>";
-                                    echo "<td>" . $row['tender_no'] . "</td>";
-                                    echo "<td>" . $row['department_name'] . "</td>";
-                                    echo "<td>" . $row['section_name'] . "</td>";
-                                    echo "<td>" . $row['division_name'] . "</td>";
-                                    echo "<td>" . $row['subdivision'] . "</td>";
-                                    echo "<td style='white-space:pre-wrap; word-wrap:break-word; max-width:100rem;'>" . $row['name_of_work'] . "</td>";
-
-                                    if ($row['tentative_cost']) {
-                                        echo "<td>" . $row['tentative_cost'] . "</td>";
-                                    } else {
-                                        echo "<td>-</td>";
-                                    }
-
-                                    echo "<td>" . date_format(date_create($row['due_date']), "d-m-Y ") . "</td>";
-                                    $originalDate = $row['created_at'];
-                                    $timestamp = strtotime($originalDate);
-                                    $istDate = date('d-m-Y', $timestamp);
-                                    $istTime = date('h:i A', $timestamp + 5.5 * 3600);
-                                    echo "<td>" . $istDate . "</td>";
-                                    echo "<td>" . $istTime . "</td>";
-                                    ?>
-
-                                    <td><?= date_format(date_create($row['sent_at']), "d-m-Y ") ?><br />
-                                        <?php if (isset($row['file_name']) && $row['file_name'] == null) { ?>
-                                            <a href="<?= '../login/tender/' . $row['file_name'] ?>" target="_blank">
-                                                View file 1
-                                            </a> </br>
-                                        <?php } ?>
-
-                                        <?php if (isset($row['file_name2']) && $row['file_name2'] == null) { ?>
-                                            <a href="<?= '../login/tender/' . $row['file_name2'] ?>" target="_blank">View
-                                                File 2
-                                            </a>
-                                        <?php } ?>
-
-                                        <?php if (!empty($row['additional_files'])) {
-                                            $extraFiles = json_decode($row['additional_files'], true);
-                                            ?>
-                                            <?php if (is_array($extraFiles)) {
-                                                $count = 1;
+                                                <?php
+                                                $created = strtotime($row['created_at']) + 5.5 * 3600;
                                                 ?>
-                                                <?php foreach ($extraFiles as $index => $filePath) { ?>
-                                                    <a href="<?= '../login/' . $filePath ?>" target="_blank">View
-                                                        File <?= $count ?>
-                                                    </a><br />
-                                                    <?php
-                                                    $count++;
-                                                } ?>
-                                            <?php } ?>
-                                        <?php } ?>
+                                                <td><?= date("d-m-Y", $created) ?></td>
+                                                <td><?= date("h:i A", $created) ?></td>
 
-                                    </td>
+                                                <td>
+                                                    <?= date("d-m-Y", strtotime($row['sent_at'])) ?>
+                                                    <br>
 
-                                    <?php
-                                    $res = $row["id"];
-                                    $res = base64_encode($res);
+                                                    <?php if (!empty($row['file_name'])): ?>
+                                                        <a href="../login/tender/<?= $row['file_name'] ?>" target="_blank">View
+                                                            File 1</a><br>
+                                                    <?php endif; ?>
+
+                                                    <?php if (!empty($row['file_name2'])): ?>
+                                                        <a href="../login/tender/<?= $row['file_name2'] ?>" target="_blank">View
+                                                            File 2</a><br>
+                                                    <?php endif; ?>
+
+                                                    <?php if (!empty($row['additional_files'])):
+                                                        $extraFiles = json_decode($row['additional_files'], true);
+                                                        if (is_array($extraFiles)):
+                                                            $i = 1;
+                                                            foreach ($extraFiles as $file): ?>
+                                                                <a href="../login/<?= $file ?>" target="_blank">View File
+                                                                    <?= $i ?></a><br>
+                                                                <?php $i++; endforeach;
+                                                        endif;
+                                                    endif; ?>
+                                                </td>
 
 
-                                    if ($isAdmin || hasPermission('Dashboard', $privileges, $roleData['role_name'])) {
-                                        echo "<td>  <a href='sent-edit.php?id=$res'><button type='button' class='btn btn-warning rounded-sm'><i class='feather icon-edit'></i>
-                                        &nbsp;Alot</button></a>  &nbsp;";
-                                    }
 
-                                    echo "<br/>";
-                                    echo "<br/>";
+                                                <td>
+                                                    <?php if (!empty($row['email_sent_date'])): ?>
+                                                        <?= date("d-m-Y h:i A", strtotime($row['email_sent_date'])) ?>
+                                                    <?php else: ?>
+                                                        <span class="text-warning">*Please Send Email</span>
+                                                    <?php endif; ?>
+                                                </td>
 
-                                    if ($isAdmin || hasPermission('Dashboard', $privileges, $roleData['role_name'])) {
-                                        echo "<a href='#' id='" . $row['id'] . "'class='recyclebutton btn btn-danger rounded-sm' title='Click To Delete'> 
-                                        <i class='feather icon-trash'></i>  &nbsp; Move to Bin</a></td>";
-                                    }
-                                    if ($row['auto_quotation'] != 1) {
-                                        if (!empty($row['email_sent_date']) && strtotime($row['email_sent_date'])) {
-                                            $originalDate2 = $row['email_sent_date'];
-                                            $timestamp2 = strtotime($originalDate2);
-                                            $istDate2 = date('d-m-Y', $timestamp2);
-                                            $istTime2 = date('h:i A', $timestamp2);
+                                                <td>
+                                                    <div class="dropdown">
+                                                        <button class="btn btn-secondary" type="button"
+                                                            id="actionMenu<?php echo $row['id']; ?>"
+                                                            data-bs-toggle="dropdown" aria-expanded="false">
+                                                            <i class="feather icon-more-vertical"></i>
+                                                        </button>
 
-                                            echo "<td><p>" . $istDate2 . " " . $istTime2 . "</p></td>";
-                                        } else {
-                                            // Placeholder if the email_sent_date is not set or invalid
-                                            echo "<td><p class='text-warning'>*Please Send Email</p></td>";
-                                        }
+                                                        <ul class="dropdown-menu"
+                                                            aria-labelledby="actionMenu<?php echo $row['id']; ?>">
 
-                                        echo "<td>  
-                                            <a href='#'><button type='button' id='" . $row['id'] . "' class= 'mail btn btn-success rounded-sm'>
-                                            <i class='feather icon-mail'></i>&nbsp;Mail Send</button></a>  &nbsp;";
-                                        echo "<br/><br/>";
-                                        echo "</td>";
-                                    } else {
-                                        echo "<td><p class=''><i class='feather icon-repeat'></i>&nbsp;Auto Email ON</p></td>";
-                                        echo "<td>  
-                                            <a href='#'><button type='button' id='" . $row['id'] . "' class= 'mail btn btn-success' rounded-sm >
-                                            <i class='feather icon-mail'></i>&nbsp;Mail Send</button></a>  &nbsp;";
-                                        echo "<br/><br/>";
-                                        echo "</td>";
-                                    }
+                                                            <?php if ($isAdmin || hasPermission('Dashboard', $privileges, $roleData['role_name'])) { ?>
+                                                                <li>
+                                                                    <a class="dropdown-item"
+                                                                        href="sent-edit.php?id=<?= base64_encode($row['id']) ?>">
+                                                                        <i class="feather icon-edit me-2"></i>Alot
+                                                                    </a>
+                                                                </li>
+                                                            <?php } ?>
 
-                                    echo "</tr>";
-                                    $count++;
-                                }
-                                echo "</tfoot>";
-                                echo "</table>";
-                                ?>
+                                                            <?php if ($isAdmin || hasPermission('Dashboard', $privileges, $roleData['role_name'])) { ?>
+                                                                <li>
+                                                                    <a class="dropdown-item recyclebutton" href="#"
+                                                                        data-id="<?php echo $row['id']; ?>" title="Move to Bin">
+                                                                        <i class="feather icon-trash me-2"></i>Move to Bin
+                                                                    </a>
+                                                                </li>
+                                                            <?php } ?>
+
+                                                            <?php if ($isAdmin || hasPermission('Dashboard', $privileges, $roleData['role_name'])) { ?>
+                                                                <li>
+                                                                    <a class="dropdown-item update-Reference"
+                                                                        href="javascript:void(0);"
+                                                                        data-tender-id="<?php echo $row['t_id']; ?>"
+                                                                        data-reference-code="<?php echo $row['reference_code']; ?>"
+                                                                        data-bs-toggle="modal" data-bs-target="#reference-code"
+                                                                        title="Change Reference Number">
+                                                                        <i class="feather icon-book me-2"></i>Reference No
+                                                                    </a>
+                                                                </li>
+                                                            <?php } ?>
+
+                                                            <li>
+                                                                <a class="dropdown-item mail" href="javascript:void(0);"
+                                                                    id="<?php echo $row['id']; ?>">
+                                                                    <i class="feather icon-mail me-2"></i>Send Mail
+                                                                </a>
+                                                            </li>
+
+                                                        </ul>
+                                                    </div>
+                                                </td>
+
+                                            </tr>
+
+                                            <?php $count++; ?>
+                                        <?php endwhile; ?>
+                                    </tbody>
+                                </table>
+
+
+
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-            <?php
-            // $_count++;
-            //} ?>
+
         </div>
     </section>
 
@@ -570,6 +641,39 @@ $result2 = mysqli_query($db, $query);
         </div>
     </div>
 
+
+    <div class="modal fade" id="reference-code" tabindex="-1" aria-labelledby="editUnitsLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editUnitsLabel">Update Reference Number</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form class="update-reference-code">
+                    <div class="modal-body">
+                        <input type="hidden" class="form-control" name="editTenderId" id="editTenderId">
+                        <div class="row">
+                            <div class="col-12 col-md-12 mb-3">
+                                <label for="editReferenceCode" class="form-label">Reference Number</label>
+                                <div class="input-group">
+
+                                    <input type="text" class="form-control" id="editReferenceCode"
+                                        name="editReferenceCode">
+                                    <button type="button" name="updateReferenceCode"
+                                        class="btn btn-primary refNumber">Generate</button>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Submit</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 
 
     <script src="assets/js/vendor-all.min.js"></script>
@@ -902,6 +1006,122 @@ $result2 = mysqli_query($db, $query);
 
     <script>
         $(document).ready(function () {
+
+
+            function generateReferenceNumber() {
+                return $.ajax({
+                    url: window.location.href,
+                    method: "POST",
+                    data: { refCode: true },
+                    dataType: "json"
+                }).then(function (data) {
+                    return data.data; // This matches your API response structure
+                });
+            }
+
+            $(document).on('click', ".update-Reference", function (event) {
+                let tenderId = $(this).data('tender-id');
+                let referenceCode = $(this).data('reference-code');
+
+                // Set values in modal form
+                $('#editTenderId').val(tenderId);
+                $('#editReferenceCode').val(referenceCode);
+            });
+
+
+            $('.refNumber').on('click', async function (e) {
+                e.preventDefault();
+
+                const $codeInput = $("#editReferenceCode");
+                if ($codeInput.length) {
+                    try {
+                        // Clear the existing value first
+                        $codeInput.val('');
+
+
+
+                        // Generate and set the new reference number
+                        const refNumber = await generateReferenceNumber();
+                        $codeInput.val(refNumber);
+
+                    } catch (error) {
+                        console.error('Error generating reference number:', error);
+                    }
+                }
+            });
+
+            $(document).on("submit", ".update-reference-code", function (e) {
+                e.preventDefault();
+
+                // Get values correctly using the name attributes
+                let tenderId = $("input[name='editTenderId']").val();
+                let referenceCode = $("input[name='editReferenceCode']").val();
+
+
+                // Your AJAX submission logic here
+                $.ajax({
+                    url: window.location.href, // Change to your actual endpoint
+                    method: 'POST',
+                    data: {
+                        tender_id: tenderId,
+                        reference_code: referenceCode
+                    },
+
+                    success: function (response) {
+                        $('#reference-code').modal('hide');
+
+                        let result = JSON.parse(response);
+                        if (result.status == 200) {
+
+                            // Show success message
+                            Swal.fire({
+                                title: 'Updated!',
+                                text: result.message,
+                                icon: 'success',
+                                confirmButtonColor: "#33cc33",
+                                timer: 1500,
+                                timerProgressBar: true,
+                                showConfirmButton: false
+                            }).then(() => {
+                                // Reload page after animation
+                                setTimeout(function () {
+                                    window.location.reload();
+                                }, 2000);
+                            });
+
+                        } else {
+                            // Show error message
+                            Swal.fire({
+                                title: 'Error!',
+                                text: result.error || 'Something went wrong',
+                                icon: 'error',
+                                confirmButtonColor: "#dc3545",
+                                timer: 1500,
+                                timerProgressBar: true,
+                                showConfirmButton: false
+                            });
+                        }
+
+                        console.log(response);
+
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Error:', error);
+                        // Show error message
+                        Swal.fire({
+                            title: 'Error!',
+                            text: 'Failed to update reference code',
+                            icon: 'error',
+                            confirmButtonColor: "#dc3545",
+                            timer: 1500,
+                            timerProgressBar: true,
+                            showConfirmButton: false
+                        });
+                    }
+                });
+            });
+
+
 
             $(document).on('change', '#select-all', function (e) {
                 var isChecked = $(this).prop('checked');
