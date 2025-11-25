@@ -138,13 +138,17 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['submit'])) {
                     $referenceNumber = $response["data"];
 
                     // Insert tender request with 'Sent' status
-                    $query = "INSERT INTO user_tender_requests (
-                                member_id, tenderID, department_id, due_date, file_name, status, tender_no, reference_code,
-                                section_id, sub_division_id, division_id, name_of_work, sent_at, tentative_cost, auto_quotation,reference_code
-                                ) VALUES (
-                                '$member_id', '$tender', '$department_id', '$due_date', '$tenderQuote[0]', 'Sent', '$tenderQuote[2]', '$tenderQuote[3]', '$tenderQuote[4]',
-                                '$tenderQuote[5]', '$tenderQuote[6]', '$tenderQuote[7]', '$sent_at', '$tenderQuote[9]', '$tenderQuote[10]',$referenceNumber
-                                )";
+                   $query = "INSERT INTO user_tender_requests (
+                        member_id, tenderID, department_id, due_date, file_name, status,
+                        tender_no, reference_code, section_id, sub_division_id, division_id,
+                        name_of_work, sent_at, tentative_cost, auto_quotation
+                    ) VALUES (
+                        '$member_id', '$tender', '$department_id', '$due_date', '$tenderQuote[0]', 'Sent',
+                        '$tenderQuote[2]', '$referenceNumber', '$tenderQuote[5]', '$tenderQuote[6]',
+                        '$tenderQuote[7]', '$tenderQuote[8]', '$sent_at', '$tenderQuote[9]', '$tenderQuote[10]'
+                    )";
+
+
                     mysqli_query($db, $query);
                 } else {
                     // Check if a tender exists but no rows are returned (new tender)
@@ -172,9 +176,18 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['submit'])) {
                             $response = referenceCode($db, "REF");
                             $referenceNumber = $response["data"];
 
-                            $query = "INSERT INTO user_tender_requests (member_id, tenderID, department_id, due_date, file_name, status, tender_no, reference_code,section_id, sub_division_id, division_id, name_of_work, tentative_cost, auto_quotation,reference_code    ) VALUES (
-                            '$member_id', '$tender', '$department_id', '$due_date', '$tenderQuote[0]', 'Requested', '$tenderQuote[2]', '$tenderQuote[3]', '$tenderQuote[4]',
-                            '$tenderQuote[5]', '$tenderQuote[6]', '$tenderQuote[7]','$tenderQuote[9]', '$tenderQuote[10]','$referenceNumber')";
+                           $query = "INSERT INTO user_tender_requests (
+                                member_id, tenderID, department_id, due_date, file_name, status,
+                                tender_no, reference_code, section_id, sub_division_id, division_id,
+                                name_of_work, tentative_cost, auto_quotation
+                            ) VALUES (
+                                '$member_id', '$tender', '$department_id', '$due_date', '$tenderQuote[0]', 'Requested',
+                                '$tenderQuote[2]', '$referenceNumber', '$tenderQuote[5]', '$tenderQuote[6]',
+                                '$tenderQuote[7]', '$tenderQuote[9]', '$tenderQuote[10]', '$auto_quotation'
+                            )";
+
+
+                            
                             mysqli_query($db, $query);
                         }
                     }
