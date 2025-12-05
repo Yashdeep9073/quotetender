@@ -272,6 +272,15 @@ $isAdmin = strtolower($roleData['role_name']) === 'admin';
                     </li>
                 <?php endif; ?>
 
+                <?php if ($isAdmin || hasPermission('CRM', $privileges, $roleData['role_name'])): ?>
+                    <!-- CRM Link -->
+                    <li class="nav-item ">
+                        <a href="<?= getenv("CRM_URL") ?? "" ?>" target="_blank" class=" nav-link "><span class=" pcoded-micon"><i
+                                    class="feather icon-book"></i></span><span class="pcoded-mtext">CRM
+                            </span></a>
+                    </li>
+                <?php endif; ?>
+
 
                 <?php if ($isAdmin || hasPermission('Recycle Bin', $privileges, $roleData['role_name'])): ?>
                     <!-- Recycle Bin -->

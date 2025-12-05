@@ -19,4 +19,7 @@ putenv('BASE_URL=https://dvepl.com/quotetender');
 // Ip Config 
 putenv('IP_TOKEN=a57896b12007b1');
 
+putenv('CRM_URL=https://dvepl.vibrantick.org');
+
+
 ?>
