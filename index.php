@@ -22,7 +22,6 @@ $sent_at = date('Y-m-d H:i:s');
 
 // Register user
 if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['submit'])) {
-
     if (!isset($_SESSION["login_register"])) {
         header("location: login.php");
     } else {
@@ -51,7 +50,18 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['submit'])) {
 
             $department_id = $_POST['dept'];
 
-            $tender = $_POST['tenderid'];
+            $tender = trim($_POST['tenderid']);
+
+            $tender = trim($_POST['tenderid']);
+
+            if (!preg_match('/^[A-Za-z]+([_-][0-9]+)+$/', $tender)) {
+                $_SESSION['error'] = "Invalid Tender ID (e.g. ABC123, ABC_123, ABC-123, ABC_2025_12_17).";
+                header('Location: index.php');
+                exit();
+            }
+
+
+
             $due_date = $_POST['datepicker'];
 
             $unique_filename1 = $unique_filename2 = null;
@@ -138,7 +148,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['submit'])) {
                     $referenceNumber = $response["data"];
 
                     // Insert tender request with 'Sent' status
-                   $query = "INSERT INTO user_tender_requests (
+                    $query = "INSERT INTO user_tender_requests (
                         member_id, tenderID, department_id, due_date, file_name, status,
                         tender_no, reference_code, section_id, sub_division_id, division_id,
                         name_of_work, sent_at, tentative_cost, auto_quotation
@@ -176,7 +186,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['submit'])) {
                             $response = referenceCode($db, "REF");
                             $referenceNumber = $response["data"];
 
-                           $query = "INSERT INTO user_tender_requests (
+                            $query = "INSERT INTO user_tender_requests (
                                 member_id, tenderID, department_id, due_date, file_name, status,
                                 tender_no, reference_code, section_id, sub_division_id, division_id,
                                 name_of_work, tentative_cost, auto_quotation
@@ -187,7 +197,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['submit'])) {
                             )";
 
 
-                            
+
                             mysqli_query($db, $query);
                         }
                     }
@@ -205,8 +215,16 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['submit'])) {
 
                 $mail->setFrom(getenv('SMTP_USER_NAME'), $emailSettingData['email_from_title'] ?? "Dvepl");
                 $mail->addAddress($email, "Recepient Name");
-                foreach ($ccEmailData as $ccEmail) { // Use the fetched array
-                    $mail->addCC($ccEmail['cc_email']); // Use addCC, not addAddress
+
+                $mail->clearCCs(); // safety
+                $mail->clearBCCs();
+
+                if (!empty($ccEmailData) && is_array($ccEmailData)) {
+                    foreach ($ccEmailData as $ccEmail) {
+                        if (!empty($ccEmail['cc_email']) && filter_var($ccEmail['cc_email'], FILTER_VALIDATE_EMAIL)) {
+                            $mail->addCC($ccEmail['cc_email']);
+                        }
+                    }
                 }
                 $mail->isHTML(true);
 
@@ -247,12 +265,10 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['submit'])) {
                 // print_r($finalBody);
                 // exit;
 
-                if ($userExistResult == 0) {
-                    $mail->Subject = $template['email_template_subject'] ?? "Tender Request Notification";
-                    // Corrected version with proper precedence
 
-
-                    $mail->Body = "
+                $mail->Subject = $template['email_template_subject'] ?? "Tender Request Notification";
+                // Corrected version with proper precedence
+                $mail->Body = "
                         <div style='font-family: Arial, sans-serif; color:#333; line-height:1.6;'>
                             <div style='text-align:center;'>
                                 <img src='" . $logo . "' alt='DVEPL Logo' style='max-width:150px; height:auto; margin-bottom:20px;'>
@@ -261,50 +277,12 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['submit'])) {
                         </div>
                     ";
 
-
-                }
-                // else {
-
-                //     $mail->Subject = "Tender Request Approved";
-
-                //     $mail->addAttachment($upload_directory . $memberData[3]);
-                //     if (!empty($memberData[4])) {
-                //         $mail->addAttachment($upload_directory . $memberData[4]);
-                //     }
-                //     $mail->Body = "<p> Dear " . $memberData[1] . " , <br/>" .
-                //         "The <b>Tender ID: </b> " . $tender . "</b>  has been approved. Quotation file is attached below. For the further process, feel free to contact us.<br/><br/>
-                // <strong>Thanks, <br /> Admin Quote Tender</strong> <br/>
-                // Mobile: +91-9417601244 | Email: info@quotender.com ";
-                // }
-
-                // $membersQuery2 = "SELECT m.email_id,  m.name, ur.file_name, ur.file_name2, ur.tenderID, ur.id FROM user_tender_requests ur 
-                // inner join members m on ur.member_id= m.member_id  WHERE ur.auto_quotation = '1' AND ur.member_id='$member_id' AND ur.tenderID='" . $tender . "' ";
-                // $membersResult2 = mysqli_query($db, $membersQuery2);
-
-                // while ($memberData2 = mysqli_fetch_row($membersResult2)) {
-                //     $mail->addAddress($memberData2[0], "Recepient Name");
-                //     $mail->Subject = "Tender Request Approved";
-                //     $mail->addAttachment($upload_directory . $memberData2[2]);
-                //     if (!empty($memberData2[3])) {
-                //         $mail->addAttachment($upload_directory . $memberData2[3]);
-                //     }
-                //     $mail->Body = "<p> Dear, " . $memberData2[1] . " <br/>" .
-                //         "The <b>Tender ID: </b> " . $memberData2[4] . "</b>  has been approved to you. Quotation file is attached below. For the further process, feel free to contact us.<br/><br/>
-                // <strong>Thanks, <br /> Admin Quote Tender</strong> <br/>
-                // Mobile: +91-9417601244 | Email: info@quotender.com ";
-                // }
-
-
+                // $mail->AltBody = strip_tags($finalBody);
 
 
                 if (!$mail->send()) {
-                    echo "Mailer Error: " . $mail->ErrorInfo;
+                    $_SESSION['error'] = "Mailer Error: " . $mail->ErrorInfo;
                 }
-
-                // $msg = "<div class='alert alert-success alert-dismissible fade show' role='alert' style='font-size:16px;' id='goldmessage'>
-                // <strong><i class='feather icon-check'></i>Thanks!</strong>Your request sent successfully.We will contact you soon.
-                // </div>
-                // ";
 
                 $_SESSION['success'] = "Your request sent successfully.We will contact you soon.";
 
@@ -545,8 +523,9 @@ $q = mysqli_query($db, $q);
                                     </div>
                                     <br />
                                     <div class="col-lg-12">
-                                        <input type="text" class="" placeholder=" Tender Id" name="tenderid"
-                                            style="border-color: #4CBB17" required />
+                                        <input type="text" class="" placeholder="Tender ID (e.g. ABC_2025_12_14)"
+                                            name="tenderid" style="border-color: #4CBB17" required />
+
                                     </div>
                                     <br />
 

@@ -6,11 +6,12 @@ require_once "../vendor/autoload.php";
 require "../env.php";
 
 
+include("db/config.php");
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
-error_reporting(0);
+// error_reporting(0);
 
 if (!isset($_SESSION["login_user"])) {
     header("location: index.php");
@@ -19,7 +20,6 @@ if (!isset($_SESSION["login_user"])) {
 
 $name = $_SESSION['login_user'];
 
-include("db/config.php");
 
 $en = $_GET["id"];
 
@@ -27,135 +27,173 @@ $en = $_GET["id"];
 $d = base64_decode($en);
 
 if (isset($_POST['submit'])) {
-    $user = $_POST['user'];
-    $days = $_POST['day'];
+
+    try {
 
 
 
-    if ($user == 'other') {
-        $name = $_POST['name'];
-        $firmname = $_POST['company'];
-        $newUserEmail = $_POST['email'];
-        $phone = $_POST['phone'];
-        $created_date = date('Y-m-d H:i:s A');
+        $user = $_POST['user'];
+        $days = $_POST['day'];
 
-        $addMember = "insert into members (name, firm_name, email_id,mobile,created_date) values ('$name', '$firmname','$newUserEmail',
-        '$phone','$created_date')";
+        // ---------- ADD MEMBER IF OTHER ----------
+        if ($user === 'other') {
+            $name = mysqli_real_escape_string($db, $_POST['name']);
+            $firmname = mysqli_real_escape_string($db, $_POST['company']);
+            $newUserEmail = mysqli_real_escape_string($db, $_POST['email']);
+            $phone = mysqli_real_escape_string($db, $_POST['phone']);
+            $state = mysqli_real_escape_string($db, trim($_POST['state']));
+            $city = mysqli_real_escape_string($db, trim($_POST['city']));
+            $created_date = date('Y-m-d H:i:s'); // ✅ MySQL safe
 
-        mysqli_query($db, $addMember);
+            $addMember = "
+                INSERT INTO members
+                (name, firm_name, city_state, state_code, email_id, mobile, created_date)
+                VALUES
+                ('$name', '$firmname', '$city', '$state', '$newUserEmail', '$phone', '$created_date')
+            ";
 
-        $newMemberQuery = "SELECT member_id FROM members where email_id='" . $newUserEmail . "' order by member_id desc limit 1";
-        $newMemberQueryResult = mysqli_query($db, $newMemberQuery);
+            if (!mysqli_query($db, $addMember)) {
+                $_SESSION['error'] = "Failed to add new member. Please try again.";
+                header("Location: alot-tender.php");
+                exit;
+            }
 
-        $addedUser = mysqli_fetch_row($newMemberQueryResult);
-        $user = $addedUser[0];
+            $user = mysqli_insert_id($db);
+        }
+
+        // ---------- UPDATE TENDER ----------
+        date_default_timezone_set('Asia/Kolkata');
+        $allotted_at = date('Y-m-d H:i:s');
+
+        if (
+            !mysqli_query(
+                $db,
+                "UPDATE user_tender_requests 
+             SET status='Allotted',
+                 selected_user_id='$user',
+                 reminder_days='$days',
+                 allotted_at='$allotted_at'
+             WHERE id='$d'"
+            )
+        ) {
+            $_SESSION['error'] = "Failed to allot tender. Please try again.";
+            header("Location: alot-tender.php");
+            exit;
+        }
+
+        // ---------- FETCH EMAIL ----------
+        $result = mysqli_query($db, "SELECT email_id FROM members WHERE member_id='$user'");
+        $row = mysqli_fetch_row($result);
+        $email = $row[0] ?? null;
+
+        if (!$email) {
+            $_SESSION['error'] = "User email not found.";
+            header("Location: alot-tender.php");
+            exit;
+        }
+
+        // ---------- SEND EMAIL ----------
+        $mail = new PHPMailer(true);
+
+        $mail->isSMTP();
+        $mail->SMTPDebug = 0;
+        $mail->Host = getenv('SMTP_HOST');
+        $mail->SMTPAuth = true;
+        $mail->Username = getenv('SMTP_USER_NAME');
+        $mail->Password = getenv('SMTP_PASSCODE');
+        $mail->SMTPSecure = PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS;
+        $mail->Port = getenv('SMTP_PORT');
+
+        $mail->setFrom(getenv('SMTP_USER_NAME'), 'Quote Tender');
+        $mail->addAddress($email);
+        $mail->addAddress(getenv('SMTP_USER_NAME'));
+        $mail->addAddress('quotetenderindia@gmail.com');
+
+        $mail->isHTML(true);
+        $mail->Subject = "Tender Allotted";
+
+        $qt = mysqli_query(
+            $db,
+            "SELECT ur.tenderID, m.name
+             FROM user_tender_requests ur
+             INNER JOIN members m ON ur.member_id = m.member_id
+             WHERE ur.id='$d'"
+        );
+        $qt = mysqli_fetch_row($qt);
+
+        $mail->Body = "
+            <p>Dear <strong>{$qt[1]}</strong>,</p>
+            <p>Your Tender ID <strong>{$qt[0]}</strong> has been allotted successfully.</p>
+            <p>Thanks & Regards,<br/>Admin, DVEPL</p>
+        ";
+
+        if (!$mail->send()) {
+            $_SESSION['error'] = "Tender allotted but email failed to send.";
+            header("Location: alot-tender.php");
+            exit;
+        }
+
+        // ---------- SUCCESS ----------
+        $_SESSION['success'] = "Tender allotted successfully and email sent.";
+        header("Location: alot-tender.php");
+        exit;
+
+    } catch (Throwable $th) {
+        $_SESSION['error'] = "Something went wrong. Please try again.";
+        header("Location: alot-tender.php");
+        exit;
     }
-
-    $status = 2;
-    date_default_timezone_set('Asia/Kolkata');
-    $allotted_at = date('Y-m-d H:i:s');
-
-    mysqli_query($db, "UPDATE user_tender_requests set `status`='Allotted',`selected_user_id`='$user',
-    `reminder_days`='$days', `allotted_at`='$allotted_at'  WHERE id='" . $d . "'");
-
-    $query = "SELECT email_id FROM members WHERE member_id='" . $user . "'";
-
-    $result = mysqli_query($db, $query);
-
-    $row = mysqli_fetch_row($result);
-
-    $email = $row[0];
-
-    $mail = new PHPMailer(true);
-
-    //Enable SMTP debugging.
-
-    $mail->SMTPDebug = 0;
-
-
-    //Set PHPMailer to use SMTP.
-
-    $mail->isSMTP();
-
-    //Set SMTP host name                      
-
-    $mail->Host = getenv('SMTP_HOST');
-
-    //Set this to true if SMTP host requires authentication to send email
-
-    $mail->SMTPAuth = true;
-
-    //Provide username and password
-
-    $mail->Username = getenv('SMTP_USER_NAME');
-
-    $mail->Password = getenv('SMTP_PASSCODE');
-
-    //If SMTP requires TLS encryption then set it
-
-    $mail->SMTPSecure = "ssl";
-
-    //Set TCP port to connect to
-
-    $mail->Port = getenv('SMTP_PORT');
-
-    $mail->From = getenv('SMTP_USER_NAME');
-
-
-    $mail->FromName = "Quote Tender  ";
-
-    $adminEmail = getenv('SMTP_USER_NAME');
-
-    $mail->addAddress($email, "Recepient Name");
-    $mail->addAddress('quotetenderindia@gmail.com');
-    $mail->addAddress($adminEmail);
-    $mail->isHTML(true);
-
-    $mail->Subject = "Alot Tender";
-    $qt1 = "SELECT user_tender_requests.tenderID,members.name
-FROM user_tender_requests
-INNER JOIN members ON user_tender_requests.member_id =members.member_id WHERE id='" . $d . "'";
-    $qty = mysqli_query($db, $qt1);
-    $qty = mysqli_fetch_row($qty);
-    $uname = $qty[0];
-
-    $mail->Body = "
-<div style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
-    <div style='text-align: center; margin-bottom: 20px;'>
-        <img src='https://dvepl.com/assets/images/logo/dvepl-logo.png' alt='Quote Tender Logo' style='max-width: 200px; height: auto;'>
-    </div>
-    <p style='font-size: 18px; color: #555;'>Dear <strong>" . $qty[1] . "</strong>,</p>
-    <p>We are pleased to inform you that the <strong>Tender ID:</strong> " . htmlspecialchars($uname) . " has been allotted to you. For any further assistance or queries regarding the process, please feel free to contact us. We are here to help!</p>
-    
-    <p style='margin-top: 20px;'>
-        <strong>Thanks & Regards,</strong><br/>
-        <span style='color: #4CBB17;'>Admin, DVEPL</span><br/>
-        <span>Mobile: <a href='tel:+919417601244' style='color: #4CBB17; text-decoration: none;'>+91-9417601244</a></span><br/>
-        <span>Email: <a href='mailto:info@quotender.com' style='color: #4CBB17; text-decoration: none;'>info@quotender.com</a></span>
-    </p>
-
-    <hr style='border: none; border-top: 1px solid #ddd; margin: 20px 0;'>
-
-    <p style='text-align: center; font-size: 12px; color: #888;'>
-       Copyright 2025 DVEPL. All Rights Reserved.
-    </p>
-</div>";
-
-
-    if (!$mail->send()) {
-
-        echo "Mailer Error: " . $mail->ErrorInfo;
-    }
-
-
-    $stat = 1;
-    $re = base64_encode($stat);
-    echo ("<SCRIPT LANGUAGE='JavaScript'>
-    window.location.href='alot-tender.php?status=$re';
-    </SCRIPT>");
 }
 
 
+try {
+    // Fetch unique, non-empty cities only
+    $stmtFetchStates = $db->prepare("SELECT * FROM state WHERE is_active = 1 ");
+    $stmtFetchStates->execute();
+    $states = $stmtFetchStates->get_result()->fetch_all(MYSQLI_ASSOC);
+} catch (\Throwable $th) {
+    //throw $th;
+}
+
+
+// fetch city by state code with ajax
+if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
+    try {
+
+        $stateCode = $_POST['stateCode'];
+
+        if (empty($stateCode)) {
+            echo json_encode([
+                "status" => 400,
+                "error" => "Invalid state",
+            ]);
+            exit;
+        }
+
+        $db->begin_transaction();
+
+        // Fetch unique, non-empty cities only
+        $stmtFetchCities = $db->prepare("SELECT * FROM cities WHERE state_code = ? AND is_active = 1");
+        $stmtFetchCities->bind_param("s", $stateCode);
+        $stmtFetchCities->execute();
+        $cities = $stmtFetchCities->get_result()->fetch_all(MYSQLI_ASSOC);
+
+
+        echo json_encode([
+            "status" => 200,
+            "data" => $cities,
+        ]);
+        exit;
+
+    } catch (\Throwable $th) {
+        //throw $th;
+        echo json_encode([
+            "status" => 500,
+            "error" => $th->getMessage(),
+        ]);
+        exit;
+    }
+}
 
 $requestQuery = mysqli_query($db, "SELECT ur.tenderID, ur.tender_no, ur.reference_code, ur.name_of_work,
 department.department_name, s.section_name, ur.selected_user_id , ur.reminder_days, sm.name, sm.email_id, sm.mobile
@@ -220,6 +258,10 @@ $members = mysqli_query($db, $memberQuery);
     <!-- Include Select2 JS -->
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.js"></script>
+
+
 
     <script>
         $(document).ready(function () {
@@ -253,6 +295,53 @@ $members = mysqli_query($db, $memberQuery);
 
 <body class="">
 
+    <?php if (isset($_SESSION['success'])) { ?>
+        <script>
+            const notyf = new Notyf({
+                position: {
+                    x: 'center',
+                    y: 'top'
+                },
+                types: [
+                    {
+                        type: 'success',
+                        background: '#26c975', // Change background color
+                        textColor: '#FFFFFF',  // Change text color
+                        dismissible: true,
+                        duration: 10000
+                    }
+                ]
+            });
+            notyf.success("<?php echo $_SESSION['success']; ?>");
+        </script>
+        <?php
+        unset($_SESSION['success']);
+        ?>
+    <?php } ?>
+
+    <?php if (isset($_SESSION['error'])) { ?>
+        <script>
+            const notyf = new Notyf({
+                position: {
+                    x: 'center',
+                    y: 'top'
+                },
+                types: [
+                    {
+                        type: 'error',
+                        background: '#ff1916',
+                        textColor: '#FFFFFF',
+                        dismissible: true,
+                        duration: 10000
+                    }
+                ]
+            });
+            notyf.error("<?php echo $_SESSION['error']; ?>");
+        </script>
+        <?php
+        unset($_SESSION['error']);
+        ?>
+    <?php } ?>
     <div class="loader-bg">
         <div class="loader-track">
             <div class="loader-fill"></div>
@@ -330,12 +419,11 @@ $members = mysqli_query($db, $memberQuery);
                                 </h5>
                             </div>
 
-                             <ul class="breadcrumb">
+                            <ul class="breadcrumb">
                                 <li class="breadcrumb-item">
                                     <a href="index.php"><i class="feather icon-home"></i> Home</a>
                                 </li>
-                                <li class="breadcrumb-item active"><a
-                                        href="alot-tender.php">Alot Tender</a>
+                                <li class="breadcrumb-item active"><a href="alot-tender.php">Alot Tender</a>
                                 </li>
                             </ul>
 
@@ -459,7 +547,7 @@ $members = mysqli_query($db, $memberQuery);
                                                     echo "<option value='" . $row['0'] . "'>" . $row['1'] . "-" . $row['4'] . "-" . $row['3'] . "</option>";
                                                 }
 
-                                                echo '<option value="other">Other</option>';
+                                                // echo '<option value="other">Other</option>';
 
                                                 echo "</select>";
                                                 ?>
@@ -495,7 +583,22 @@ $members = mysqli_query($db, $memberQuery);
                                             </div>
 
 
+                                            <div class="form-group">State <span style="color:red;"> *</span>
+                                                <select name="state" class="js-example-basic-single select-state">
+                                                    <option>State</option>
+                                                    <?php foreach ($states as $state) { ?>
+                                                        <option value="<?= $state['state_code'] ?>">
+                                                            <?= $state['state_name'] ?>
+                                                        </option>
+                                                    <?php } ?>
+                                                </select>
+                                            </div>
 
+                                            <div class="form-group">City <span style="color:red;"> *</span>
+                                                <select name="city" class="js-example-basic-single select-city">
+                                                    <option>City</option>
+                                                </select>
+                                            </div>
 
                                             <div class="form-group">Company Name
                                                 <label class="sr-only control-label" for="name">City<span class=" ">
@@ -541,5 +644,43 @@ $members = mysqli_query($db, $memberQuery);
         </div>
     </section>
 </body>
+
+<script>
+    $(document).ready(function () {
+        $(document).on("change", ".select-state", async function (e) {
+            let stateCode = $(this).val();
+            await $.ajax({
+                url: window.location.href,
+                type: 'POST',
+                data: { stateCode: stateCode },
+                dataType: 'json',
+                success: function (response) {
+                    if (response.status == 200) {
+                        let citySelect = $(".select-city");
+                        citySelect.empty(); // clear old options
+                        citySelect.append('<option value="">Select City</option>');
+                        $.each(response.data, function (index, city) {
+                            citySelect.append(
+                                `<option value="${city.city_id}">${city.city_name}</option>`
+                            );
+                        });
+                    } else {
+                        Swal.fire("No Data", "No cities found.", "warning");
+                    }
+                },
+                error: function (xhr, status, error) {
+                    console.error("AJAX Error:", status, error);
+                    console.error("Raw Response:", xhr.responseText);
+                    Swal.fire("Error", "An error occurred while processing your request. Please try again.", "error");
+                }
+            });
+        });
+
+        $('.js-example-basic-single').select2({
+            width: '100%',
+        });
+
+    })
+</script>
 
 </html>

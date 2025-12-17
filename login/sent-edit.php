@@ -395,7 +395,7 @@ $members = mysqli_query($db, $memberQuery);
                                                         echo "<option value='" . $row['member_id'] . "'>" . $row['member_id'] . "--" . $row['name'] . "--" . $row['firm_name'] . "--" . $row['mobile'] . "--" . $row['email_id'] . "</option>";
                                                     }
                                                     ?>
-                                                    <option value="other">Other</option>
+                                                    <!-- <option value="other">Other</option> -->
                                                 </select>
 
                                             </div>

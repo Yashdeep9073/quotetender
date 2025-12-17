@@ -46,8 +46,8 @@ if ($emailSettingData) {
     putenv("SMTP_PORT=" . $emailSettingData['email_port']);
 } else {
     putenv("SMTP_HOST=smtp.hostinger.com");
-    putenv('SMTP_USER_NAME=mailerbot@vibrantick.in');
-    putenv('SMTP_PASSCODE=Mailerbot@123');
+    putenv('SMTP_USER_NAME=mailerbotv3@vibrantick.in');
+    putenv('SMTP_PASSCODE=Mailerbotv3@2026');
     putenv('SMTP_PORT=465');
 }
 

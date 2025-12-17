@@ -529,12 +529,12 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['tender_id']) && isset(
                                                     <?= date("d-m-Y", strtotime($row['sent_at'])) ?>
                                                     <br>
 
-                                                    <?php if (!empty($row['file_name'])): ?>
+                                                    <?php if (!isset($row['file_name'])): ?>
                                                         <a href="../login/tender/<?= $row['file_name'] ?>" target="_blank">View
                                                             File 1</a><br>
                                                     <?php endif; ?>
 
-                                                    <?php if (!empty($row['file_name2'])): ?>
+                                                    <?php if (!isset($row['file_name2'])): ?>
                                                         <a href="../login/tender/<?= $row['file_name2'] ?>" target="_blank">View
                                                             File 2</a><br>
                                                     <?php endif; ?>

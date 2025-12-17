@@ -22,4 +22,11 @@ putenv('IP_TOKEN=a57896b12007b1');
 putenv('CRM_URL=https://dvepl.vibrantick.org');
 
 
+
+// putenv('SEVER_URL=localhost/quotetender');
+putenv('SEVER_URL=https://dvepl.com/quotetender');
+putenv('SECRET_KEY=!@#$%^&*())_+');
+putenv('TOKEN=Dvepl@#2026');
+
+
 ?>

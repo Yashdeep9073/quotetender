@@ -464,7 +464,19 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
 
                 $emailBody = nl2br($template['content_1']) . "<br><br>" . nl2br($template['content_2']);
                 $finalBody = str_replace($search, $replace, $emailBody);
-                $mail->Subject = $template['email_template_subject'] ?? "Tender Request Approved";
+
+                // Replace placeholders in template
+                $searchInSubject = [
+                    '{$tenderId}',
+                ];
+
+                $replaceInSubject = [
+                    $memberData[4],         // tender id
+                ];
+
+                $emailSubject = nl2br($template['email_template_subject']);
+                $finalSubject = str_replace($searchInSubject, $replaceInSubject, $emailSubject);
+                $mail->Subject = $finalSubject;
 
                 // Handle attachments
                 if (!empty($memberData[6])) { // Use index 6 directly
@@ -482,17 +494,25 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
 
                 // Set email body
                 $mail->Body = "
-            <div style='font-family: Arial, sans-serif; color:#333; line-height:1.6;'>
-                <div style='text-align:center;'>
-                    <img src='" . $logo . "' alt='DVEPL Logo' style='max-width:150px; height:auto; margin-bottom:20px;'>
-                </div>
-                $finalBody
-            </div>
-        ";
+                    <div style='font-family: Arial, sans-serif; color:#333; line-height:1.6;'>
+                        <div style='text-align:center;'>
+                            <img src='" . $logo . "' alt='DVEPL Logo' style='max-width:150px; height:auto; margin-bottom:20px;'>
+                        </div>
+                        $finalBody
+                    </div>
+                ";
 
                 // Send the email
                 if ($mail->send()) {
                     $sentCount++;
+
+                    date_default_timezone_set("Asia/Calcutta");
+                    $emailSentDate = date("Y-m-d h:i A");
+
+                    $stmtUpdateEmailSentAt = $db->prepare("UPDATE user_tender_requests SET email_sent_date = ? WHERE id = ?");
+                    $stmtUpdateEmailSentAt->bind_param("ss", $emailSentDate, $memberData[5]);
+                    $stmtUpdateEmailSentAt->execute();
+
                 } else {
                     echo json_encode([
                         "status" => 400,
