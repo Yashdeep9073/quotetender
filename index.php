@@ -19,279 +19,261 @@ date_default_timezone_set('Asia/Kolkata');
 $sent_at = date('Y-m-d H:i:s');
 
 
+function processTenderRequest(mysqli $db, array $data): array
+{
+    $db->begin_transaction();
 
-// Register user
-if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['submit'])) {
-    if (!isset($_SESSION["login_register"])) {
-        header("location: login.php");
-    } else {
+    try {
+        // Count tender usage (lock rows to avoid race)
+        $stmt = $db->prepare("
+            SELECT COUNT(*) 
+            FROM user_tender_requests
+            WHERE tenderID = ?
+            FOR UPDATE
+        ");
+        $stmt->bind_param("s", $data['tender_id']);
+        $stmt->execute();
+        $stmt->bind_result($count);
+        $stmt->fetch();
+        $stmt->close();
 
-        $swl = " SELECT pending_request FROM members WHERE email_id='" . $_SESSION["login_register"] . "'";
-
-        $max = mysqli_query($db, $swl);
-        $pening_requests = mysqli_fetch_row($max);
-
-
-        if ($pening_requests[0] > 0) {
-            $query = "SELECT * FROM members WHERE email_id='" . $_SESSION["login_register"] . "'";
-
-            $result = mysqli_query($db, $query);
-            $row = mysqli_fetch_row($result);
-
-            $email = $row[4];
-            $name_user = $row[1];
-
-            $_SESSION['user_name'] = $name_user;
-            $member_id = $row[0];
-            $pendingRequests = $row[12] - 1;
-
-            mysqli_select_db($db, DB_NAME);
-            $upload_directory = "login/tender/";
-
-            $department_id = $_POST['dept'];
-
-            $tender = trim($_POST['tenderid']);
-
-            $tender = trim($_POST['tenderid']);
-
-            if (!preg_match('/^[A-Za-z]+([_-][0-9]+)+$/', $tender)) {
-                $_SESSION['error'] = "Invalid Tender ID (e.g. ABC123, ABC_123, ABC-123, ABC_2025_12_17).";
-                header('Location: index.php');
-                exit();
-            }
-
-
-
-            $due_date = $_POST['datepicker'];
-
-            $unique_filename1 = $unique_filename2 = null;
-            if (!empty($_FILES["uploaded_file1"]["tmp_name"])) {
-                $file_size1 = $_FILES["uploaded_file1"]["size"];
-                if (isset($file_size1) && $file_size1 < 3 * 1024 * 1024) {
-                    $temp_name1 = $_FILES["uploaded_file1"]["tmp_name"];
-                    $original_name1 = $_FILES["uploaded_file1"]["name"];
-                    $unique_filename1 = uniqid() . '_' . $original_name1;
-                    move_uploaded_file($temp_name1, $upload_directory . $unique_filename1);
-                    $fileUploaded1 = true;
-                } else {
-                    $fileUploaded1 = false;
-                }
-            }
-
-            if (!empty($_FILES["uploaded_file2"]["tmp_name"])) {
-                $file_size2 = $_FILES["uploaded_file2"]["size"];
-                if (isset($file_size2) && $file_size2 < 3 * 1024 * 1024) {
-                    $temp_name2 = $_FILES["uploaded_file2"]["tmp_name"];
-                    $original_name2 = $_FILES["uploaded_file2"]["name"];
-                    $unique_filename2 = uniqid() . '_' . $original_name2;
-                    move_uploaded_file($temp_name2, $upload_directory . $unique_filename2);
-                    $fileUploaded2 = true;
-                } else {
-                    $fileUploaded2 = false;
-                }
-            }
-
-            if ($fileUploaded1 == false || $fileUploaded2 == false) {
-                // $msg = "<div class='alert alert-danger alert-dismissible fade show' role='alert' style='font-size:16px;' id='goldmessage'>
-                //     <strong><i class='feather icon-check'></i>Error !</strong> File size exceeds the limit of 3MB.
-                //     </div>";
-
-                $_SESSION['error'] = "Error !File size exceeds the limit of 3MB.";
-            }
-
-
-            $tenderExistsQuery = "
-        SELECT 
-        ur.file_name,
-        ur.tenderID, 
-        ur.tender_no, 
-        ur.reference_code, 
-        ur.section_id, 
-        ur.sub_division_id,
-        ur.division_id, 
-        ur.name_of_work, 
-        ur.file_name,
-        ur.tentative_cost,
-        ur.auto_quotation,
-        ur.member_id
-        FROM user_tender_requests ur
-        WHERE (ur.status = 'Sent' OR ur.status = 'Allotted') 
-        AND ur.tenderID = '$tender' 
-        AND (ur.auto_quotation = '1' OR ur.auto_quotation = '0')
-        ORDER BY ur.created_at DESC 
-        LIMIT 1
-        ";
-
-
-            $tenderExistsResult = mysqli_query($db, $tenderExistsQuery);
-            $rowTender = mysqli_num_rows($tenderExistsResult);
-
-
-            $userExist = mysqli_query($db, "SELECT * FROM user_tender_requests ur WHERE ur.tenderID='" . $tender . "' AND ur.member_id = '$member_id'");
-            $userExistResult = mysqli_num_rows($userExist);
-
-            if ($userExistResult > 0) {
-                // $msg = "<div class='alert alert-danger alert-dismissible fade show' role='alert' style='font-size:16px;' id='goldmessage'>
-                // <strong><i class='feather icon-check'></i>Error !</strong> You Already Sent Request On This Tender Id.
-                // </div>
-                // ";
-
-                $_SESSION['error'] = "Error ! You Already Sent Request On This Tender Id.";
-
-            } else {
-                // Check if there are existing tenders
-                if ($rowTender > 0) {
-                    // Fetch tender quote details
-                    $tenderQuote = mysqli_fetch_row($tenderExistsResult);
-
-                    $response = referenceCode($db, "REF");
-                    $referenceNumber = $response["data"];
-
-                    // Insert tender request with 'Sent' status
-                    $query = "INSERT INTO user_tender_requests (
-                        member_id, tenderID, department_id, due_date, file_name, status,
-                        tender_no, reference_code, section_id, sub_division_id, division_id,
-                        name_of_work, sent_at, tentative_cost, auto_quotation
-                    ) VALUES (
-                        '$member_id', '$tender', '$department_id', '$due_date', '$tenderQuote[0]', 'Sent',
-                        '$tenderQuote[2]', '$referenceNumber', '$tenderQuote[5]', '$tenderQuote[6]',
-                        '$tenderQuote[7]', '$tenderQuote[8]', '$sent_at', '$tenderQuote[9]', '$tenderQuote[10]'
-                    )";
-
-
-                    mysqli_query($db, $query);
-                } else {
-                    // Check if a tender exists but no rows are returned (new tender)
-                    if (mysqli_num_rows($tenderExistsResult) == 0) {
-                        // Handle file upload logic
-                        if ($fileUploaded1 == true || $fileUploaded2 == true || empty($_FILES["uploaded_file"]["tmp_name"])) {
-
-                            $response = referenceCode($db, "REF");
-                            $referenceNumber = $response["data"];
-
-                            // Insert tender request with 'Requested' status
-                            $query = "INSERT INTO user_tender_requests (member_id, tenderID, department_id, due_date, file_name, status, file_name2,reference_code) VALUES (
-                            '$member_id', '$tender', '$department_id', '$due_date', '$unique_filename1', 'Requested', '$unique_filename2','$referenceNumber')";
-                            mysqli_query($db, $query);
-
-                            // Update the member's pending request count
-                            mysqli_query($db, "UPDATE members SET `pending_request` = '$pendingRequests' WHERE `member_id` = '$member_id'");
-                        } else {
-
-                            $response = referenceCode($db, "REF");
-                            $referenceNumber = $response["data"];
-                            // Handle case where tender exists but no files are uploaded
-                            $tenderQuote = mysqli_fetch_row($tenderExistsResult);
-
-                            $response = referenceCode($db, "REF");
-                            $referenceNumber = $response["data"];
-
-                            $query = "INSERT INTO user_tender_requests (
-                                member_id, tenderID, department_id, due_date, file_name, status,
-                                tender_no, reference_code, section_id, sub_division_id, division_id,
-                                name_of_work, tentative_cost, auto_quotation
-                            ) VALUES (
-                                '$member_id', '$tender', '$department_id', '$due_date', '$tenderQuote[0]', 'Requested',
-                                '$tenderQuote[2]', '$referenceNumber', '$tenderQuote[5]', '$tenderQuote[6]',
-                                '$tenderQuote[7]', '$tenderQuote[9]', '$tenderQuote[10]', '$auto_quotation'
-                            )";
-
-
-
-                            mysqli_query($db, $query);
-                        }
-                    }
-                }
-
-                $mail = new PHPMailer(true);
-                $mail->SMTPDebug = 0;
-                $mail->isSMTP();
-                $mail->Host = getenv('SMTP_HOST');
-                $mail->SMTPAuth = true;
-                $mail->Username = getenv('SMTP_USER_NAME');
-                $mail->Password = getenv('SMTP_PASSCODE');
-                $mail->SMTPSecure = "ssl";
-                $mail->Port = getenv('SMTP_PORT');
-
-                $mail->setFrom(getenv('SMTP_USER_NAME'), $emailSettingData['email_from_title'] ?? "Dvepl");
-                $mail->addAddress($email, "Recepient Name");
-
-                $mail->clearCCs(); // safety
-                $mail->clearBCCs();
-
-                if (!empty($ccEmailData) && is_array($ccEmailData)) {
-                    foreach ($ccEmailData as $ccEmail) {
-                        if (!empty($ccEmail['cc_email']) && filter_var($ccEmail['cc_email'], FILTER_VALIDATE_EMAIL)) {
-                            $mail->addCC($ccEmail['cc_email']);
-                        }
-                    }
-                }
-                $mail->isHTML(true);
-
-                $membersQuery = " SELECT ur.tenderID, m.name, m.firm_name, ur.file_name, ur.file_name2
-                FROM user_tender_requests ur
-                INNER JOIN members m ON ur.member_id = m.member_id  WHERE m.email_id='" . $_SESSION["login_register"] . "'";
-
-                $membersResult = mysqli_query($db, $membersQuery);
-                $memberData = mysqli_fetch_row($membersResult);
-
-                $template = emailTemplate($db, "TENDER_REQUEST");
-
-                // Replace placeholders in template
-                $search = [
-                    '{$name}',
-                    '{$tenderId}',
-                    '{$firmName}',
-                    '{$supportPhone}',
-                    '{$enquiryEmail}',
-                    '{$supportEmail}',
-                ];
-
-                $replace = [
-                    $memberData[1],         // name
-                    $tender,         // tender id
-                    $memberData[2],         // firm name
-                    $supportPhone ?? 'N/A',
-                    $enquiryMail ?? 'N/A',
-                    $supportEmail ?? 'N/A',
-                ];
-
-                $emailBody = nl2br($template['content_1']) . "<br><br>" . nl2br($template['content_2']);
-                // Replace placeholders
-                $finalBody = str_replace($search, $replace, $emailBody);
-
-
-                // echo "<pre>";
-                // print_r($finalBody);
-                // exit;
-
-
-                $mail->Subject = $template['email_template_subject'] ?? "Tender Request Notification";
-                // Corrected version with proper precedence
-                $mail->Body = "
-                        <div style='font-family: Arial, sans-serif; color:#333; line-height:1.6;'>
-                            <div style='text-align:center;'>
-                                <img src='" . $logo . "' alt='DVEPL Logo' style='max-width:150px; height:auto; margin-bottom:20px;'>
-                            </div>
-                            $finalBody
-                        </div>
-                    ";
-
-                // $mail->AltBody = strip_tags($finalBody);
-
-
-                if (!$mail->send()) {
-                    $_SESSION['error'] = "Mailer Error: " . $mail->ErrorInfo;
-                }
-
-                $_SESSION['success'] = "Your request sent successfully.We will contact you soon.";
-
-            }
-        } else {
-            $_SESSION['error'] = "Error ! You have reached the maximum allowed requests. Please try again later.";
+        // Block third attempt
+        if ($count >= 2) {
+            $db->rollback();
+            return [
+                'success' => false,
+                'message' => 'This Tender ID has already been used twice.'
+            ];
         }
+
+        // Decide status + email
+        if ($count === 0) {
+            $status = 'Requested';
+            $emailTemplate = 'TENDER_REQUEST';
+        } else {
+            $status = 'Sent';
+            $emailTemplate = 'SENT_TENDER';
+        }
+
+        $refResponse = referenceCode($db, "REF");
+        $refCode = $refResponse['data']; 
+
+        //  Insert request
+        $stmt = $db->prepare("
+            INSERT INTO user_tender_requests
+            (
+                member_id,
+                tenderID,
+                reference_code,
+                department_id,
+                due_date,
+                file_name,
+                file_name2,
+                status,
+                auto_quotation,
+                created_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, NOW())
+        ");
+
+        $stmt->bind_param(
+            "isssssss",
+            $data['member_id'],
+            $data['tender_id'],
+            $refCode,
+            $data['department_id'],
+            $data['due_date'],
+            $data['file1'],
+            $data['file2'],
+            $status
+        );
+
+        if (!$stmt->execute()) {
+            throw new Exception('Insert failed');
+        }
+
+        $stmt->close();
+
+        //  Reduce pending_request
+        $stmt = $db->prepare("
+            UPDATE members
+            SET pending_request = pending_request - 1
+            WHERE member_id = ? AND pending_request > 0
+        ");
+        $stmt->bind_param("i", $data['member_id']);
+        $stmt->execute();
+        $stmt->close();
+
+        $db->commit();
+
+        return [
+            'success' => true,
+            'status' => $status,
+            'email_template' => $emailTemplate
+        ];
+
+    } catch (Throwable $e) {
+        $db->rollback();
+        return [
+            'success' => false,
+            'message' => 'Something went wrong. Please try again.'
+        ];
     }
 }
+
+function replaceTemplateVars(string $content, array $vars): string
+{
+    foreach ($vars as $key => $value) {
+        $content = str_replace('{$' . $key . '}', $value, $content);
+    }
+    return $content;
+}
+
+
+function sendMail(
+    array $template,
+    string $toEmail,
+    string $toName,
+    array $placeholders,
+    array $ccEmails = [],
+    ?string $logo = null
+): bool {
+
+    $mail = new PHPMailer(true);
+
+    try {
+        // SMTP config
+        $mail->isSMTP();
+        $mail->SMTPDebug = 0;
+        $mail->Host = getenv('SMTP_HOST');
+        $mail->SMTPAuth = true;
+        $mail->Username = getenv('SMTP_USER_NAME');
+        $mail->Password = getenv('SMTP_PASSCODE');
+        $mail->SMTPSecure = 'ssl';
+        $mail->Port = getenv('SMTP_PORT');
+
+        // From / To
+        $mail->setFrom(
+            getenv('SMTP_USER_NAME'),
+            $template['email_from_title'] ?? 'Dvepl'
+        );
+        $mail->addAddress($toEmail, $toName);
+
+        // CC (optional)
+        $mail->clearCCs();
+        if (!empty($ccEmails)) {
+            foreach ($ccEmails as $cc) {
+                if (filter_var($cc, FILTER_VALIDATE_EMAIL)) {
+                    $mail->addCC($cc);
+                }
+            }
+        }
+
+        $mail->isHTML(true);
+
+        // Subject
+        $subject = $template['email_template_subject'] ?? 'Notification';
+        $mail->Subject = replaceTemplateVars($subject, $placeholders);
+
+        // Body
+        $body = nl2br($template['content_1'] ?? '');
+        $body .= "<br><br>" . nl2br($template['content_2'] ?? '');
+
+        $finalBody = replaceTemplateVars($body, $placeholders);
+
+        $mail->Body = "
+            <div style='font-family: Arial, sans-serif; color:#333; line-height:1.6;'>
+                " . ($logo ? "<div style='text-align:center; margin-bottom:20px;'>
+                        <img src='{$logo}' alt='Logo' style='max-width:150px;'>
+                   </div>" : "") . "
+                {$finalBody}
+            </div>
+        ";
+
+        return $mail->send();
+
+    } catch (Exception $e) {
+        // You may log this if needed
+        return false;
+    }
+}
+
+
+
+// Register user
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
+
+    if (!isset($_SESSION['login_register'])) {
+        header("Location: login.php");
+        exit;
+    }
+
+    // Get member & pending_request
+    $stmt = $db->prepare("
+        SELECT member_id, name, email_id, pending_request
+        FROM members
+        WHERE email_id = ?
+    ");
+    $stmt->bind_param("s", $_SESSION['login_register']);
+    $stmt->execute();
+    $member = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    if (!$member || (int) $member['pending_request'] <= 0) {
+        $_SESSION['error'] = "You have reached the maximum allowed requests.";
+        header("Location: index.php");
+        exit;
+    }
+
+    //  Validate tender
+    $tender = trim($_POST['tenderid']);
+    if (!preg_match('/^[A-Za-z]+([_-][0-9]+)+$/', $tender)) {
+        $_SESSION['error'] = "Invalid Tender ID format.";
+        header("Location: index.php");
+        exit;
+    }
+
+    // Process tender (SERVICE)
+    $result = processTenderRequest($db, [
+        'member_id' => (int) $member['member_id'],
+        'tender_id' => $tender,
+        'department_id' => $_POST['dept'],
+        'due_date' => $_POST['datepicker'],
+        'file1' => $unique_filename1 ?? null,
+        'file2' => $unique_filename2 ?? null,
+    ]);
+
+    if (!$result['success']) {
+        $_SESSION['error'] = $result['message'];
+        header("Location: index.php");
+        exit;
+    }
+
+    // Send correct email
+    $template = emailTemplate($db, $result['email_template']);
+
+    sendMail(
+        template: $template,
+        toEmail: $member['email_id'],
+        toName: $member['name'],
+        placeholders: [
+            'name' => $member['name'],
+            'tenderId' => $tender,
+            'firmName' => $member['firm_name'] ?? '',
+            'supportPhone' => $supportPhone ?? 'N/A',
+            'enquiryEmail' => $enquiryMail ?? 'N/A',
+            'supportEmail' => $supportEmail ?? 'N/A',
+        ],
+        ccEmails: array_column($ccEmailData ?? [], 'cc_email'),
+        logo: $logo ?? null
+    );
+
+
+    $_SESSION['success'] = "Tender request submitted successfully.";
+    header("Location: index.php");
+    exit;
+}
+
 
 $ba = "SELECT * FROM banner";
 $ba = mysqli_query($db, $ba);
