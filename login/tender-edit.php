@@ -170,6 +170,8 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
 
     try {
 
+        $updatedBy = $_SESSION['login_user'];
+
         if (isset($isUpdate) && $isUpdate === 1) {
 
             // echo json_encode([ 
@@ -269,7 +271,8 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
                     `file_name2` = 'null',
                     `status` = 'Sent', 
                     `sent_at` = '$sent_at', 
-                    `auto_quotation` = '$autoEmail' 
+                    `auto_quotation` = '$autoEmail', 
+                    `updated_by` = '$updatedBy' 
                     WHERE `tenderID` = '" . $tender2 . "'");
 
                 // Update additional_files with merged array
@@ -310,7 +313,8 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
                         `file_name2` = 'null',
                         `status` = 'Sent', 
                         `sent_at` = '$sent_at', 
-                        `auto_quotation` = '$autoEmail' 
+                        `auto_quotation` = '$autoEmail',
+                          `updated_by` = '$updatedBy'  
                         WHERE `tenderID` = '" . $tender2 . "'");
             }
         } else {
@@ -385,7 +389,9 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
 
             mysqli_query($db, "UPDATE user_tender_requests set `tender_no` ='$tender', `reference_code`='$code',`tenderID`='$tender1', 
             `tentative_cost`='$tentative_cost', `department_id`='$dept',`section_id`='$section',`sub_division_id`='$sub_division_id',`division_id`='$division_id',`name_of_work`='$work',
-            `file_name`='null',`file_name2`='null',`status`='Sent', `sent_at`='$sent_at' , `auto_quotation`='$autoEmail' WHERE `tenderID`='" . $tender2 . "' ");
+            `file_name`='null',`file_name2`='null',`status`='Sent', `sent_at`='$sent_at' , `auto_quotation`='$autoEmail',
+               `updated_by` = '$updatedBy' 
+             WHERE `tenderID`='" . $tender2 . "' ");
 
             $stmtUpdateMedia = $db->prepare("UPDATE user_tender_requests SET additional_files = ? WHERE tenderID = ?");
             $stmtUpdateMedia->bind_param("ss", $mediaUrlsJson, $tender2); // "si" means first param is string (JSON), second is integer (ID)
@@ -910,7 +916,8 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
                                                     <div class="file-input-wrapper">
                                                         <input name="multi_file[]" type="file"
                                                             class="form-control input-md file-input"
-                                                            accept="application/pdf,application/vnd.ms-excel,.csv,.xlsx,.png,.jpeg,.jpg,.webp,.svg">
+                                                            accept="application/pdf,application/vnd.ms-excel,.csv,.xlsx,.png,.jpeg,.jpg,.webp,.svg"
+                                                            required>
                                                     </div>
                                                 </div>
 
@@ -1192,7 +1199,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
                 });
 
                 // Basic validation
-                if (!tenderno || !code || !work || !tender || !tentative_cost || !department || !coutrycode || !statelist || !city || !autoEmail) {
+                if (!tenderno || !code || !work || !tender || !tentative_cost || !department || !coutrycode || !statelist || !city || !autoEmail || !filesArray) {
                     Swal.fire("Error", "All fields are required. Please fill out the form completely.", "error");
                     return;
                 }
@@ -1227,47 +1234,44 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
                 //     console.log(key, value);
                 // };
 
-                await $.ajax({
-                    url: window.location.href,
-                    type: 'POST',
-                    data: formData,
-                    dataType: 'json',
-                    // Important: Set these to false to let the browser handle the content-type
-                    processData: false,  // Don't process the data
-                    contentType: false,  // Don't set content type (browser will set it with boundary)
-                    dataType: 'json',
-                    success: function (response) {
-                        if (response.status == 201) {
+                try {
 
-                            // Restore button state
-                            $submitBtn.prop('disabled', false).val(originalBtnText);
-
-                            // Show success message
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Success!',
-                                text: 'Tender updated successful!',
-                                confirmButtonText: 'OK'
-                            });
+                    const response = await $.ajax({
+                        url: window.location.href,
+                        type: 'POST',
+                        data: formData,
+                        processData: false,
+                        contentType: false,
+                        dataType: 'json'
+                    });
 
 
+                    if (response.status == 201) {
 
-                            // window.location.href = "tender-request2.php";
-                        } else {
+                        $submitBtn.prop('disabled', false).val(originalBtnText);
 
-                            $submitBtn.prop('disabled', false).html(originalBtnText);
-                            Swal.fire("Error", response.error, "error");
-                        }
-                    },
-                    error: function (xhr, status, error) {
-                        // Reset reCAPTCHA on error
-                        $('#submitBtn').prop('disabled', false); // Enable button - user needs to complete new reCAPTCHA
+                        await Swal.fire({
+                            icon: 'success',
+                            title: 'Success!',
+                            text: 'Tender updated successfully!',
+                            confirmButtonText: 'OK',
+                            allowOutsideClick: false
+                        });
 
-                        console.error("AJAX Error:", status, error);
-                        console.error("Raw Response:", xhr.responseText);
-                        Swal.fire("Error", "An error occurred while processing your request. Please try again.", "error");
+                        console.log("User confirmed alert 👉 redirecting 🚀");
+                        window.location.href = "tender-request2.php";
+
+                    } else {
+                        $submitBtn.prop('disabled', false).val(originalBtnText);
+                        Swal.fire("Error", response.error, "error");
                     }
-                });
+
+                } catch (err) {
+
+                    $submitBtn.prop('disabled', false).val(originalBtnText);
+                    Swal.fire("Error", "An error occurred while processing your request.", "error");
+                }
+
             });
 
             console.log('working');

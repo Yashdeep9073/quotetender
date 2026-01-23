@@ -12,7 +12,7 @@ use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
 
-$adminEmail = "quotetenderindia@gmail.com";
+$adminEmail = "enquiry@dvepl.com";
 $mail = new PHPMailer(true);
 
 //Enable SMTP debugging.
@@ -81,7 +81,7 @@ $mail->Body = "
         <strong>Thanks & Regards,</strong><br/>
         <span style='color: #4CBB17;'>Admin, DVEPL</span><br/>
         <span>Mobile: <a href='tel:+919417601244' style='color: #4CBB17; text-decoration: none;'>+91-94176-01244</a></span><br/>
-        <span>Email: <a href='mailto:quotetenderindia@gmail.com' style='color: #4CBB17; text-decoration: none;'>quotetenderindia@gmail.com</a></span>
+        <span>Email: <a href='mailto:enquiry@dvepl.com' style='color: #4CBB17; text-decoration: none;'>enquiry@dvepl.com</a></span>
     </p>
 
     <hr style='border: none; border-top: 1px solid #ddd; margin: 20px 0;'>

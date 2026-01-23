@@ -7,6 +7,8 @@ if (!isset($_SESSION["login_user"])) {
     header("location: index.php");
 }
 
+
+
 try {
     $stmtFetchTenderRequested = $db->prepare("SELECT
             ROW_NUMBER() OVER (ORDER BY ur.created_at) AS sno, 

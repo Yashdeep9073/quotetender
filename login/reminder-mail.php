@@ -46,7 +46,7 @@ while ($row = mysqli_fetch_row($result)) {
     //Set TCP port to connect to
     $mail->Port = getenv('SMTP_PORT');
 
-    $mail->From = "quotetenderindia@gmail.com";
+    $mail->From = "enquiry@dvepl.com";
 
 
     $mail->FromName = "Dvepl";

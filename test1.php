@@ -1,3 +1,3 @@
 <?php
-echo date("H:i:s");
+echo $_SERVER['DOCUMENT_ROOT'];
 ?>

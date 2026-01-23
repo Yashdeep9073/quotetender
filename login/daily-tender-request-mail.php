@@ -225,10 +225,10 @@ $mail->Password = getenv('SMTP_PASSCODE');
 $mail->SMTPSecure = "ssl";
 $mail->Port = getenv('SMTP_PORT');
 
-// quotetenderindia@gmail.com
+// enquiry@dvepl.com
 $mail->From = getenv('SMTP_USER_NAME');
 $mail->FromName = "Quote Tender";
-$mail->addAddress("quotetenderindia@gmail.com", "Recipient Name");
+$mail->addAddress("enquiry@dvepl.com", "Recipient Name");
 
 $mail->isHTML(true);
 $mail->Subject = "List of All Tender Requests";

@@ -107,7 +107,7 @@ if (isset($_POST['submit'])) {
         $mail->setFrom(getenv('SMTP_USER_NAME'), 'Quote Tender');
         $mail->addAddress($email);
         $mail->addAddress(getenv('SMTP_USER_NAME'));
-        $mail->addAddress('quotetenderindia@gmail.com');
+        $mail->addAddress('enquiry@dvepl.com');
 
         $mail->isHTML(true);
         $mail->Subject = "Tender Allotted";

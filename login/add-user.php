@@ -102,7 +102,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['username'])) {
         $mail->setFrom(getenv('SMTP_USER_NAME'), $emailSettingData['email_from_title'] ?? "Dvepl");
         $mail->addAddress($email, $name);
         $mail->isHTML(true);
-        $mail->addAddress('quotetenderindia@gmail.com');
+        $mail->addAddress('enquiry@dvepl.com');
         $loginUrl = $baseUrl . "/login";
 
         $mail->Subject = "Welcome to DVEPL - Your Account is Active!";
@@ -150,7 +150,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['username'])) {
             
             <div style='text-align: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee; color: #666; font-size: 14px;'>
                 <p>&copy; " . date('Y') . " DVEPL. All rights reserved.</p>
-                <p>If you have any questions, contact us at quotetenderindia@gmail.com</p>
+                <p>If you have any questions, contact us at enquiry@dvepl.com</p>
             </div>
         </div>";
 

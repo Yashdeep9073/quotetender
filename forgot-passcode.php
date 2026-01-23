@@ -75,7 +75,7 @@ if (isset($_POST['submit'])) {
 
                 //Provide username and password
 
-                $mail->Username = "quotetenderindia@gmail.com";
+                $mail->Username = "enquiry@dvepl.com";
 
                 $mail->Password = "Zxcv@123";
 

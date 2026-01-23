@@ -9,9 +9,34 @@ require("login/db/config.php");
 require_once "./vendor/autoload.php";
 require_once "./env.php";
 require "./login/utility/referenceCodeGenerator.php";
+require_once __DIR__ . "/./login/utility/fileUploader.php";
 
+$upload_directory = "login/tender/";
 
-
+$allowedTypes = [
+    // Images
+    'jpg',
+    'jpeg',
+    'png',
+    'gif',
+    'webp',
+    'bmp',
+    'svg',
+    'tiff',
+    'ico',
+    // Documents
+    'pdf',
+    'doc',
+    'docx',
+    'xls',
+    'xlsx',
+    'ppt',
+    'pptx',
+    'txt',
+    'rtf',
+    // Data
+    'csv',
+];
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
@@ -24,9 +49,9 @@ function processTenderRequest(mysqli $db, array $data): array
     $db->begin_transaction();
 
     try {
-        // Count tender usage (lock rows to avoid race)
+        // 1️⃣ Count tender usage (lock)
         $stmt = $db->prepare("
-            SELECT COUNT(*) 
+            SELECT COUNT(*)
             FROM user_tender_requests
             WHERE tenderID = ?
             FOR UPDATE
@@ -37,7 +62,6 @@ function processTenderRequest(mysqli $db, array $data): array
         $stmt->fetch();
         $stmt->close();
 
-        // Block third attempt
         if ($count >= 2) {
             $db->rollback();
             return [
@@ -46,19 +70,49 @@ function processTenderRequest(mysqli $db, array $data): array
             ];
         }
 
-        // Decide status + email
+        // Defaults (Case 1)
+        $status = 'Requested';
+        $emailTemplate = 'TENDER_REQUEST';
+        $autoQuotation = 0;
+
+        $userAdditionalFiles = $data['user_additional_files'] ?? null;
+        $quotationFiles = null;
+        $refCode = null;
+
+        // 2️⃣ Check if quotation already exists (Case 3)
+        $stmt = $db->prepare("
+            SELECT reference_code, additional_files
+            FROM user_tender_requests
+            WHERE tenderID = ?
+              AND status = 'Sent'
+              AND auto_quotation = '1'
+            ORDER BY created_at ASC
+            LIMIT 1
+        ");
+
+        $stmt->bind_param("s", $data['tender_id']);
+        $stmt->execute();
+        $stmt->bind_result($existingRefCode, $existingQuotationFiles);
+        $hasQuotation = $stmt->fetch();
+        $stmt->close();
+
+        // 3️⃣ Reference code
         if ($count === 0) {
-            $status = 'Requested';
-            $emailTemplate = 'TENDER_REQUEST';
+            $refResponse = referenceCode($db, "REF");
+            $refCode = $refResponse['data'];
         } else {
-            $status = 'Sent';
-            $emailTemplate = 'SENT_TENDER';
+            $refCode = $existingRefCode;
         }
 
-        $refResponse = referenceCode($db, "REF");
-        $refCode = $refResponse['data']; 
+        // 4️⃣ Case 3 logic (reuse quotation)
+        if ($hasQuotation) {
+            $status = 'Sent';
+            $emailTemplate = 'SENT_TENDER';
+            $autoQuotation = 1;
+            $quotationFiles = $existingQuotationFiles;
+        }
 
-        //  Insert request
+        // 5️⃣ Insert request
         $stmt = $db->prepare("
             INSERT INTO user_tender_requests
             (
@@ -67,25 +121,26 @@ function processTenderRequest(mysqli $db, array $data): array
                 reference_code,
                 department_id,
                 due_date,
-                file_name,
-                file_name2,
+                user_additional_files,
+                additional_files,
                 status,
                 auto_quotation,
                 created_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, NOW())
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
         ");
 
         $stmt->bind_param(
-            "isssssss",
+            "isssssssi",
             $data['member_id'],
             $data['tender_id'],
             $refCode,
             $data['department_id'],
             $data['due_date'],
-            $data['file1'],
-            $data['file2'],
-            $status
+            $userAdditionalFiles,
+            $quotationFiles,
+            $status,
+            $autoQuotation
         );
 
         if (!$stmt->execute()) {
@@ -94,7 +149,7 @@ function processTenderRequest(mysqli $db, array $data): array
 
         $stmt->close();
 
-        //  Reduce pending_request
+        // 6️⃣ Reduce pending_request
         $stmt = $db->prepare("
             UPDATE members
             SET pending_request = pending_request - 1
@@ -109,6 +164,7 @@ function processTenderRequest(mysqli $db, array $data): array
         return [
             'success' => true,
             'status' => $status,
+            'reference_code' => $refCode,
             'email_template' => $emailTemplate
         ];
 
@@ -120,6 +176,8 @@ function processTenderRequest(mysqli $db, array $data): array
         ];
     }
 }
+
+
 
 function replaceTemplateVars(string $content, array $vars): string
 {
@@ -136,7 +194,8 @@ function sendMail(
     string $toName,
     array $placeholders,
     array $ccEmails = [],
-    ?string $logo = null
+    ?string $logo = null,
+    array $attachments = []
 ): bool {
 
     $mail = new PHPMailer(true);
@@ -168,6 +227,19 @@ function sendMail(
                 }
             }
         }
+
+        foreach ($attachments as $filePath) {
+            $fullPath = UPLOAD_BASE_PATH . ltrim($filePath, '/');
+
+            if (file_exists($fullPath)) {
+                $mail->addAttachment($fullPath, basename($filePath));
+                error_log("Attachment added ✅📎");
+            } else {
+                error_log("Attachment missing ❌📁 " . $fullPath);
+            }
+        }
+
+
 
         $mail->isHTML(true);
 
@@ -203,6 +275,7 @@ function sendMail(
 // Register user
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
 
+
     if (!isset($_SESSION['login_register'])) {
         header("Location: login.php");
         exit;
@@ -233,14 +306,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
         exit;
     }
 
+
+
+    $uploadedFiles = [];
+
+    // file1
+    if (!empty($_FILES['uploaded_file1']['name'])) {
+        $upload1 = uploadMedia(
+            $_FILES['uploaded_file1'],
+            $upload_directory,
+            $allowedTypes,
+            2 * 1024 * 1024
+        );
+
+        if (isset($upload1[0]['filename'])) {
+            $uploadedFiles[] = $upload1[0]['filename'];
+        }
+    }
+
+    // file2
+    if (!empty($_FILES['uploaded_file2']['name'])) {
+        $upload2 = uploadMedia(
+            $_FILES['uploaded_file2'],
+            $upload_directory,
+            $allowedTypes,
+            2 * 1024 * 1024
+        );
+
+        if (isset($upload2[0]['filename'])) {
+            $uploadedFiles[] = $upload2[0]['filename'];
+        }
+    }
+
+    // Convert to JSON (or NULL if empty)
+    $userAdditionalFilesJson = !empty($uploadedFiles)
+        ? json_encode($uploadedFiles)
+        : null;
+
+
     // Process tender (SERVICE)
     $result = processTenderRequest($db, [
         'member_id' => (int) $member['member_id'],
         'tender_id' => $tender,
         'department_id' => $_POST['dept'],
         'due_date' => $_POST['datepicker'],
-        'file1' => $unique_filename1 ?? null,
-        'file2' => $unique_filename2 ?? null,
+        'user_additional_files' => $userAdditionalFilesJson
     ]);
 
     if (!$result['success']) {
@@ -249,7 +359,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
         exit;
     }
 
-    // Send correct email
+    // 🔹 Fetch quotation files ONLY if auto quotation applied
+    $quotationFiles = [];
+
+    if ($result['status'] === 'Sent') {
+        $stmt = $db->prepare("
+            SELECT additional_files
+            FROM user_tender_requests
+            WHERE tenderID = ?
+              AND status = 'Sent'
+              AND auto_quotation = '1'
+            ORDER BY created_at ASC
+            LIMIT 1
+        ");
+        $stmt->bind_param("s", $tender);
+        $stmt->execute();
+        $stmt->bind_result($quotationFilesJson);
+        $stmt->fetch();
+        $stmt->close();
+
+        if (!empty($quotationFilesJson)) {
+            $quotationFiles = json_decode($quotationFilesJson, true) ?? [];
+        }
+    }
+
+    // 🔹 Send email
     $template = emailTemplate($db, $result['email_template']);
 
     sendMail(
@@ -265,8 +399,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
             'supportEmail' => $supportEmail ?? 'N/A',
         ],
         ccEmails: array_column($ccEmailData ?? [], 'cc_email'),
-        logo: $logo ?? null
+        logo: $logo ?? null,
+        attachments: $quotationFiles
     );
+
 
 
     $_SESSION['success'] = "Tender request submitted successfully.";
