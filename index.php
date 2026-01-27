@@ -54,9 +54,16 @@ function processTenderRequest(mysqli $db, array $data): array
             SELECT COUNT(*)
             FROM user_tender_requests
             WHERE tenderID = ?
+            AND member_id = ?
             FOR UPDATE
         ");
-        $stmt->bind_param("s", $data['tender_id']);
+
+        $stmt->bind_param(
+            "si",
+            $data['tender_id'],
+            $data['member_id']
+        );
+
         $stmt->execute();
         $stmt->bind_result($count);
         $stmt->fetch();
@@ -81,28 +88,47 @@ function processTenderRequest(mysqli $db, array $data): array
 
         // 2️⃣ Check if quotation already exists (Case 3)
         $stmt = $db->prepare("
-            SELECT reference_code, additional_files
+        SELECT reference_code
+        FROM user_tender_requests
+        WHERE tenderID = ?
+        AND reference_code IS NOT NULL
+        ORDER BY created_at ASC
+        LIMIT 1
+    ");
+        $stmt->bind_param("s", $data['tender_id']);
+        $stmt->execute();
+        $stmt->bind_result($existingRefCode);
+        $stmt->fetch();
+        $stmt->close();
+
+        $stmt = $db->prepare("
+            SELECT additional_files
             FROM user_tender_requests
             WHERE tenderID = ?
-              AND status = 'Sent'
-              AND auto_quotation = '1'
+            AND status = 'Sent'
+            AND auto_quotation = 1
             ORDER BY created_at ASC
             LIMIT 1
         ");
-
         $stmt->bind_param("s", $data['tender_id']);
         $stmt->execute();
-        $stmt->bind_result($existingRefCode, $existingQuotationFiles);
+        $stmt->bind_result($existingQuotationFiles);
         $hasQuotation = $stmt->fetch();
         $stmt->close();
 
+
+
         // 3️⃣ Reference code
-        if ($count === 0) {
+        if (!empty($existingRefCode)) {
+            // 🔁 Reuse SAME ref for ALL users
+            $refCode = $existingRefCode;
+        } else {
+            // 🆕 First time this tender appears globally
             $refResponse = referenceCode($db, "REF");
             $refCode = $refResponse['data'];
-        } else {
-            $refCode = $existingRefCode;
         }
+
+
 
         // 4️⃣ Case 3 logic (reuse quotation)
         if ($hasQuotation) {
@@ -641,10 +667,24 @@ $q = mysqli_query($db, $q);
                                     </div>
                                     <br />
                                     <div class="col-lg-12">
-                                        <input type="text" class="" placeholder="Tender ID (e.g. ABC_2025_12_14)"
-                                            name="tenderid" style="border-color: #4CBB17" required />
+                                        <div class="row align-items-center">
+                                            <div class="col-lg-9 col-md-8 mb-2 mb-md-0">
+                                                <input type="text" placeholder="Tender ID (e.g. ABC_2025_12_14)"
+                                                    name="tenderid" id="tenderid" class="form-control"
+                                                    style="border-color: #4CBB17; border-radius: 0;" required />
+                                            </div>
 
+                                            <div class="col-lg-3 col-md-4">
+                                                <button type="button" class="btn btn-success btn-block h-100"
+                                                    style="min-height: 38px; border-radius: 0; background-color: #33cc33; color: #101014;"
+                                                    id="generateTenderId">
+                                                    Generate
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
+
+
                                     <br />
 
                                     <div class="col-lg-12">
@@ -1644,6 +1684,70 @@ $q = mysqli_query($db, $q);
             }
         </script>
 
+        <script>
+            $(document).ready(function () {
+
+                const notyf = new Notyf({
+                    position: {
+                        x: 'center',
+                        y: 'top'
+                    },
+                    types: [
+                        {
+                            type: 'success',
+                            background: '#26c975', // Change background color
+                            textColor: '#FFFFFF',  // Change text color
+                            dismissible: true,
+                            duration: 10000
+                        }
+                    ],
+                    types: [
+                        {
+                            type: 'error',
+                            background: '#ff1916',
+                            textColor: '#FFFFFF',
+                            dismissible: true,
+                            duration: 10000
+                        }
+                    ]
+                });
+                $('#generateTenderId').on('click', function () {
+
+
+                    const deptSelect = $('select[name="dept"]');
+                    const selectedDeptValue = deptSelect.val();
+                    const selectedDeptText = deptSelect.find('option:selected').text();
+
+                    if (!selectedDeptValue) {
+                        notyf.error("Please select a Department");
+                        return;
+                    }
+
+                    // Date: YYYY_MM_DD
+                    const now = new Date();
+                    const year = now.getFullYear();
+                    const month = String(now.getMonth() + 1).padStart(2, '0');
+                    const day = String(now.getDate()).padStart(2, '0');
+                    const dateStr = `${year}_${month}_${day}`;
+
+                    // Department code
+                    let deptCode = selectedDeptText.split('-')[0].trim().split(' ')[0];
+                    deptCode = deptCode.substring(0, 3).toUpperCase();
+
+                    // Random suffix
+                    const randomNo = Math.floor(10 + Math.random() * 90);
+
+                    const tenderId = `${deptCode}_${dateStr}_`;
+
+                    $('#tenderid').val(tenderId);
+
+                    notyf.success("Tender ID generated successfully");
+                });
+
+
+
+            });
+        </script>
 
 </body>
 
