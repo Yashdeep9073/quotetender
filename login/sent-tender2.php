@@ -861,14 +861,16 @@ try {
                                                     </div>
                                                 </td>
                                                 <td>
-                                                    <?php if ($isAdmin || hasPermission('Sent Tender Print', $privileges, $roleData['role_name'])) { ?>
-                                                        <a class='tender_id'
-                                                            href='sent-tender3.php?tender_id=<?= base64_encode($row['tenderID']) ?>'>
+                                                    <strong>
+                                                        <?php if ($isAdmin || hasPermission('Sent Tender Print', $privileges, $roleData['role_name'])) { ?>
+                                                            <a class='tender_id'
+                                                                href='sent-tender3.php?tender_id=<?= base64_encode($row['tenderID']) ?>'>
+                                                                <?= htmlspecialchars($row['tenderID']) ?>
+                                                            </a>
+                                                        <?php } else { ?>
                                                             <?= htmlspecialchars($row['tenderID']) ?>
-                                                        </a>
-                                                    <?php } else { ?>
-                                                        <?= htmlspecialchars($row['tenderID']) ?>
-                                                    <?php } ?>
+                                                        <?php } ?>
+                                                    </strong>
                                                 </td>
                                                 <td><?= htmlspecialchars($row['tender_no']) ?></td>
                                                 <td><?= htmlspecialchars($row['department_name']) ?></td>

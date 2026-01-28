@@ -112,8 +112,8 @@ try {
 
 if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['tender_id']) && isset($_POST['reference_code'])) {
     try {
-        $tenderId = $_POST['tender_id'];
-        $referenceCode = $_POST['reference_code'];
+        $tenderId = trim($_POST['tender_id']);
+        $referenceCode = trim($_POST['reference_code']);
 
         $db->begin_transaction();
 
@@ -131,6 +131,18 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['tender_id']) && isset(
             $db->rollback(); // Add rollback
             exit;
         }
+
+        $tenderData = $result->fetch_array(MYSQLI_ASSOC);
+        // Reference Code Logs 
+        logReferenceCodeEvent(
+            $db,
+            $tenderData['tenderID'],
+            $tenderData['reference_code'],
+            $referenceCode,
+            "UPDATED",
+            "Reference code manually modified by user",
+            $_SESSION['login_user'] ?? null
+        );
 
         // Fixed: bind parameters and execute the update statement
         $stmtUpdateReference = $db->prepare("UPDATE user_tender_requests SET reference_code = ? WHERE id = ?");
@@ -159,12 +171,30 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
 
     // Use a transaction to ensure atomicity
     try {
+        $tenderId = trim($_POST['tenderId']);
         $prefix = "REF";
         $response = referenceCode($db, $prefix);
         $refNumber = $response['data'];
+
+        $stmtFetchTender = $db->prepare("Select tenderID,reference_code From user_tender_requests WHERE id = ?");
+        $stmtFetchTender->bind_param("i", $tenderId);
+        $stmtFetchTender->execute();
+
+        $tenderData = $stmtFetchTender->get_result()->fetch_array(MYSQLI_ASSOC);
+        // Reference Code Logs 
+        logReferenceCodeEvent(
+            $db,
+            $tenderData['tenderID'],
+            $tenderData['reference_code'],
+            $refNumber,
+            "UPDATED",
+            "Reference code auto-generated using button",
+            $_SESSION['login_user'] ?? null
+        );
+
         echo json_encode([
             "status" => 201,
-            "data" => $refNumber
+            "data" => $refNumber,
         ]);
         exit;
     } catch (Exception $e) {
@@ -479,12 +509,14 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
                                                     </div>
                                                 </td>
                                                 <td>
-                                                    <?php if ($isAdmin || hasPermission('Tender Requests View', $privileges, $roleData['role_name'])) { ?>
-                                                        <a class='tender_id'
-                                                            href='tender-request3.php?tender_id=<?php echo base64_encode($row['tenderID']) ?>'><?php echo $row['tenderID'] ?></a>
-                                                    <?php } else { ?>
-                                                        <?php echo $row['tenderID'] ?>
-                                                    <?php } ?>
+                                                    <strong>
+                                                        <?php if ($isAdmin || hasPermission('Tender Requests View', $privileges, $roleData['role_name'])) { ?>
+                                                            <a class='tender_id'
+                                                                href='tender-request3.php?tender_id=<?php echo base64_encode($row['tenderID']) ?>'><?php echo $row['tenderID'] ?></a>
+                                                        <?php } else { ?>
+                                                            <?php echo $row['tenderID'] ?>
+                                                        <?php } ?>
+                                                    </strong>
                                                 </td>
                                                 <td>
                                                     <?php echo $row['reference_code'] ?>
@@ -1031,6 +1063,8 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
                 e.preventDefault();
 
                 const $codeInput = $("#editReferenceCode");
+                // Get values correctly using the name attributes
+                let tenderId = $("input[name='editTenderId']").val();
                 if ($codeInput.length) {
                     try {
                         // Clear the existing value first
@@ -1039,7 +1073,8 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
 
 
                         // Generate and set the new reference number
-                        const refNumber = await generateReferenceNumber();
+                        const refNumber = await generateReferenceNumber(tenderId);
+                        console.log(refNumber)
                         $codeInput.val(refNumber);
 
                     } catch (error) {
@@ -1048,11 +1083,11 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
                 }
             });
 
-            function generateReferenceNumber() {
+            function generateReferenceNumber(tenderId) {
                 return $.ajax({
                     url: window.location.href,
                     method: "POST",
-                    data: { refCode: true },
+                    data: { refCode: true, tenderId: tenderId },
                     dataType: "json"
                 }).then(function (data) {
                     return data.data; // This matches your API response structure

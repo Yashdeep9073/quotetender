@@ -2,7 +2,7 @@
 
 session_start();
 include("db/config.php");
-
+require "./utility/referenceCodeGenerator.php";
 // tender sent
 if (isset($_GET['id'])) {
     $id = $_GET['id'];

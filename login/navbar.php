@@ -275,8 +275,8 @@ $isAdmin = strtolower($roleData['role_name']) === 'admin';
                 <?php if ($isAdmin || hasPermission('CRM', $privileges, $roleData['role_name'])): ?>
                     <!-- CRM Link -->
                     <li class="nav-item ">
-                        <a href="<?= getenv("CRM_URL") ?? "" ?>" target="_blank" class=" nav-link "><span class=" pcoded-micon"><i
-                                    class="feather icon-book"></i></span><span class="pcoded-mtext">CRM
+                        <a href="<?= getenv("CRM_URL") ?? "" ?>" target="_blank" class=" nav-link "><span
+                                class=" pcoded-micon"><i class="feather icon-book"></i></span><span class="pcoded-mtext">CRM
                             </span></a>
                     </li>
                 <?php endif; ?>
@@ -345,6 +345,14 @@ $isAdmin = strtolower($roleData['role_name']) === 'admin';
                         <a href="changepass.php" class="nav-link"><span class="pcoded-micon"><i
                                     class="feather icon-command"></i></span><span class="">Change
                                 Password</span></a>
+                    </li>
+                <?php endif; ?>
+
+                <?php if ($isAdmin || hasPermission('Reference Code', $privileges, $roleData['role_name'])): ?>
+                    <!-- Logs Report -->
+                    <li class="nav-item">
+                        <a href="reference-code-logs.php" class="nav-link "><span class="pcoded-micon"><i
+                                    class="feather icon-file-plus"></i></span><span class="">Reference Code Logs</span></a>
                     </li>
                 <?php endif; ?>
 

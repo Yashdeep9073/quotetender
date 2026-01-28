@@ -1198,10 +1198,26 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
                     }
                 });
 
-                // Basic validation
-                if (!tenderno || !code || !work || !tender || !tentative_cost || !department || !coutrycode || !statelist || !city || !autoEmail || !filesArray) {
-                    Swal.fire("Error", "All fields are required. Please fill out the form completely.", "error");
+
+                console.log(department);
+
+                // Base required fields
+                if (!tenderno || !code || !work || !tender || !tentative_cost || !department || !coutrycode || !autoEmail) {
+                    Swal.fire("Error", "All required fields must be filled.", "error");
                     return;
+                }
+
+                const departmentText = $.trim(
+                    $('select[name="department"]').find('option:selected').text()
+                );
+
+
+                // Conditional validation for Division & Sub Division
+                if (departmentText !== 'Private') {
+                    if (!statelist || !city) {
+                        Swal.fire("Error", "Division and Sub Division are required.", "error");
+                        return;
+                    }
                 }
 
                 // Store original button text and disable button during processing
@@ -1219,7 +1235,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
                 formData.append('tender', tender);
                 formData.append('tentative_cost', tentative_cost);
                 formData.append('department', department);
-                formData.append('coutrycode', coutrycode); // Use the correct name
+                formData.append('coutrycode', coutrycode); // Use the correct name old dev fucked up 🫡
                 formData.append('statelist', statelist); // Use the correct name
                 formData.append('city', city);
                 formData.append('autoEmail', autoEmail);
@@ -1274,7 +1290,6 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
 
             });
 
-            console.log('working');
             $(document).on("change", "#department", async function (e) {
                 let departmentId = $(this).val();
 
@@ -1308,8 +1323,37 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
                 });
             });
 
+
+            $(document).on("change", "#department", async function (e) {
+                const $department = $('select[name="department"]');
+                const $division = $('#statelist');
+                const $subDivision = $('#city');
+
+                const selectedValue = $.trim(
+                    $department.find('option:selected').text()
+                );
+
+
+                if (selectedValue === 'Private') {
+                    // hide parent form-groups
+                    $division.closest('.form-group').hide();
+                    $subDivision.closest('.form-group').hide();
+
+                    // reset values
+                    $division.val('');
+                    $subDivision.val('');
+
+                } else {
+                    $division.closest('.form-group').show();
+                    $subDivision.closest('.form-group').show();
+                }
+            });
+
+
         })
     </script>
+
+
 
 
 

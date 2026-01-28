@@ -49,4 +49,36 @@ function referenceCode($db, $prefix)
     }
 }
 
+function logReferenceCodeEvent(
+    $db,
+    $tenderId,
+    $oldRef,
+    $newRef,
+    $actionType,
+    $reason = null,
+    $actionBy = null
+) {
+   
+
+    $stmt = $db->prepare("
+        INSERT INTO reference_code_logs
+        (tender_id, old_reference_code, new_reference_code,
+         action_type, action_reason, action_by)
+        VALUES (?, ?, ?, ?, ?, ?)
+    ");
+
+    $stmt->bind_param(
+        "ssssss",
+        $tenderId,
+        $oldRef,
+        $newRef,
+        $actionType,
+        $reason,
+        $actionBy
+    );
+
+    $stmt->execute();
+}
+
+
 ?>

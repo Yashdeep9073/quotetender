@@ -126,7 +126,17 @@ function processTenderRequest(mysqli $db, array $data): array
             // 🆕 First time this tender appears globally
             $refResponse = referenceCode($db, "REF");
             $refCode = $refResponse['data'];
+            logReferenceCodeEvent(
+                $db,
+                $data['tender_id'],
+                null,
+                $refCode,
+                "GENERATED",
+                "Initial generation",
+                $_SESSION['login_register'] ?? null
+            );
         }
+
 
 
 
@@ -195,6 +205,8 @@ function processTenderRequest(mysqli $db, array $data): array
         ];
 
     } catch (Throwable $e) {
+        // print_r($e);
+        // exit;
         $db->rollback();
         return [
             'success' => false,
@@ -326,12 +338,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
 
     //  Validate tender
     $tender = trim($_POST['tenderid']);
-    if (!preg_match('/^[A-Za-z]+([_-][0-9]+)+$/', $tender)) {
+    if (!preg_match('/^[A-Z]+(_[A-Z]+)*_[0-9]{4}_[0-9]{2}_[0-9]{2}(_[0-9]+)?$/', $tender)) {
         $_SESSION['error'] = "Invalid Tender ID format.";
         header("Location: index.php");
         exit;
     }
-
 
 
     $uploadedFiles = [];
@@ -1736,8 +1747,15 @@ $q = mysqli_query($db, $q);
 
                     // Random suffix
                     const randomNo = Math.floor(10 + Math.random() * 90);
+                    let tenderId;
 
-                    const tenderId = `${deptCode}_${dateStr}_`;
+                    if (deptCode === "PRI") {
+                        // PRI → NO trailing underscore
+                        tenderId = `${deptCode}_${dateStr}`;
+                    } else {
+                        // Other departments → keep underscore
+                        tenderId = `${deptCode}_${dateStr}_`;
+                    }
 
                     $('#tenderid').val(tenderId);
 
