@@ -1788,6 +1788,7 @@ try {
                                         <option value="SENT_TENDER">Sent Tender</option>
                                         <option value="ALOT_TENDER">Alot Tender</option>
                                         <option value="AWARD_TENDER">Award Tender</option>
+                                        <option value="NOTIFICATION">Notification</option>
                                     </select>
                                 </div>
                             </div>
@@ -1977,6 +1978,7 @@ try {
                                         <option value="SENT_TENDER">Sent Tender</option>
                                         <option value="ALOT_TENDER">Alot Tender</option>
                                         <option value="AWARD_TENDER">Award Tender</option>
+                                        <option value="NOTIFICATION">Notification</option>
                                     </select>
                                 </div>
                             </div>

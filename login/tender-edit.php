@@ -461,8 +461,8 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
                 ];
 
                 $replace = [
-                    $memberData[1],         // name
-                    $memberData[4],         // tender id
+                    "",         // name
+                    "",         // tender id
                     $supportPhone ?? 'N/A',
                     $enquiryMail ?? 'N/A',
                     $supportEmail ?? 'N/A'
