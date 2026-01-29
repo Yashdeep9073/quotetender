@@ -338,11 +338,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
 
     //  Validate tender
     $tender = trim($_POST['tenderid']);
-    if (!preg_match('/^[A-Z]+(_[A-Z]+)*_[0-9]{4}_[0-9]{2}_[0-9]{2}(_[0-9]+)?$/', $tender)) {
-        $_SESSION['error'] = "Invalid Tender ID format.";
-        header("Location: index.php");
-        exit;
-    }
+    // if (!preg_match('/^[A-Z]+(_[A-Z]+)*_[0-9]{4}_[0-9]{2}_[0-9]{2}(_[0-9]+)?$/', $tender)) {
+    //     $_SESSION['error'] = "Invalid Tender ID format.";
+    //     header("Location: index.php");
+    //     exit;
+    // }
 
 
     $uploadedFiles = [];

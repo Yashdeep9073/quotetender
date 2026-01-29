@@ -1,70 +1,107 @@
 <?php
-require_once "../vendor/autoload.php";
-include("db/config.php");
+declare(strict_types=1);
 
+require_once "../vendor/autoload.php";
+require_once "db/config.php";
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
+try {
+    /**
+     * Fetch users who need reminder mails
+     */
+    $sql = "
+        SELECT m.email_id, utr.*
+        FROM user_tender_requests utr
+        LEFT JOIN members m 
+            ON utr.member_id = m.member_id
+        WHERE utr.status = 'Allotted'
+        AND utr.reminder_days > 0
+    ";
 
-$query = "SELECT sm.email_id, ur.reminder_days, ur.allotted_at FROM user_tender_requests ur 
-inner join members sm on ur.selected_user_id= sm.member_id where ur.status= 'Allotted' AND DATEDIFF(NOW(), ur.allotted_at)=ur.reminder_days 
-AND ur.reminder_days!=0";
+    $stmt = $db->prepare($sql);
 
-$result = mysqli_query($db, $query);
-while ($row = mysqli_fetch_row($result)) {
-
-    $email = $row[0];
-
-    $mail = new PHPMailer(true);
-
-    //Enable SMTP debugging.
-
-    $mail->SMTPDebug = 0;
-
-
-    //Set PHPMailer to use SMTP.
-
-    $mail->isSMTP();
-
-    //Set SMTP host name                      
-    $mail->Host = getenv('SMTP_HOST');
-
-    //Set this to true if SMTP host requires authentication to send email
-
-    $mail->SMTPAuth = true;
-
-    //Provide username and password
-    $mail->Username = getenv('SMTP_USER_NAME');
-    $mail->Password = getenv('SMTP_PASSCODE');
-
-    //If SMTP requires TLS encryption then set it
-
-    $mail->SMTPSecure = "ssl";
-
-
-    //Set TCP port to connect to
-    $mail->Port = getenv('SMTP_PORT');
-
-    $mail->From = "enquiry@dvepl.com";
-
-
-    $mail->FromName = "Dvepl";
-
-    $mail->addAddress($email, "Recepient Name");
-
-    $mail->isHTML(true);
-
-
-    $mail->Subject = "Reminder: Follow-up on Alot Tender";
-
-    $mail->Body = "<p> Dear user, <br/>" .
-        "This is a friendly reminder to follow up on alloted Tender.<br/><br/>
-        The Tender has been alloted. Kindly enter into your login panel and see the details<br/><br/>
-        <strong>Quote Tender</strong> <br/>
-    Mobile: +91-9870443528 | Email: info@quotender.com ";
-
-    if (!$mail->send()) {
-        echo "Mailer Error: " . $mail->ErrorInfo;
+    if (!$stmt) {
+        throw new Exception("DB Prepare Failed: " . $db->error);
     }
+
+    if (!$stmt->execute()) {
+        throw new Exception("DB Execute Failed: " . $stmt->error);
+    }
+
+    // 🔥 IMPORTANT for debugging
+    $stmt->store_result();
+
+    echo "Total Rows Found: " . $stmt->num_rows . "<br>";
+
+    $stmt->bind_result($email);
+
+    // /**
+    //  * Common mail configuration
+    //  */
+    // function getMailer(): PHPMailer
+    // {
+    //     $mail = new PHPMailer(true);
+
+    //     $mail->isSMTP();
+    //     $mail->SMTPDebug = 0;
+    //     $mail->Host = getenv('SMTP_HOST');
+    //     $mail->SMTPAuth = true;
+    //     $mail->Username = getenv('SMTP_USER_NAME');
+    //     $mail->Password = getenv('SMTP_PASSCODE');
+    //     $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+    //     $mail->Port = (int) getenv('SMTP_PORT');
+
+    //     $mail->setFrom('enquiry@dvepl.com', 'DVEPL');
+    //     $mail->isHTML(true);
+
+    //     return $mail;
+    // }
+
+    // /**
+    //  * Email Body
+    //  */
+    // $emailBody = <<<HTML
+    // <p>Dear User,</p>
+
+    // <p>This is a friendly reminder to follow up on your <strong>allotted tender</strong>.</p>
+
+    // <p>
+    // The tender has already been allotted.  
+    // Please log in to your dashboard to view the complete details.
+    // </p>
+
+    // <p>
+    // <strong>QuoteTender</strong><br>
+    // 📞 +91-9870443528<br>
+    // ✉️ info@quotender.com
+    // </p>
+    // HTML;
+
+    // while ($stmt->fetch()) {
+    //     try {
+    //         $mail = getMailer();
+    //         $mail->addAddress($email);
+    //         $mail->Subject = "Reminder: Follow-up on Allotted Tender";
+    //         $mail->Body = $emailBody;
+
+    //         $mail->send();
+    //     } catch (Exception $e) {
+    //         error_log("Mail failed for {$email}: " . $e->getMessage());
+    //     }
+    // }
+
+    // $stmt->close();
+    // $db->close();
+
+
+
+    while ($stmt->fetch()) {
+        echo "Mail Sent Successfully" . $email;
+    }
+
+} catch (Throwable $e) {
+    // Global safety net
+    error_log("Reminder Cron Failed: " . $e->getMessage());
 }
