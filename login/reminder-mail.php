@@ -39,6 +39,8 @@ try {
             ON utr.member_id = m.member_id
         WHERE utr.status = 'Allotted'
           AND utr.reminder_days > 0
+          AND DATE(utr.allotted_at) <= DATE_SUB(CURDATE(), INTERVAL utr.reminder_days DAY)
+
     ";
 
     $stmt = $db->prepare($sql);
