@@ -7,21 +7,14 @@ require_once "db/config.php";
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
-/**
- * CONFIG
- */
-define('DEBUG_MODE', false);   // 🔁 set false in production
+define('DEBUG_MODE', false); // set true for testing
 
-
-/**
- * Mailer factory
- */
-function getMailer(): PHPMailer
+function getMailer($supportEmail): PHPMailer
 {
     $mail = new PHPMailer(true);
 
     $mail->isSMTP();
-    $mail->SMTPDebug = 0;
+    $mail->SMTPDebug = 1;
     $mail->Host = getenv('SMTP_HOST');
     $mail->SMTPAuth = true;
     $mail->Username = getenv('SMTP_USER_NAME');
@@ -30,7 +23,7 @@ function getMailer(): PHPMailer
     $mail->Port = (int) getenv('SMTP_PORT');
 
     $mail->setFrom(getenv('SMTP_USER_NAME'), 'DVEPL');
-    $mail->addReplyTo(ENQUIRY_EMAIL, 'DVEPL Support');
+    $mail->addReplyTo($supportEmail, 'DVEPL Support');
     $mail->isHTML(true);
 
     return $mail;
@@ -38,13 +31,6 @@ function getMailer(): PHPMailer
 
 try {
 
-    /**
-     * Business Logic:
-     * - Allotted tenders
-     * - reminder_days > 0
-     * - reminder date has passed
-     * - not already mailed today
-     */
     $sql = "
         SELECT 
             utr.id,
@@ -64,28 +50,12 @@ try {
     ";
 
     $stmt = $db->prepare($sql);
-    if (!$stmt) {
-        throw new Exception("DB Prepare Failed: " . $db->error);
-    }
-
     $stmt->execute();
-    $stmt->store_result();
 
-    echo "<h3>Total Rows Found: {$stmt->num_rows}</h3>";
+    $result = $stmt->get_result();
 
-    $stmt->bind_result(
-        $requestId,
-        $email,
-        $userName,
-        $tenderId,
-        $allottedAt,
-        $reminderDays,
-        $daysPassed
-    );
+    echo "<h3>Total Rows Found: {$result->num_rows}</h3>";
 
-    /**
-     * Fetch email template ONCE
-     */
     $template = emailTemplate($db, 'NOTIFICATION');
 
     $search = [
@@ -96,16 +66,24 @@ try {
         '{$supportEmail}',
     ];
 
-    while ($stmt->fetch()) {
+    foreach ($result as $row) {
 
-        // Duration math
+        $requestId = $row['id'];
+        $email = $row['email_id'];
+        $userName = $row['name'];
+        $tenderId = $row['tenderID'];
+        $allottedAt = $row['allotted_at'];
+        $reminderDays = (int) $row['reminder_days'];
+        $daysPassed = (int) $row['days_passed'];
+
+        // ⏱ Duration math
         $pendingDays = max(0, $reminderDays - $daysPassed);
         $reminderStartDate = date(
             'Y-m-d',
             strtotime($allottedAt . " +{$reminderDays} days")
         );
 
-        // DEBUG OUTPUT
+        // 🐞 Debug
         if (DEBUG_MODE) {
             echo "<pre>";
             echo "📧 Email            : {$email}\n";
@@ -117,18 +95,15 @@ try {
             echo "⌛ Pending Days     : {$pendingDays}\n";
             echo "🚀 Reminder Starts  : {$reminderStartDate}\n";
             echo "✅ STATUS           : READY TO SEND\n";
+            echo "✔️ STATUS           : $supportEmail\n";
+            echo "✔️ STATUS           : $supportPhone\n";
+            echo "✔️ STATUS           : $enquiryMail\n";
             echo "---------------------------------\n";
             echo "</pre>";
-        }
-
-        // Skip sending while debugging
-        if (DEBUG_MODE) {
             continue;
         }
 
-        /**
-         * ✉️ Build mail body
-         */
+        // ✉️ Mail body
         $replace = [
             $userName,
             $tenderId,
@@ -145,15 +120,17 @@ try {
         $finalBody = str_replace($search, $replace, $emailBody);
 
         try {
-            $mail = getMailer();
+            $mail = getMailer($supportEmail);
             $mail->addAddress($email);
             $mail->Subject = $template['email_template_subject'] ?? 'Tender Reminder';
             $mail->Body = $finalBody;
             $mail->send();
 
-            // ✅ Mark as mailed today
+            // mark sent today
             $update = $db->prepare(
-                "UPDATE user_tender_requests SET email_sent_date = CURDATE() WHERE id = ?"
+                "UPDATE user_tender_requests 
+                 SET email_sent_date = CURDATE() 
+                 WHERE id = ?"
             );
             $update->bind_param('i', $requestId);
             $update->execute();
@@ -162,6 +139,7 @@ try {
 
         } catch (Exception $e) {
             error_log("Mail failed for {$email}: " . $e->getMessage());
+            echo "❌ Mail failed for {$email}<br>";
         }
     }
 
