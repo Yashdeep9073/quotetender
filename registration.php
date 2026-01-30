@@ -172,7 +172,6 @@ if (isset($_POST['firmName']) && $_SERVER['REQUEST_METHOD'] == "POST") {
 
 
             // Corrected version with proper precedence
-            $logo = getenv('BASE_URL') . "/login/" . ($emailSettingData['logo_url'] ?? "https://dvepl.com/assets/images/logo/dvepl-logo.png");
             $mail->Subject = $template['email_template_subject'] ?? "Account Activation";
 
 

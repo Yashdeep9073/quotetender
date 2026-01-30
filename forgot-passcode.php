@@ -51,7 +51,7 @@ if (isset($_POST['submit'])) {
 
     if (isset($username)) {
 
-        $updateSql = "UPDATE members SET expiry_time ='$expiryTime',  activation_token ='$activationToken' WHERE email_id = '"  . $username . "'";
+        $updateSql = "UPDATE members SET expiry_time ='$expiryTime',  activation_token ='$activationToken' WHERE email_id = '" . $username . "'";
         mysqli_query($db, $updateSql);
 
         $mail = new PHPMailer(true);
@@ -67,27 +67,27 @@ if (isset($_POST['submit'])) {
 
         //Set SMTP host name                      
 
-          $mail->Host = "smtp.hostinger.com";
+        $mail->Host = "smtp.hostinger.com";
 
-                //Set this to true if SMTP host requires authentication to send email
+        //Set this to true if SMTP host requires authentication to send email
 
-                $mail->SMTPAuth = true;
+        $mail->SMTPAuth = true;
 
-                //Provide username and password
+        //Provide username and password
 
-                $mail->Username = "enquiry@dvepl.com";
+        $mail->Username = "enquiry@dvepl.com";
 
-                $mail->Password = "Zxcv@123";
+        $mail->Password = "Zxcv@123";
 
-                //If SMTP requires TLS encryption then set it
+        //If SMTP requires TLS encryption then set it
 
-                $mail->SMTPSecure = "ssl";
+        $mail->SMTPSecure = "ssl";
 
-                //Set TCP port to connect to
+        //Set TCP port to connect to
 
-                $mail->Port = 465;
+        $mail->Port = 465;
 
-                $mail->From = "quotetenderindia@gmail.com";
+        $mail->From = "quotetenderindia@gmail.com";
 
         $mail->FromName = "Quote Tender  ";
 
@@ -98,10 +98,10 @@ if (isset($_POST['submit'])) {
         $activationLink = 'https://www.quotetender.in/reset-password.php?token=' . $activationToken;
         $mail->Subject = "Reset Password";
 
-        $mail->Body =  "<p> Dear user, <br/>" .
-            "Click the following link to reset your password: <a href='$activationLink' style='background-color:green; color:#fff; padding:10px; text-decoration:none;'>Click Here</a> <br/><br/>
-        <strong>Admin Quote Tender</strong> <br/>
-    Mobile: +91-994176 01244  | Email: info@quotender.com ";
+        $mail->Body = "<p> Dear user, <br/>" .
+                "Click the following link to reset your password: <a href='$activationLink' style='background-color:green; color:#fff; padding:10px; text-decoration:none;'>Click Here</a> <br/><br/>
+            <strong>Admin Quote Tender</strong> <br/>
+        Mobile: +91-994176 01244  | Email: info@quotender.com ";
 
 
         if (!$mail->send()) {
