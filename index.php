@@ -63,17 +63,27 @@ function processTenderRequest(mysqli $db, array $data): array
             $data['tender_id'],
             $data['member_id']
         );
-
         $stmt->execute();
         $stmt->bind_result($count);
         $stmt->fetch();
+
+        // echo "<pre>";
+        // echo "Tender Count Debug:\n";
+        // echo "Tender ID: " . $data['tender_id'] . "\n";
+        // echo "Member ID: " . $data['member_id'] . "\n";
+        // echo "Count: " . $count . "\n";
+        // print_r($stmt->error);
+        // echo "</pre>";
+
+        // exit;
+
         $stmt->close();
 
-        if ($count >= 2) {
+        if ($count >= 1) {
             $db->rollback();
             return [
                 'success' => false,
-                'message' => 'This Tender ID has already been used twice.'
+                'message' => 'You have already submitted this Tender ID.'
             ];
         }
 
@@ -138,6 +148,62 @@ function processTenderRequest(mysqli $db, array $data): array
         }
 
 
+        $sectionId = null;
+        $divisionId = null;
+        $subDivisionId = null;
+        $serverDueDate = null;
+        $nameOfWork = null;
+        $fileName = null;
+        $fileName2 = null;
+        $tentativeCost = null;
+        $quotationFiles = null;
+
+        if ($hasQuotation) {
+
+            // Case 3 → Sent
+            $status = 'Sent';
+            $emailTemplate = 'SENT_TENDER';
+            $autoQuotation = 1;
+            $quotationFiles = $existingQuotationFiles;
+
+            // Fetch ALL metadata from first Sent record
+            $stmt = $db->prepare("
+          SELECT 
+            section_id,
+            division_id,
+            sub_division_id,
+            due_date,
+            name_of_work,
+            file_name,
+            file_name2,
+            tentative_cost,
+            additional_files
+            FROM user_tender_requests
+            WHERE tenderID = ?
+            AND status = 'Sent'
+            AND auto_quotation = 1
+            ORDER BY created_at ASC
+            LIMIT 1
+        ");
+
+            $stmt->bind_param("s", $data['tender_id']);
+            $stmt->execute();
+
+            $stmt->bind_result(
+                $sectionId,
+                $divisionId,
+                $subDivisionId,
+                $serverDueDate,
+                $nameOfWork,
+                $fileName,
+                $fileName2,
+                $tentativeCost,
+                $quotationFiles
+            );
+
+            $stmt->fetch();
+            $stmt->close();
+        }
 
 
         // 4️⃣ Case 3 logic (reuse quotation)
@@ -151,32 +217,47 @@ function processTenderRequest(mysqli $db, array $data): array
         // 5️⃣ Insert request
         $stmt = $db->prepare("
             INSERT INTO user_tender_requests
-            (
-                member_id,
-                tenderID,
-                reference_code,
-                department_id,
-                due_date,
-                user_additional_files,
-                additional_files,
-                status,
-                auto_quotation,
-                created_at
-            )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+                (
+                    member_id,
+                    tenderID,
+                    reference_code,
+                    department_id,
+                    section_id,
+                    division_id,
+                    sub_division_id,
+                    due_date,
+                    user_additional_files,
+                    additional_files,
+                    file_name,
+                    file_name2,
+                    tentative_cost,
+                    status,
+                    auto_quotation,
+                    name_of_work,
+                    sent_at,
+                    created_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
         ");
 
         $stmt->bind_param(
-            "isssssssi",
+            "issiiissssssisis",
             $data['member_id'],
             $data['tender_id'],
             $refCode,
             $data['department_id'],
-            $data['due_date'],
+            $sectionId,
+            $divisionId,
+            $subDivisionId,
+            $serverDueDate,
             $userAdditionalFiles,
             $quotationFiles,
+            $fileName,
+            $fileName2,
+            $tentativeCost,
             $status,
-            $autoQuotation
+            $autoQuotation,
+            $nameOfWork
         );
 
         if (!$stmt->execute()) {
@@ -185,11 +266,11 @@ function processTenderRequest(mysqli $db, array $data): array
 
         $stmt->close();
 
-        // 6️⃣ Reduce pending_request
+        // 6️⃣ Reduce max_request
         $stmt = $db->prepare("
             UPDATE members
-            SET pending_request = pending_request - 1
-            WHERE member_id = ? AND pending_request > 0
+            SET max_request = max_request - 1
+            WHERE member_id = ? AND max_request > 0
         ");
         $stmt->bind_param("i", $data['member_id']);
         $stmt->execute();
@@ -205,8 +286,8 @@ function processTenderRequest(mysqli $db, array $data): array
         ];
 
     } catch (Throwable $e) {
-        // print_r($e);
-        // exit;
+        print_r($e);
+        exit;
         $db->rollback();
         return [
             'success' => false,
@@ -313,94 +394,97 @@ function sendMail(
 // Register user
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
 
+    try {
+        if (!isset($_SESSION['login_register'])) {
+            header("Location: login.php");
+            exit;
+        }
 
-    if (!isset($_SESSION['login_register'])) {
-        header("Location: login.php");
-        exit;
-    }
-
-    // Get member & pending_request
-    $stmt = $db->prepare("
-        SELECT member_id, name, email_id, pending_request
+        // Get member & max_request
+        $stmt = $db->prepare("
+        SELECT member_id, name, email_id, max_request
         FROM members
         WHERE email_id = ?
     ");
-    $stmt->bind_param("s", $_SESSION['login_register']);
-    $stmt->execute();
-    $member = $stmt->get_result()->fetch_assoc();
-    $stmt->close();
-
-    if (!$member || (int) $member['pending_request'] <= 0) {
-        $_SESSION['error'] = "You have reached the maximum allowed requests.";
-        header("Location: index.php");
-        exit;
-    }
-
-    //  Validate tender
-    $tender = trim($_POST['tenderid']);
-    // if (!preg_match('/^[A-Z]+(_[A-Z]+)*_[0-9]{4}_[0-9]{2}_[0-9]{2}(_[0-9]+)?$/', $tender)) {
-    //     $_SESSION['error'] = "Invalid Tender ID format.";
-    //     header("Location: index.php");
-    //     exit;
-    // }
+        $stmt->bind_param("s", $_SESSION['login_register']);
+        $stmt->execute();
+        $member = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
 
 
-    $uploadedFiles = [];
 
-    // file1
-    if (!empty($_FILES['uploaded_file1']['name'])) {
-        $upload1 = uploadMedia(
-            $_FILES['uploaded_file1'],
-            $upload_directory,
-            $allowedTypes,
-            2 * 1024 * 1024
-        );
-
-        if (isset($upload1[0]['filename'])) {
-            $uploadedFiles[] = $upload1[0]['filename'];
+        if (!$member || (int) $member['max_request'] <= 0) {
+            $_SESSION['error'] = "You have reached the maximum allowed requests.";
+            header("Location: index.php");
+            exit;
         }
-    }
 
-    // file2
-    if (!empty($_FILES['uploaded_file2']['name'])) {
-        $upload2 = uploadMedia(
-            $_FILES['uploaded_file2'],
-            $upload_directory,
-            $allowedTypes,
-            2 * 1024 * 1024
-        );
+        //  Validate tender
+        $tender = trim($_POST['tenderid']);
+        // if (!preg_match('/^[A-Z]+(_[A-Z]+)*_[0-9]{4}_[0-9]{2}_[0-9]{2}(_[0-9]+)?$/', $tender)) {
+        //     $_SESSION['error'] = "Invalid Tender ID format.";
+        //     header("Location: index.php");
+        //     exit;
+        // }
 
-        if (isset($upload2[0]['filename'])) {
-            $uploadedFiles[] = $upload2[0]['filename'];
+
+
+        $uploadedFiles = [];
+
+        // file1
+        if (!empty($_FILES['uploaded_file1']['name'])) {
+            $upload1 = uploadMedia(
+                $_FILES['uploaded_file1'],
+                $upload_directory,
+                $allowedTypes,
+                2 * 1024 * 1024
+            );
+
+            if (isset($upload1[0]['filename'])) {
+                $uploadedFiles[] = $upload1[0]['filename'];
+            }
         }
-    }
 
-    // Convert to JSON (or NULL if empty)
-    $userAdditionalFilesJson = !empty($uploadedFiles)
-        ? json_encode($uploadedFiles)
-        : null;
+        // file2
+        if (!empty($_FILES['uploaded_file2']['name'])) {
+            $upload2 = uploadMedia(
+                $_FILES['uploaded_file2'],
+                $upload_directory,
+                $allowedTypes,
+                2 * 1024 * 1024
+            );
+
+            if (isset($upload2[0]['filename'])) {
+                $uploadedFiles[] = $upload2[0]['filename'];
+            }
+        }
+
+        // Convert to JSON (or NULL if empty)
+        $userAdditionalFilesJson = !empty($uploadedFiles)
+            ? json_encode($uploadedFiles)
+            : null;
 
 
-    // Process tender (SERVICE)
-    $result = processTenderRequest($db, [
-        'member_id' => (int) $member['member_id'],
-        'tender_id' => $tender,
-        'department_id' => $_POST['dept'],
-        'due_date' => $_POST['datepicker'],
-        'user_additional_files' => $userAdditionalFilesJson
-    ]);
+        // Process tender (SERVICE)
+        $result = processTenderRequest($db, [
+            'member_id' => (int) $member['member_id'],
+            'tender_id' => $tender,
+            'department_id' => $_POST['dept'],
+            'due_date' => $_POST['datepicker'],
+            'user_additional_files' => $userAdditionalFilesJson
+        ]);
 
-    if (!$result['success']) {
-        $_SESSION['error'] = $result['message'];
-        header("Location: index.php");
-        exit;
-    }
+        if (!$result['success']) {
+            $_SESSION['error'] = $result['message'];
+            header("Location: index.php");
+            exit;
+        }
 
-    // 🔹 Fetch quotation files ONLY if auto quotation applied
-    $quotationFiles = [];
+        // 🔹 Fetch quotation files ONLY if auto quotation applied
+        $quotationFiles = [];
 
-    if ($result['status'] === 'Sent') {
-        $stmt = $db->prepare("
+        if ($result['status'] === 'Sent') {
+            $stmt = $db->prepare("
             SELECT additional_files
             FROM user_tender_requests
             WHERE tenderID = ?
@@ -409,42 +493,66 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
             ORDER BY created_at ASC
             LIMIT 1
         ");
-        $stmt->bind_param("s", $tender);
-        $stmt->execute();
-        $stmt->bind_result($quotationFilesJson);
-        $stmt->fetch();
-        $stmt->close();
+            $stmt->bind_param("s", $tender);
+            $stmt->execute();
+            $stmt->bind_result($quotationFilesJson);
+            $stmt->fetch();
+            $stmt->close();
 
-        if (!empty($quotationFilesJson)) {
-            $quotationFiles = json_decode($quotationFilesJson, true) ?? [];
+            if (!empty($quotationFilesJson)) {
+                $quotationFiles = json_decode($quotationFilesJson, true) ?? [];
+            }
         }
+
+        // 🔹 Send email
+        $template = emailTemplate($db, $result['email_template']);
+
+        $mailSent = sendMail(
+            template: $template,
+            toEmail: $member['email_id'],
+            toName: $member['name'],
+            placeholders: [
+                'name' => $member['name'],
+                'tenderId' => $tender,
+                'firmName' => $member['firm_name'] ?? '',
+                'supportPhone' => $supportPhone ?? 'N/A',
+                'enquiryEmail' => $enquiryMail ?? 'N/A',
+                'supportEmail' => $supportEmail ?? 'N/A',
+            ],
+            ccEmails: array_column($ccEmailData ?? [], 'cc_email'),
+            logo: $logo ?? null,
+            attachments: $quotationFiles
+        );
+
+        if ($mailSent && $result['status'] === 'Sent') {
+
+            $stmt = $db->prepare("
+                UPDATE user_tender_requests
+                SET email_sent_date = NOW()
+                WHERE tenderID = ?
+                AND member_id = ?
+                ORDER BY created_at DESC
+                LIMIT 1
+            ");
+
+            $stmt->bind_param(
+                "si",
+                $tender,
+                $member['member_id']
+            );
+
+            $stmt->execute();
+            $stmt->close();
+        }
+
+        $_SESSION['success'] = "Tender request submitted successfully.";
+        header("Location: index.php");
+        exit;
+    } catch (\Throwable $th) {
+        print_r($th->getMessage());
+        exit;
     }
 
-    // 🔹 Send email
-    $template = emailTemplate($db, $result['email_template']);
-
-    sendMail(
-        template: $template,
-        toEmail: $member['email_id'],
-        toName: $member['name'],
-        placeholders: [
-            'name' => $member['name'],
-            'tenderId' => $tender,
-            'firmName' => $member['firm_name'] ?? '',
-            'supportPhone' => $supportPhone ?? 'N/A',
-            'enquiryEmail' => $enquiryMail ?? 'N/A',
-            'supportEmail' => $supportEmail ?? 'N/A',
-        ],
-        ccEmails: array_column($ccEmailData ?? [], 'cc_email'),
-        logo: $logo ?? null,
-        attachments: $quotationFiles
-    );
-
-
-
-    $_SESSION['success'] = "Tender request submitted successfully.";
-    header("Location: index.php");
-    exit;
 }
 
 
