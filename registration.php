@@ -184,44 +184,6 @@ if (isset($_POST['firmName']) && $_SERVER['REQUEST_METHOD'] == "POST") {
                         </div>
                 ";
 
-            // $mail->Body = "
-            // <div style='font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;'>
-            //     <div style='text-align: center; margin-bottom: 30px;'>
-            //         <img src='" . $logo . "' alt='Quote Tender Logo' style='max-width: 200px; height: auto; display: block; margin: 0 auto;'>
-            //     </div>
-
-            //     <div style='background-color: #f9f9f9; border-radius: 10px; padding: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border: 1px solid #eee;'>
-            //         <h2 style='color: #4CBB17; text-align: center; margin-bottom: 25px; font-size: 24px;'>Account Activation</h2>
-
-            //         <p style='font-size: 16px; color: #555; margin-bottom: 20px;'>
-            //             Dear <strong>" . htmlspecialchars($name) . "</strong>,
-            //         </p>
-
-            //         <p style='margin-bottom: 25px; font-size: 16px;'>
-            //             Thank you for registering with Quote Tender. Your registration process is completed.
-            //             Please click the button below to activate your account:
-            //         </p>
-
-            //         <div style='text-align: center; margin: 30px 0;'>
-            //             <a href='" . htmlspecialchars($activationLink) . "'
-            //             style='background-color: #4CBB17; color: #ffffff; padding: 15px 30px; text-decoration: none;
-            //                     border-radius: 5px; font-weight: bold; display: inline-block;
-            //                     box-shadow: 0 4px 6px rgba(0,0,0,0.1); font-size: 16px; border: none; cursor: pointer;'>
-            //                 Activate Account
-            //             </a>
-            //         </div>
-
-            //         <div style='text-align: center; margin: 20px 0;'>
-            //             <p style='margin-bottom: 15px; font-size: 14px; color: #666;'>
-            //                 <strong>Activation Link:</strong>
-            //             </p>
-            //             <p style='font-size: 12px; color: #666; word-break: break-all; background-color: #f0f0f0; padding: 10px; border-radius: 4px;'>
-            //                 " . htmlspecialchars($activationLink) . "
-            //             </p>
-            //         </div>
-            //     </div>
-            // </div>";
-
             $emailSent = $mail->send();
 
         } catch (Exception $e) {

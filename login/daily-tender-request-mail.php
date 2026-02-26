@@ -220,8 +220,8 @@ try {
     $mail->Port = getenv('SMTP_PORT');
 
     $mail->setFrom(getenv('SMTP_USER_NAME'), "DVEPL");
-    // $mail->addAddress("enquiry@dvepl.com");
-    $mail->addAddress("yashdeep@vibrantick.in");
+    $mail->addAddress("enquiry@dvepl.com");
+    // $mail->addAddress("yashdeep@vibrantick.in");
 
     $mail->isHTML(true);
     $mail->Subject = "List of All Tender Requests";
