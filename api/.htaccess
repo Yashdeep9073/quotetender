@@ -1,0 +1,4 @@
+RewriteEngine On
+
+# Route clean endpoint to PHP handler.
+RewriteRule ^test-whatsapp-gateway/?$ test-whatsapp-gateway.php [L,QSA]

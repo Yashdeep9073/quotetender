@@ -954,6 +954,13 @@ try {
                                         <i class="feather icon-hash"></i> Reference Code
                                     </a>
                                 <?php } ?>
+                                <?php if ($isAdmin || hasPermission('WhatsApp Gateway', $privileges, $roleData['role_name'])) { ?>
+
+                                    <a class="nav-link" id="whatsapp-gateway-setting-tab" 
+                                        href="whatsapp-gateway-settings.php" role="tab">
+                                        <i class="feather icon-message-circle"></i> WhatsApp Gateway
+                                    </a>
+                                <?php } ?>
                             </div>
                         </div>
                     </div>
