@@ -1847,7 +1847,7 @@ $q = mysqli_query($db, $q);
                     const year = now.getFullYear();
                     const month = String(now.getMonth() + 1).padStart(2, '0');
                     const day = String(now.getDate()).padStart(2, '0');
-                    const dateStr = `${year}_${month}_${day}`;
+                    const dateStr = `${year}`;
 
                     // Department code
                     let deptCode = selectedDeptText.split('-')[0].trim().split(' ')[0];
