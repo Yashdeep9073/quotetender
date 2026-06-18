@@ -98,6 +98,8 @@ try {
     ur.sub_division_id,
     ur.department_id,
     ur.additional_files,
+    ur.project_name,
+    ur.project_location,
     MAX(s.section_name) AS section_name,
     MAX(dv.division_name) AS division_name,
     MAX(sd.subdivision) AS subdivision,
@@ -154,7 +156,6 @@ ORDER BY
     // echo "<pre>";
     // print_r($tenderData);
 
-    // print_r($sections->fetch_all(MYSQLI_ASSOC));
     // echo "</pre>";
     // exit;    
 
@@ -1060,6 +1061,28 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
                                                         </option>
                                                     <?php } ?>
                                                 </select>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-xl-6 col-lg-6 col-md-4 col-sm-12 col-12">
+                                            <div class="form-group">Project Name <span class="text-danger"></span>
+                                                <label class="sr-only control-label" for="name">Project Name<span
+                                                        class=" ">
+                                                    </span></label>
+                                                <input id="project_name" name="project_name" type="text"
+                                                    class="form-control input-md" placeholder="Enter Project Name"
+                                                    value="<?php echo $tenderData['project_name'] ?? ""; ?>">
+                                            </div>
+                                        </div>
+
+                                        <div class="col-xl-6 col-lg-6 col-md-4 col-sm-12 col-12">
+                                            <div class="form-group">Project Location <span class="text-danger"></span>
+                                                <label class="sr-only control-label" for="name">Project Location<span
+                                                        class=" ">
+                                                    </span></label>
+                                                <input id="project_location" name="project_location" type="text"
+                                                    class="form-control input-md" placeholder="Enter Project Location"
+                                                    value="<?php echo $tenderData['project_location'] ?? ""; ?>">
                                             </div>
                                         </div>
 

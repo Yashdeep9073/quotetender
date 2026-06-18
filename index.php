@@ -47,8 +47,6 @@ $sent_at = date('Y-m-d H:i:s');
 function processTenderRequest(mysqli $db, array $data): array
 {
 
-    
-    
     $db->begin_transaction();
 
     try {
@@ -219,6 +217,8 @@ function processTenderRequest(mysqli $db, array $data): array
         // echo "Tentative Cost: " . $tentativeCost . "\n";
         // echo "Quotation Files: " . $quotationFiles . "\n";
         // echo "Member ID: " . $data['member_id'] . "\n";
+        // echo "Project Name: " . $data['project_name'] . "\n";
+        // echo "Project Location: " . $data['project_location'] . "\n";
         // echo "Count: " . $count . "\n";
         // print_r($stmt->error);
         // echo "</pre>";
@@ -253,13 +253,15 @@ function processTenderRequest(mysqli $db, array $data): array
                     auto_quotation,
                     name_of_work,
                     sent_at,
-                    created_at
+                    created_at,
+                    project_name,
+                    project_location
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(),?,?)
         ");
 
         $stmt->bind_param(
-            "issiiissssssisis",
+            "issiiissssssisisss",
             $data['member_id'],
             $data['tender_id'],
             $refCode,
@@ -275,7 +277,9 @@ function processTenderRequest(mysqli $db, array $data): array
             $tentativeCost,
             $status,
             $autoQuotation,
-            $nameOfWork
+            $nameOfWork,
+            $data['project_name'],
+            $data['project_location']
         );
 
         if (!$stmt->execute()) {
@@ -482,6 +486,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
             ? json_encode($uploadedFiles)
             : null;
 
+        // echo "<pre>";
+        // print_r($_POST);
+        // echo "</pre>";
+        // exit;
 
         // Process tender (SERVICE)
         $result = processTenderRequest($db, [
@@ -489,6 +497,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
             'tender_id' => $tender,
             'department_id' => $_POST['dept'],
             'section_id' => $_POST['sectionId'] ?? null,
+            'project_name' => $_POST['projectName'] ?? null,
+            'project_location' => $_POST['projectLocation'] ?? null,
             'due_date' => $_POST['datepicker'],
             'user_additional_files' => $userAdditionalFilesJson
         ]);
@@ -816,61 +826,71 @@ $q = mysqli_query($db, $q);
                                 <?php } ?>
 
                                 <br />
-                                <form action="" method="post" autocomplete="off" enctype="multipart/form-data"
-                                    id="myForm">
-                                    <div class="col-lg-12">
-
+                                <form action="" method="post" autocomplete="off" enctype="multipart/form-data" id="myForm">
+                                
+                                    <div class="col-lg-12 mb-3">
                                         <?php
                                         if (isset($_SESSION["login_register"]) && $_SESSION["login_register"] == TRUE) {
-
-
-                                            echo '<select id="department" name="dept" required = "true" class="dept"  required style="border-color: #4CBB17" >';
+                                
+                                            echo '<select id="department" name="dept" required class="dept form-control" style="border-color: #4CBB17">';
                                             echo "<option value=''>Select Department</option>";
+                                
                                             while ($row = mysqli_fetch_row($dept)) {
-
                                                 echo "<option value='" . $row['0'] . "'>" . $row['1'] . "</option>";
                                             }
+                                
                                             echo "</select>";
                                         } else {
-
-                                            echo '<select name="dept" required="true" style="border-color: #4CBB17" onchange="window.location.href = \'login.php\'">';
-
-
+                                
+                                            echo '<select name="dept" required class="form-control" style="border-color: #4CBB17" onchange="window.location.href = \'login.php\'">';
                                             echo "<option value=''>Select Department</option>";
+                                
                                             while ($row = mysqli_fetch_row($dept)) {
-
-
                                                 echo "<option value='" . $row['1'] . "'>" . $row['1'] . "</option>";
                                             }
-
+                                
                                             echo "</select>";
                                         }
-
-
                                         ?>
-
                                     </div>
-                                    <br />
-                                    <div class="col-lg-12" id="sectionIdContainer" style="display: none;">
+                                
+                                    <div class="col-lg-12 mb-3" id="sectionIdContainer" style="display: none;">
                                         <div class="row align-items-center">
-                                            <div class="col-lg-12 col-md-12 mb-2 mb-md-0">
-                                                    <select id="sectionId" name="sectionId" class="form-control" 
-                                                        style="border-color: #4CBB17; border-radius: 0;" >
-                                                        <option value="">Select Section</option>
-                                                    </select>
+                                            <div class="col-lg-12 col-md-12">
+                                                <select id="sectionId" name="sectionId" class="form-control"
+                                                    style="border-color: #4CBB17; border-radius: 0;">
+                                                    <option value="">Select Section</option>
+                                                </select>
                                             </div>
                                         </div>
                                     </div>
-  
-                                    <br />
-                                    <div class="col-lg-12">
+                                
+                                    <div class="col-lg-12 mb-3" id="projectNameContainer" style="display: none;">
+                                        <div class="row align-items-center">
+                                            <div class="col-lg-12 col-md-12">
+                                                <input type="text" id="projectName" name="projectName" class="form-control"
+                                                    style="border-color: #4CBB17; border-radius: 0;" placeholder="Enter Project Name">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-lg-12 mb-3" id="projectLocationContainer" style="display: none;">
+                                        <div class="row align-items-center">
+                                            <div class="col-lg-12 col-md-12">
+                                                <input type="text" id="projectLocation" name="projectLocation" class="form-control"
+                                                    style="border-color: #4CBB17; border-radius: 0;" placeholder="Enter Project Location">
+                                            </div>
+                                        </div>
+                                    </div>
+                                
+                                    <div class="col-lg-12 mb-3">
                                         <div class="row align-items-center">
                                             <div class="col-lg-9 col-md-8 mb-2 mb-md-0">
                                                 <input type="text" placeholder="Tender ID (e.g. ABC_2025_12_14)"
                                                     name="tenderid" id="tenderid" class="form-control"
                                                     style="border-color: #4CBB17; border-radius: 0;" required />
                                             </div>
-
+                                
                                             <div class="col-lg-3 col-md-4">
                                                 <button type="button" class="btn btn-success btn-block h-100"
                                                     style="min-height: 38px; border-radius: 0; background-color: #33cc33; color: #101014;"
@@ -880,45 +900,44 @@ $q = mysqli_query($db, $q);
                                             </div>
                                         </div>
                                     </div>
-
-
-                                    <br />
-
-                                    <div class="col-lg-12">
-                                        <input type="text" class="" placeholder="Enter Bid End Date " required
-                                            name="datepicker" style="border-color: #4CBB17" id="datepicker" />
+                                
+                                    <div class="col-lg-12 mb-3">
+                                        <input type="text" class="form-control" placeholder="Enter Bid End Date" required
+                                            name="datepicker" style="border-color: #4CBB17; border-radius: 0;" id="datepicker" />
                                     </div>
-                                    <br />
-
-                                    <div class="col-lg-12 d-flex">
-                                        <div class="col-lg-6" style="padding-right: 4px;">
-                                            <input name="uploaded_file1" id="uploaded_file1" type="file"
-                                                class="form-control input-md"
-                                                accept="application/pdf,application/vnd.ms-excel"
-                                                style="background-color: #fff; border-color: #4CBB17;">
-                                        </div>
-                                        <div class="col-lg-6">
-                                            <input name="uploaded_file2" id="uploaded_file2" type="file"
-                                                class="form-control input-md"
-                                                accept="application/pdf,application/vnd.ms-excel"
-                                                style="background-color: #fff; border-color: #4CBB17" disabled>
+                                
+                                    <div class="col-lg-12 mb-3">
+                                        <div class="row">
+                                            <div class="col-lg-6 mb-2 mb-lg-0">
+                                                <input name="uploaded_file1" id="uploaded_file1" type="file"
+                                                    class="form-control input-md"
+                                                    accept="application/pdf,application/vnd.ms-excel"
+                                                    style="background-color: #fff; border-color: #4CBB17;">
+                                            </div>
+                                
+                                            <div class="col-lg-6">
+                                                <input name="uploaded_file2" id="uploaded_file2" type="file"
+                                                    class="form-control input-md"
+                                                    accept="application/pdf,application/vnd.ms-excel"
+                                                    style="background-color: #fff; border-color: #4CBB17" disabled>
+                                            </div>
                                         </div>
                                     </div>
-                                    <br />
-                                    <div class="col-lg-12">
+                                
+                                    <div class="col-lg-12 mb-3">
                                         <div class="g-recaptcha" data-sitekey="6LeyShEqAAAAAJIMoyXfN7DmfesxwLNYOgBHIh4N"
                                             data-callback="callback" style="border:none;">
                                         </div>
                                     </div>
-                                    <br />
+                                
                                     <div class="col-lg-12">
-
-                                        <button type="submit" class="btn lab-btn btn-block" name="submit" id="submit"
-                                            disabled>
+                                        <button type="submit" class="btn lab-btn btn-block" name="submit" id="submit" disabled>
                                             <i class="feather icon-save"></i>&nbsp; Send Request
                                         </button>
                                     </div>
+                                
                                 </form>
+
                             </div>
                             <br />
                             <div class="banner-catagory d-flex flex-wrap content">
@@ -1996,9 +2015,13 @@ $q = mysqli_query($db, $q);
     
                     if (selectedValue === 'Private') {
                         $("#sectionIdContainer").show();
+                        $("#projectNameContainer").show();
+                        $("#projectLocationContainer").show();
                     } else {
                         $("#sectionIdContainer").hide();
                         $("#sectionId").val("");
+                        $("#projectNameContainer").hide();
+                        $("#projectLocationContainer").hide();
                         return;
                     }
                 });

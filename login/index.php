@@ -433,6 +433,7 @@ if (isset($_SESSION["login_user"])) {
 
 </head>
 
+<body>
 <div class="auth-wrapper align-items-stretch aut-bg-img">
     <div class="flex-grow-1">
         <div class="h-100 d-md-flex align-items-center auth-side-img">
@@ -486,8 +487,6 @@ if (isset($_SESSION["login_user"])) {
             <p style="color:#000;">HelpDesk/Helpline No:+91-9870443528</p>
         </div>
     </div>
-</div>
-</div>
 </div>
 
 
