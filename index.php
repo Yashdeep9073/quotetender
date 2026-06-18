@@ -46,6 +46,9 @@ $sent_at = date('Y-m-d H:i:s');
 
 function processTenderRequest(mysqli $db, array $data): array
 {
+
+    
+    
     $db->begin_transaction();
 
     try {
@@ -54,28 +57,22 @@ function processTenderRequest(mysqli $db, array $data): array
             SELECT COUNT(*)
             FROM user_tender_requests
             WHERE tenderID = ?
+            AND section_id = ?
             AND member_id = ?
             FOR UPDATE
         ");
 
         $stmt->bind_param(
-            "si",
+            "sii",
             $data['tender_id'],
+            $data['section_id'],
             $data['member_id']
         );
         $stmt->execute();
         $stmt->bind_result($count);
         $stmt->fetch();
 
-        // echo "<pre>";
-        // echo "Tender Count Debug:\n";
-        // echo "Tender ID: " . $data['tender_id'] . "\n";
-        // echo "Member ID: " . $data['member_id'] . "\n";
-        // echo "Count: " . $count . "\n";
-        // print_r($stmt->error);
-        // echo "</pre>";
 
-        // exit;
 
         $stmt->close();
 
@@ -104,7 +101,8 @@ function processTenderRequest(mysqli $db, array $data): array
         AND reference_code IS NOT NULL
         ORDER BY created_at ASC
         LIMIT 1
-    ");
+        ");
+        
         $stmt->bind_param("s", $data['tender_id']);
         $stmt->execute();
         $stmt->bind_result($existingRefCode);
@@ -148,10 +146,10 @@ function processTenderRequest(mysqli $db, array $data): array
         }
 
 
-        $sectionId = null;
+        $sectionId = $data['section_id'] ?? null;
         $divisionId = null;
         $subDivisionId = null;
-        $serverDueDate = null;
+        $serverDueDate = $data['due_date'] ?? null;
         $nameOfWork = null;
         $fileName = null;
         $fileName2 = null;
@@ -205,6 +203,26 @@ function processTenderRequest(mysqli $db, array $data): array
             $stmt->close();
         }
 
+
+        // echo "<pre>";
+        // echo "Tender Count Debug:\n";
+        // echo "Tender ID: " . $data['tender_id'] . "\n";
+        // echo "Section ID: " . $data['section_id'] . "\n";
+        // echo "Due Date: " . $data['due_date'] . "\n";
+        // echo "Section ID: " . $sectionId . "\n";
+        // echo "Division ID: " . $divisionId . "\n";
+        // echo "Sub Division ID: " . $subDivisionId . "\n";
+        // echo "Server Due Date: " . $serverDueDate . "\n";
+        // echo "Name of Work: " . $nameOfWork . "\n";
+        // echo "File Name: " . $fileName . "\n";
+        // echo "File Name 2: " . $fileName2 . "\n";
+        // echo "Tentative Cost: " . $tentativeCost . "\n";
+        // echo "Quotation Files: " . $quotationFiles . "\n";
+        // echo "Member ID: " . $data['member_id'] . "\n";
+        // echo "Count: " . $count . "\n";
+        // print_r($stmt->error);
+        // echo "</pre>";
+        // exit;
 
         // 4️⃣ Case 3 logic (reuse quotation)
         if ($hasQuotation) {
@@ -470,6 +488,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
             'member_id' => (int) $member['member_id'],
             'tender_id' => $tender,
             'department_id' => $_POST['dept'],
+            'section_id' => $_POST['sectionId'] ?? null,
             'due_date' => $_POST['datepicker'],
             'user_additional_files' => $userAdditionalFilesJson
         ]);
@@ -554,6 +573,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
     }
 
 }
+
+if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['departmentId'])) {
+
+    try {
+        $required_fields = ['departmentId'];
+        foreach ($required_fields as $field) {
+            if (!isset($_POST[$field])) {
+                echo json_encode([
+                    "status" => 400,
+                    "error" => "Missing required field: " . $field
+                ]);
+                exit;
+            }
+        }
+
+        $departmentId = trim($_POST['departmentId']);
+
+
+
+        $db->begin_transaction();
+
+        // Fetch unique, non-empty cities only
+        $stmtFetchSections = $db->prepare("SELECT * FROM section WHERE department_id = ? AND status = 1");
+        $stmtFetchSections->bind_param("i", $departmentId);
+        $stmtFetchSections->execute();
+        $sections = $stmtFetchSections->get_result()->fetch_all(MYSQLI_ASSOC);
+
+
+        echo json_encode([
+            "status" => 200,
+            "data" => $sections,
+        ]);
+
+        $db->commit();
+        exit;
+
+
+    } catch (\Throwable $th) {
+        //throw $th;
+        echo json_encode([
+            "status" => 500,
+            "error" => $th->getMessage(),
+        ]);
+        exit;
+    }
+
+}
+
 
 
 $ba = "SELECT * FROM banner";
@@ -757,7 +824,7 @@ $q = mysqli_query($db, $q);
                                         if (isset($_SESSION["login_register"]) && $_SESSION["login_register"] == TRUE) {
 
 
-                                            echo '<select name="dept" required = "true" class="dept"  required style="border-color: #4CBB17" >';
+                                            echo '<select id="department" name="dept" required = "true" class="dept"  required style="border-color: #4CBB17" >';
                                             echo "<option value=''>Select Department</option>";
                                             while ($row = mysqli_fetch_row($dept)) {
 
@@ -781,9 +848,20 @@ $q = mysqli_query($db, $q);
 
 
                                         ?>
-                                        <br />
 
                                     </div>
+                                    <br />
+                                    <div class="col-lg-12" id="sectionIdContainer" style="display: none;">
+                                        <div class="row align-items-center">
+                                            <div class="col-lg-12 col-md-12 mb-2 mb-md-0">
+                                                    <select id="sectionId" name="sectionId" class="form-control" 
+                                                        style="border-color: #4CBB17; border-radius: 0;" >
+                                                        <option value="">Select Section</option>
+                                                    </select>
+                                            </div>
+                                        </div>
+                                    </div>
+  
                                     <br />
                                     <div class="col-lg-12">
                                         <div class="row align-items-center">
@@ -1872,6 +1950,60 @@ $q = mysqli_query($db, $q);
 
 
 
+                
+                $(document).on("change", "#department", async function (e) {
+                    let departmentId = $(this).val();
+    
+    
+                    await $.ajax({
+                        url: window.location.href,
+                        type: 'POST',
+                        data: { departmentId: departmentId },
+                        dataType: 'json',
+                        success: function (response) {
+                            if (response.status == 200) {
+                                let sectionSelect = $("#sectionId");
+                                sectionSelect.empty(); // clear old options
+                                sectionSelect.append('<option value="">Select Section</option>');
+                                console.log(response.data);
+    
+                                $.each(response.data, function (index, section) {
+                                    sectionSelect.append(
+                                        `<option value="${section.section_id}">${section.section_name}</option>`
+                                    );
+                                });
+                            } else {
+                                Swal.fire("No Data", "No Sections found.", "warning");
+                            }
+                        },
+                        error: function (xhr, status, error) {
+                            console.error("AJAX Error:", status, error);
+                            console.error("Raw Response:", xhr.responseText);
+                            Swal.fire("Error", "An error occurred while processing your request. Please try again.", "error");
+                        }
+                    });
+                });
+    
+    
+                $(document).on("change", "#department", async function (e) {
+                    const $department = $('select[name="dept"]');
+                   
+    
+                    const selectedValue = $.trim(
+                        $department.find('option:selected').text()
+                    );
+    
+    
+                    if (selectedValue === 'Private') {
+                        $("#sectionIdContainer").show();
+                    } else {
+                        $("#sectionIdContainer").hide();
+                        $("#sectionId").val("");
+                        return;
+                    }
+                });
+
+                
             });
         </script>
 

@@ -96,6 +96,7 @@ try {
     ur.section_id, 
     ur.division_id,
     ur.sub_division_id,
+    ur.department_id,
     ur.additional_files,
     MAX(s.section_name) AS section_name,
     MAX(dv.division_name) AS division_name,
@@ -131,6 +132,7 @@ ORDER BY
 
 
 
+
     // $requestQuery = mysqli_query($db, "SELECT department.department_name, ur.file_name, ur.tenderID, ur.id ,ur.reference_code,
     // ur.tender_no,ur.name_of_work,ur.tentative_cost,ur.auto_quotation
     // FROM user_tender_requests ur 
@@ -143,8 +145,18 @@ ORDER BY
     $departmentQuery = "SELECT * FROM department ";
     $departments = mysqli_query($db, $departmentQuery);
 
+   
+
+
     $sectionQuery = "SELECT * FROM section where status= 1 ";
     $sections = mysqli_query($db, $sectionQuery);
+
+    // echo "<pre>";
+    // print_r($tenderData);
+
+    // print_r($sections->fetch_all(MYSQLI_ASSOC));
+    // echo "</pre>";
+    // exit;    
 
     $stmtFetchDivision = $db->prepare("SELECT * FROM division ");
     $stmtFetchDivision->execute();
@@ -987,16 +999,11 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
                                                 <label class="sr-only control-label" for="name">Departments*<span
                                                         class=" ">
                                                     </span></label>
-                                                <?php
-
-                                                echo "<select class='form-control' name='department' id='department' >";
-                                                while ($row = mysqli_fetch_row($departments)) {
-                                                    $selected = $tenderData['division_id'] == $row['1'] ? "selected=''" : '';
-
-                                                    echo "<option value='" . $row['0'] . "' " . $selected . ">" . $row['1'] . "</option>";
-                                                }
-                                                echo "</select>";
-                                                ?>
+                                                <select class='form-control' name='department' id='department' >
+                                                <?php while ($row = mysqli_fetch_row($departments)) { ?>
+                                                    <option value="<?php echo $row['0']; ?>" <?php echo $tenderData['department_id'] == $row['0'] ? "selected=''" : ''; ?>><?php echo $row['1']; ?></option>
+                                                <?php } ?>
+                                                </select>
                                             </div>
                                         </div>
 
@@ -1324,30 +1331,39 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
             });
 
 
-            $(document).on("change", "#department", async function (e) {
+            function toggleDivisionFields() {
                 const $department = $('select[name="department"]');
                 const $division = $('#statelist');
                 const $subDivision = $('#city');
-
+            
                 const selectedValue = $.trim(
                     $department.find('option:selected').text()
                 );
-
-
+            
                 if (selectedValue === 'Private') {
                     // hide parent form-groups
                     $division.closest('.form-group').hide();
                     $subDivision.closest('.form-group').hide();
-
+            
                     // reset values
                     $division.val('');
                     $subDivision.val('');
-
                 } else {
                     $division.closest('.form-group').show();
                     $subDivision.closest('.form-group').show();
                 }
+            }
+            
+            // Run on change
+            $(document).on("change", "#department", function () {
+                toggleDivisionFields();
             });
+            
+            // Run on page reload / first load
+            $(document).ready(function () {
+                toggleDivisionFields();
+            });
+
 
 
         })
