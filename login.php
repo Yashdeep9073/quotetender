@@ -188,9 +188,16 @@ $q = mysqli_query($db, $q);
                     <div class="form-group">
                         <input type="text" placeholder="Email id" name="username" required>
                     </div>
-                    <div class="form-group">
-                        <input type="password" placeholder="Password" name="password" required>
+                    <div class="form-group position-relative">
+                        <input type="password" placeholder="Password" name="password" id="password" required>
+                    
+                        <span id="togglePassword"
+                            style="position:absolute; right:15px; top:50%; transform:translateY(-50%); cursor:pointer;">
+                            <i class="icofont-eye"></i>
+                        </span>
                     </div>
+
+
 
                     <div class="form-group">
                         <div class="g-recaptcha" data-sitekey="6LeyShEqAAAAAJIMoyXfN7DmfesxwLNYOgBHIh4N"
@@ -285,6 +292,27 @@ $q = mysqli_query($db, $q);
         submitButton.removeAttribute("disabled");
     }
     </script>
+
+    <script type="text/javascript">
+        function callback() {
+            const submitButton = document.getElementById("submit");
+            submitButton.removeAttribute("disabled");
+        }
+    
+        $("#togglePassword").on("click", function () {
+            const passwordInput = $("#password");
+            const icon = $(this).find("i");
+    
+            if (passwordInput.attr("type") === "password") {
+                passwordInput.attr("type", "text");
+                icon.removeClass("icofont-eye").addClass("icofont-eye-blocked");
+            } else {
+                passwordInput.attr("type", "password");
+                icon.removeClass("icofont-eye-blocked").addClass("icofont-eye");
+            }
+        });
+    </script>
+
 </body>
 
 

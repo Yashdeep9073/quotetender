@@ -2,21 +2,19 @@
 session_start();
 error_reporting(0);
 
-// username and password sent from form 
+// username and password sent from form
 require "./db/config.php";
-require './utility/otpGenerator.php';
-require './utility/logGenerator.php';
-require '../env.php';
-require '../vendor/autoload.php';
+require "./utility/otpGenerator.php";
+require "./utility/logGenerator.php";
+require "../env.php";
+require "../vendor/autoload.php";
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
 $mail = new PHPMailer(true);
 
-
 try {
-
     function logRequestData($db, $requestInfo, $userId, $geoInfo)
     {
         // Prepare the SQL statement
@@ -37,27 +35,27 @@ try {
         }
 
         // Prepare the values
-        $request_type = $requestInfo['type'] ?? null;
-        $browser_name = $requestInfo['browser']['name'] ?? 'Unknown';
-        $browser_version = $requestInfo['browser']['version'] ?? 'Unknown';
-        $platform = $requestInfo['browser']['platform'] ?? 'Unknown';
-        $is_mobile = $requestInfo['browser']['is_mobile'] ?? 0;
-        $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? null;
-        $ip_address = $_SERVER['REMOTE_ADDR'] ?? null;
-        $request_method = $_SERVER['REQUEST_METHOD'] ?? null;
-        $request_uri = $_SERVER['REQUEST_URI'] ?? null;
-        $query_string = $_SERVER['QUERY_STRING'] ?? null;
+        $request_type = $requestInfo["type"] ?? null;
+        $browser_name = $requestInfo["browser"]["name"] ?? "Unknown";
+        $browser_version = $requestInfo["browser"]["version"] ?? "Unknown";
+        $platform = $requestInfo["browser"]["platform"] ?? "Unknown";
+        $is_mobile = $requestInfo["browser"]["is_mobile"] ?? 0;
+        $user_agent = $_SERVER["HTTP_USER_AGENT"] ?? null;
+        $ip_address = $_SERVER["REMOTE_ADDR"] ?? null;
+        $request_method = $_SERVER["REQUEST_METHOD"] ?? null;
+        $request_uri = $_SERVER["REQUEST_URI"] ?? null;
+        $query_string = $_SERVER["QUERY_STRING"] ?? null;
         $headers = json_encode(getallheaders());
-        $content_type = $_SERVER['CONTENT_TYPE'] ?? null;
-        $accept_header = $_SERVER['HTTP_ACCEPT'] ?? null;
-        $referer = $_SERVER['HTTP_REFERER'] ?? null;
-        $xhr_requested = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) ? 1 : 0;
-        $request_body = file_get_contents('php://input');
+        $content_type = $_SERVER["CONTENT_TYPE"] ?? null;
+        $accept_header = $_SERVER["HTTP_ACCEPT"] ?? null;
+        $referer = $_SERVER["HTTP_REFERER"] ?? null;
+        $xhr_requested = !empty($_SERVER["HTTP_X_REQUESTED_WITH"]) ? 1 : 0;
+        $request_body = file_get_contents("php://input");
         $response_status = http_response_code();
         $response_time = null; // Set this if measuring response time
-        $country = $geoInfo['country'];
-        $state = $geoInfo['state'];
-        $city = $geoInfo['city'];
+        $country = $geoInfo["country"];
+        $state = $geoInfo["state"];
+        $city = $geoInfo["city"];
 
         // Bind parameters
         $stmt->bind_param(
@@ -83,7 +81,7 @@ try {
             $userId,
             $country,
             $state,
-            $city
+            $city,
         );
 
         // Execute the statement
@@ -97,47 +95,45 @@ try {
             return false;
         }
     }
-
-
 } catch (Exception $e) {
-    $_SESSION['error'] = $e->getMessage();
+    $_SESSION["error"] = $e->getMessage();
 }
 
-
-if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['username'])) {
-    $myusername2 = mysqli_real_escape_string($db, $_POST['username']);
-    $mypassword = mysqli_real_escape_string($db, $_POST['password']);
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["username"])) {
+    $myusername2 = mysqli_real_escape_string($db, $_POST["username"]);
+    $mypassword = mysqli_real_escape_string($db, $_POST["password"]);
     $mypassword = md5($mypassword);
-
 
     $sql = "SELECT * FROM admin WHERE username = '$myusername2' and password = '$mypassword' and status='1'";
     $result = mysqli_query($db, $sql);
     $adminData = mysqli_fetch_row($result);
     $row = mysqli_fetch_array($result, MYSQLI_ASSOC);
-    $active = $row['active'];
-
+    $active = $row["active"];
 
     // Storing google recaptcha response
     // in $recaptcha variable
-    $recaptcha = $_POST['g-recaptcha-response'];
+    $recaptcha = $_POST["g-recaptcha-response"];
 
     // Check if reCAPTCHA response exists
     if (empty($recaptcha)) {
         echo json_encode([
             "success" => false,
-            "message" => "reCAPTCHA verification is required."
+            "message" => "reCAPTCHA verification is required.",
         ]);
         exit();
     }
 
     // Put secret key here, which we get
     // from google console
-    $secret_key = '6LeyShEqAAAAAKVRQAie1sCk9E5rBjvR9Ce0x5k_';
+    $secret_key = "6LeyShEqAAAAAKVRQAie1sCk9E5rBjvR9Ce0x5k_";
 
     // Hitting request to the URL, Google will
     // respond with success or error scenario
-    $url = 'https://www.google.com/recaptcha/api/siteverify?secret='
-        . $secret_key . '&response=' . $recaptcha;
+    $url =
+        "https://www.google.com/recaptcha/api/siteverify?secret=" .
+        $secret_key .
+        "&response=" .
+        $recaptcha;
 
     // Making request to verify captcha
     $response = file_get_contents($url);
@@ -151,7 +147,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['username'])) {
     if ($response->success != true) {
         echo json_encode([
             "success" => false,
-            "message" => "Error in Google reCAPTCHA verification. Please try again."
+            "message" =>
+                "Error in Google reCAPTCHA verification. Please try again.",
         ]);
         exit();
     }
@@ -161,19 +158,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['username'])) {
     // If result matched $myusername2 and $mypassword, table row must be 1 row
 
     if ($count == 1) {
-
-        $_SESSION['login_user'] = $myusername2;
-        $_SESSION['login_user_id'] = $adminData[0];
-        $_SESSION['login_user_id'] = $adminData[0];
+        $_SESSION["login_user"] = $myusername2;
+        $_SESSION["login_user_id"] = $adminData[0];
+        $_SESSION["login_user_id"] = $adminData[0];
 
         /*?>setcookie('password',$myusername2,time() + (86400 * 7));<?php */
 
-        $_SESSION['id'] = session_id(); // hold the user id in session
+        $_SESSION["id"] = session_id(); // hold the user id in session
 
-        $ipAddress = $_SERVER['REMOTE_ADDR']; // get the user ip
+        $ipAddress = $_SERVER["REMOTE_ADDR"]; // get the user ip
 
         // Your API Key from ipinfo.io (you can use a free tier key or subscribe for more features)
-        $accessToken = 'c922e696cae131'; // Replace with your ipinfo.io token
+        $accessToken = "c922e696cae131"; // Replace with your ipinfo.io token
 
         // IPinfo API endpoint
         $url = "http://ipinfo.io/{$ipAddress}/json?token={$accessToken}";
@@ -194,13 +190,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['username'])) {
         // Decode the JSON response
         $data = json_decode($response, true);
 
-        $ip = $data['ip'];
-        $city = $data['city'];
-        $region = $data['region'];
+        $ip = $data["ip"];
+        $city = $data["city"];
+        $region = $data["region"];
 
-        date_default_timezone_set('Asia/Kolkata');
-        $action = date('Y-m-d H:i:s A'); // query for inser user log in to data base
-        mysqli_query($db, "insert into user_logs(user_id,username,user_ip,login_time,city,region) values('" . $_SESSION['id'] . "','" . $_SESSION['login_user'] . "','$ip','$action','$city','$region')");
+        date_default_timezone_set("Asia/Kolkata");
+        $action = date("Y-m-d H:i:s A"); // query for inser user log in to data base
+        mysqli_query(
+            $db,
+            "insert into user_logs(user_id,username,user_ip,login_time,city,region) values('" .
+                $_SESSION["id"] .
+                "','" .
+                $_SESSION["login_user"] .
+                "','$ip','$action','$city','$region')",
+        );
 
         session_regenerate_id(true);
         $st = 1;
@@ -213,10 +216,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['username'])) {
         // $otp = $otpResponse['otp'];
         // $otpId = base64_encode($otpResponse['otpId']);
 
-
-        // Example usage 
+        // Example usage
         $requestInfo = detectRequestType();
-        $geoInfo = $requestInfo['geo'];
+        $geoInfo = $requestInfo["geo"];
 
         // echo "<pre>";
         // print_r($geoInfo);
@@ -243,33 +245,34 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['username'])) {
         $error = "Your Username or Password is invalid";
         echo json_encode([
             "success" => false,
-            "message" => $error
+            "message" => $error,
         ]);
         exit();
     }
 }
 
-if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['otpId'])) {
-
-    $otp = trim($_POST['otp']);
-    $otpId = base64_decode($_POST['otpId']);
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["otpId"])) {
+    $otp = trim($_POST["otp"]);
+    $otpId = base64_decode($_POST["otpId"]);
 
     // Validate OTP format
     if (!preg_match('/^\d{6}$/', $otp)) {
         echo json_encode([
             "success" => false,
-            "message" => "Please enter a valid 6-digit OTP."
+            "message" => "Please enter a valid 6-digit OTP.",
         ]);
         exit();
     }
 
     // Prepare and execute query to validate OTP
-    $stmtIsValidOtp = $db->prepare("SELECT * FROM admin_otp WHERE otp_id = ? AND is_used = 0");
+    $stmtIsValidOtp = $db->prepare(
+        "SELECT * FROM admin_otp WHERE otp_id = ? AND is_used = 0",
+    );
 
     if (!$stmtIsValidOtp) {
         echo json_encode([
             "success" => false,
-            "message" => "Database error occurred. Please try again."
+            "message" => "Database error occurred. Please try again.",
         ]);
         exit();
     }
@@ -280,31 +283,35 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['otpId'])) {
 
     if ($result->num_rows > 0) {
         $row = $result->fetch_assoc();
-        $storedOtp = $row['otp_code'];
-        $adminId = $row['admin_id'];
+        $storedOtp = $row["otp_code"];
+        $adminId = $row["admin_id"];
 
         // Compare server OTP with client OTP
         if ($otp !== $storedOtp) {
             echo json_encode([
                 "success" => false,
-                "message" => "Invalid OTP. Please try again."
+                "message" => "Invalid OTP. Please try again.",
             ]);
             exit();
         }
 
         // OTP is valid - mark as used
-        $stmtUpdateOtp = $db->prepare("UPDATE admin_otp SET is_used = 1 WHERE otp_id = ?");
+        $stmtUpdateOtp = $db->prepare(
+            "UPDATE admin_otp SET is_used = 1 WHERE otp_id = ?",
+        );
         $stmtUpdateOtp->bind_param("i", $otpId);
         $stmtUpdateOtp->execute();
 
         // Admin
         // Prepare and execute query to validate OTP
-        $stmtIsValidAdmin = $db->prepare("SELECT * FROM admin WHERE id = ? AND status = 1");
+        $stmtIsValidAdmin = $db->prepare(
+            "SELECT * FROM admin WHERE id = ? AND status = 1",
+        );
 
         if (!$stmtIsValidAdmin) {
             echo json_encode([
                 "success" => false,
-                "message" => "Database error occurred. Please try again."
+                "message" => "Database error occurred. Please try again.",
             ]);
             exit();
         }
@@ -314,44 +321,44 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['otpId'])) {
         $resultAdmin = $stmtIsValidAdmin->get_result();
         $rowAdmin = $resultAdmin->fetch_assoc();
 
-        $_SESSION['login_user'] = $rowAdmin['username'];
-        $_SESSION['login_user_id'] = $rowAdmin['id'];
+        $_SESSION["login_user"] = $rowAdmin["username"];
+        $_SESSION["login_user_id"] = $rowAdmin["id"];
 
         echo json_encode([
             "success" => true,
-            "message" => "OTP verified successfully."
+            "message" => "OTP verified successfully.",
         ]);
         exit();
     } else {
         echo json_encode([
             "success" => false,
-            "message" => "Invalid or expired OTP. Please try again."
+            "message" => "Invalid or expired OTP. Please try again.",
         ]);
         exit();
     }
 }
 
-if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['userId'])) {
-
-    $adminId = $_POST['userId'];
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["userId"])) {
+    $adminId = $_POST["userId"];
 
     // Validate OTP format
     if (!preg_match('/^[0-9]*$/', $userId)) {
         echo json_encode([
             "success" => false,
-            "message" => "Invalid user id ."
+            "message" => "Invalid user id .",
         ]);
         exit();
     }
 
-
     // Admin
-    $stmtIsValidAdmin = $db->prepare("SELECT * FROM admin WHERE id = ? AND status = 1");
+    $stmtIsValidAdmin = $db->prepare(
+        "SELECT * FROM admin WHERE id = ? AND status = 1",
+    );
     if (!$stmtIsValidAdmin) {
         error_log("Admin Select Prepare Error: " . $db->error);
         return [
             "success" => false,
-            "message" => "Failed to prepare admin selection: " . $db->error
+            "message" => "Failed to prepare admin selection: " . $db->error,
         ];
     }
 
@@ -360,7 +367,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['userId'])) {
         error_log("Admin Select Execute Error: " . $stmtIsValidAdmin->error);
         return [
             "success" => false,
-            "message" => "Failed to execute admin selection: " . $stmtIsValidAdmin->error
+            "message" =>
+                "Failed to execute admin selection: " .
+                $stmtIsValidAdmin->error,
         ];
     }
 
@@ -368,17 +377,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['userId'])) {
     if ($resultAdmin->num_rows === 0) {
         return [
             "success" => false,
-            "message" => "Admin not found or inactive"
+            "message" => "Admin not found or inactive",
         ];
     }
 
     $rowAdmin = $resultAdmin->fetch_assoc();
-    $adminId = $rowAdmin['id'];
-    $adminEmail = $rowAdmin['email'];
+    $adminId = $rowAdmin["id"];
+    $adminEmail = $rowAdmin["email"];
 
     $otpResponse = otpGenerate($adminId, $db, $mail);
-    $otp = $otpResponse['otp'];
-    $otpId = base64_encode($otpResponse['otpId']);
+    $otp = $otpResponse["otp"];
+    $otpId = base64_encode($otpResponse["otpId"]);
 
     echo json_encode([
         "success" => true,
@@ -390,9 +399,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['userId'])) {
 
 if (isset($_SESSION["login_user"])) {
     header("location: dashboard.php?loginin=$st");
-    exit;
+    exit();
 }
-
 ?>
 
 
@@ -449,12 +457,22 @@ if (isset($_SESSION["login_user"])) {
                     </div>
                     <div class="input-group mb-4">
                         <div class="input-group-prepend">
-                            <span class="input-group-text" style="background-color:#33cc33;color:#fff;"><i
-                                    class="feather icon-lock"></i></span>
+                            <span class="input-group-text" style="background-color:#33cc33;color:#fff;">
+                                <i class="feather icon-lock"></i>
+                            </span>
                         </div>
+                    
                         <input type="password" class="form-control" placeholder="Password" name="password"
                             id="userPassword" style="border-color:#33cc33">
+                    
+                        <div class="input-group-append">
+                            <button class="btn btn-outline-secondary" type="button" id="togglePassword"
+                                style="border-color:#33cc33; color:#33cc33;">
+                                <i class="feather icon-eye" id="togglePasswordIcon"></i>
+                            </button>
+                        </div>
                     </div>
+
                     <div class="g-recaptcha" data-sitekey="6LeyShEqAAAAAJIMoyXfN7DmfesxwLNYOgBHIh4N"
                         data-callback="callback" data-expired-callback="expiredCallback" style="border:none;"
                         align="center">
@@ -480,6 +498,20 @@ if (isset($_SESSION["login_user"])) {
 
 <script>
     $(document).ready(function () {
+      $('#togglePassword').on('click', function () {
+          const $passwordInput = $('#userPassword');
+          const $icon = $('#togglePasswordIcon');
+      
+          if ($passwordInput.attr('type') === 'password') {
+              $passwordInput.attr('type', 'text');
+              $icon.removeClass('icon-eye').addClass('icon-eye-off');
+          } else {
+              $passwordInput.attr('type', 'password');
+              $icon.removeClass('icon-eye-off').addClass('icon-eye');
+          }
+      });
+
+    
 
         let currentOtpId = null;
         let isOtpVerified = false; // Track if OTP is verified
@@ -718,7 +750,7 @@ if (isset($_SESSION["login_user"])) {
                 url: window.location.href, // Create this PHP file for OTP resend
                 type: 'POST',
                 data: {
-                    userId: '<?php echo $_SESSION['login_user_id'] ?? ''; ?>'
+                    userId: '<?php echo $_SESSION["login_user_id"] ?? ""; ?>'
                 },
                 dataType: 'json',
                 success: function (response) {
