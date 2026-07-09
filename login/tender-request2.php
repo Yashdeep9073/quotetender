@@ -1,6 +1,6 @@
 <?php
 
-ini_set("display_errors", 0);
+ini_set("display_errors", 1);
 session_start();
 include "db/config.php";
 require_once "../vendor/autoload.php";
@@ -22,7 +22,6 @@ if (!isset($_SESSION["login_user"])) {
 
 $name = $_SESSION["login_user"];
 
-
 $adminID = $_SESSION["login_user_id"];
 
 // Initialize the row number variable
@@ -37,6 +36,8 @@ $queryMain = "SELECT
     m.mobile,
     m.email_id,
     department.department_name,
+    s.section_name,
+    dv.division_name,
     ur.due_date,
     ur.file_name,
     ur.tenderID,
@@ -66,6 +67,8 @@ ORDER BY
 ";
 
 $resultMain = mysqli_query($db, $queryMain);
+
+
 
 $adminID = $_SESSION["login_user_id"];
 
@@ -304,12 +307,11 @@ function processTenderRequest(mysqli $db, array $data): array
     $db->begin_transaction();
 
     try {
-
         // echo "<pre>";
         // print_r($data);
         // echo "</pre>";
         // exit();
-        
+
         // 1️⃣ Count tender usage (lock)
         $stmt = $db->prepare("
             SELECT COUNT(*)
@@ -535,7 +537,7 @@ function processTenderRequest(mysqli $db, array $data): array
             $nameOfWork,
             $data["project_name"],
             $data["project_location"],
-            $updatedBy
+            $updatedBy,
         );
 
         if (!$stmt->execute()) {
@@ -596,6 +598,7 @@ function sendMail(
         // SMTP config
         $mail->isSMTP();
         $mail->SMTPDebug = 0;
+        // $mail->DebugOutput = 'html';
         $mail->Host = getenv("SMTP_HOST");
         $mail->SMTPAuth = true;
         $mail->Username = getenv("SMTP_USER_NAME");
@@ -666,28 +669,25 @@ function sendMail(
 
 if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["submit"])) {
     try {
-        if (!isset($_SESSION["login_register"])) {
-            header("Location: login.php");
-            exit();
-        }
+        $member_id = $_POST["member_id"];
 
-
-
-        // Get member & max_request
         $stmt = $db->prepare("
-        SELECT member_id, name, email_id, max_request
-        FROM members
-        WHERE email_id = ?
+            SELECT member_id, name, email_id, max_request
+            FROM members
+            WHERE member_id = ?
         ");
-        $stmt->bind_param("s", $_SESSION["login_register"]);
+
+        $stmt->bind_param("i", $member_id);
         $stmt->execute();
+
         $member = $stmt->get_result()->fetch_assoc();
         $stmt->close();
 
         if (!$member || (int) $member["max_request"] <= 0) {
             $_SESSION["error"] =
-                "You have reached the maximum allowed requests.";
-            header("Location: index.php");
+                "You have reached the maximum allowed requests." .
+                $member["max_request"];
+            header("Location: tender-request2.php");
             exit();
         }
 
@@ -734,11 +734,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["submit"])) {
             ? json_encode($uploadedFiles)
             : null;
 
-        // echo "<pre>";
-        // print_r($_POST);
-        // echo "</pre>";
-        // exit;
-
         // Process tender (SERVICE)
         $result = processTenderRequest($db, [
             "member_id" => (int) $member["member_id"],
@@ -749,12 +744,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["submit"])) {
             "project_location" => $_POST["projectLocation"] ?? null,
             "due_date" => $_POST["datepicker"],
             "user_additional_files" => $userAdditionalFilesJson,
-            "updated_by" => $_SESSION["login_user"] 
+            "updated_by" => $_SESSION["login_user"],
         ]);
 
         if (!$result["success"]) {
             $_SESSION["error"] = $result["message"];
-            header("Location: index.php");
+            header("Location: tender-request2");
             exit();
         }
 
@@ -801,6 +796,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["submit"])) {
             logo: $logo ?? null,
             attachments: $quotationFiles,
         );
+
+      
 
         if ($mailSent && $result["status"] === "Sent") {
             $stmt = $db->prepare("
@@ -920,6 +917,50 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["submit"])) {
 
 <body class="">
 
+<?php if (isset($_SESSION["success"])) { ?>
+    <script>
+        const notyf = new Notyf({
+            position: {
+                x: 'center',
+                y: 'top'
+            },
+            types: [
+                {
+                    type: 'success',
+                    background: '#26c975', // Change background color
+                    textColor: '#FFFFFF',  // Change text color
+                    dismissible: true,
+                    duration: 10000
+                }
+            ]
+        });
+        notyf.success("<?php echo $_SESSION["success"]; ?>");
+    </script>
+    <?php unset($_SESSION["success"]); ?>
+<?php } ?>
+
+<?php if (isset($_SESSION["error"])) { ?>
+    <script>
+        const notyf = new Notyf({
+            position: {
+                x: 'center',
+                y: 'top'
+            },
+            types: [
+                {
+                    type: 'error',
+                    background: '#ff1916',
+                    textColor: '#FFFFFF',
+                    dismissible: true,
+                    duration: 10000
+                }
+            ]
+        });
+        notyf.error("<?php echo $_SESSION["error"]; ?>");
+    </script>
+    <?php unset($_SESSION["error"]); ?>
+<?php } ?>
+
     <div class="loader-bg">
         <div class="loader-track">
             <div class="loader-fill"></div>
@@ -1007,8 +1048,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["submit"])) {
                                 <span id="new">
 
                                     <?php
-                                    $tenderRequestedCountValue = 0; // Default value
-
+                                    $tenderRequestedCountValue = 0;
+                                    // Default value
                                     if (
                                         $isAdmin ||
                                         hasPermission(
@@ -1170,6 +1211,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["submit"])) {
                                             <th>Tender ID</th>
                                             <th>Reference Code</th>
                                             <th>Department</th>
+                                            <th>Section</th>
+                                            <th>Division</th>
                                             <th>Due Date</th>
                                             <th>Add Date </th>
                                             <th>Created By </th>
@@ -1240,6 +1283,16 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["submit"])) {
                                                         "department_name"
                                                     ]; ?>
                                                 </td>
+                                                <td>
+                                                    <?php echo $row[
+                                                        "section_name"
+                                                    ]; ?>
+                                                </td>
+                                                <td>
+                                                    <?php echo $row[
+                                                        "division_name"
+                                                    ]; ?>
+                                                </td>
                                                 <?php
                                                 $dueDate = new DateTime(
                                                     $row["due_date"],
@@ -1267,7 +1320,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["submit"])) {
                                                 $res = $row["id"];
                                                 $res = base64_encode($res);
                                                 ?>
-                                                <td><?php echo $row["updated_by"]; ?></td>
+                                                <td><?php echo $row[
+                                                    "updated_by"
+                                                ]; ?></td>
                                                 <td>
 
                                                     <div class="dropdown">
