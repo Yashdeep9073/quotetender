@@ -68,8 +68,6 @@ ORDER BY
 
 $resultMain = mysqli_query($db, $queryMain);
 
-
-
 $adminID = $_SESSION["login_user_id"];
 
 // Lock the sequence row
@@ -797,8 +795,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["submit"])) {
             attachments: $quotationFiles,
         );
 
-      
-
         if ($mailSent && $result["status"] === "Sent") {
             $stmt = $db->prepare("
                 UPDATE user_tender_requests
@@ -849,6 +845,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["submit"])) {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <link rel="stylesheet" href="assets/css/style.css">
+
+
+
     <style>
         #basic-btn2_length {
             padding: 10px !important;
@@ -1537,7 +1536,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["submit"])) {
                                     Members <span class="text-danger">*</span>
                                 </label>
 
-                                <select class="form-select" id="members" name="member_id" required>
+                                <select class="js-example-basic-single form-select" id="members" name="member_id" required>
                                     <option value="">Select Member</option>
 
                                     <?php foreach ($members as $member) { ?>
@@ -1645,7 +1644,14 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["submit"])) {
     </div>
 
 
-    <script src=" assets/js/vendor-all.min.js"></script>
+    <script src="assets/js/vendor-all.min.js"></script>
+
+    <!-- CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+    <!-- Select2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
     <script src="assets/js/plugins/bootstrap.min.js"></script>
     <script src="assets/js/pcoded.min.js"></script>
 
@@ -1883,6 +1889,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["submit"])) {
 
     <script>
         $(document).ready(function () {
+
+
             setInterval(function () {
                 //$("#new").load("load.php");
                 // refresh();
@@ -1892,6 +1900,17 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["submit"])) {
 
     <script type="text/javascript">
         $(document).ready(function () {
+
+          $(function () {
+              $('#members').select2({
+                  dropdownParent: $('#create-tender-request-model'),
+                  width: '100%',
+                  placeholder: 'Select Member'
+              });
+          });
+
+
+
             // Initialize the DataTable with buttons
             var table = $('#basic-btn2').DataTable({
                 pageLength: 100,
