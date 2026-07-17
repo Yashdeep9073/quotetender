@@ -2,17 +2,65 @@
 
 session_start();
 
-
 if (!isset($_SESSION["login_user"])) {
     header("location: index.php");
 }
-$name = $_SESSION['login_user'];
+$name = $_SESSION["login_user"];
 
-include("db/config.php");
+include "db/config.php";
 
 $query = "SELECT * FROM section";
 $result = mysqli_query($db, $query);
 
+// echo "<pre>";
+// print_r($result->fetch_all(MYSQLI_ASSOC));
+// echo "</pre>";
+
+// exit();
+//
+
+if (isset($_POST["sectionId"]) && $_SERVER["REQUEST_METHOD"] == "POST") {
+    try {
+        $sectionId = intval($_POST["sectionId"]);
+
+        // echo json_encode([
+        //     "status" => 200,
+        //     "message" => "Test",
+        //     "data" => $sectionId,
+        // ]);
+        // exit();
+
+        if (empty($sectionId)) {
+            echo json_encode([
+                "status" => 400,
+                "error" => "Invalid state",
+            ]);
+            exit();
+        }
+
+        $db->begin_transaction();
+
+        $stmtDeleteSection = $db->prepare("DELETE FROM section WHERE section_id = ?");
+        $stmtDeleteSection->bind_param("i", $sectionId);
+        $stmtDeleteSection->execute();
+
+        $db->commit();
+
+        echo json_encode([
+            "status" => 200,
+            "message" => "Section deleted successfully",
+            "data" => $sectionId,
+        ]);
+        exit();
+    } catch (\Throwable $th) {
+        //throw $th;
+        echo json_encode([
+            "status" => 500,
+            "error" => $th->getMessage(),
+        ]);
+        exit();
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -50,7 +98,7 @@ $result = mysqli_query($db, $query);
 
 
 
-    <?php include 'navbar.php'; ?>
+    <?php include "navbar.php"; ?>
 
 
     <header class="navbar pcoded-header navbar-expand-lg navbar-light headerpos-fixed header-blue">
@@ -93,7 +141,7 @@ $result = mysqli_query($db, $query);
             <div class="dropdown-menu dropdown-menu-right profile-notification">
                 <div class="pro-head">
                     <img src="assets/images/user.png" class="img-radius" alt="User-Profile-Image">
-                    <span><?php echo $name ?></span>
+                    <span><?php echo $name; ?></span>
                     <a href="logout.php" class="dud-logout" title="Logout">
                         <i class="feather icon-log-out"></i>
                     </a>
@@ -145,10 +193,8 @@ $result = mysqli_query($db, $query);
                         </div>
                         <div class="card-body">
                             <div class="dt-responsive table-responsive">
-                                <?php
-
-                                if (isset($_GET['status'])) {
-                                    $st = $_GET['status'];
+                                <?php if (isset($_GET["status"])) {
+                                    $st = $_GET["status"];
                                     $st1 = base64_decode($st);
 
                                     if ($st1 > 0) {
@@ -159,7 +205,6 @@ $result = mysqli_query($db, $query);
   </button>
 </div> ";
                                     } else {
-
                                         echo " <div class='alert alert-danger alert-dismissible fade show' role='alert' style='font-size:16px;' id='gold'>
   <strong>Error!</strong> Section  not Updated
   <button type='button' class='close' data-dismiss='alert' aria-label='Close'>
@@ -167,9 +212,7 @@ $result = mysqli_query($db, $query);
   </button>
 </div> ";
                                     }
-                                }
-
-                                ?>
+                                } ?>
                                 <br />
                                 <table id="basic-btn2" class="table table-striped table-bordered nowrap">
                                     <thead>
@@ -182,40 +225,59 @@ $result = mysqli_query($db, $query);
                                     <tbody>
                                         <?php
                                         $count = 1;
-                                        while ($row = mysqli_fetch_row($result)) {
-                                            ?>
+                                        while (
+                                            $row = mysqli_fetch_row($result)
+                                        ) { ?>
                                             <tr class='record'>
                                                 <td><?php echo $count; ?></td>
-                                                <td><?php echo $row['1']; ?></td>
+                                                <td><?php echo $row[
+                                                    "1"
+                                                ]; ?></td>
 
                                                 <td>
                                                     <?php
                                                     $res = $row[0];
                                                     $res = base64_encode($res);
 
-                                                    if ($isAdmin || hasPermission('Edit Section', $privileges, $roleData['role_name'])) {
-                                                        ?>
+                                                    if (
+                                                        $isAdmin ||
+                                                        hasPermission(
+                                                            "Edit Section",
+                                                            $privileges,
+                                                            $roleData[
+                                                                "role_name"
+                                                            ],
+                                                        )
+                                                    ) { ?>
                                                         <a href='section-edit.php?sect=<?php echo $res; ?>'>
                                                             <button type='button' class='btn btn-warning'>
                                                                 <i class='feather icon-edit'></i> &nbsp;Edit
                                                             </button>
                                                         </a>
                                                         &nbsp;
-                                                    <?php } ?>
+                                                    <?php }
+                                                    ?>
 
-                                                    <?php
-                                                    if ($isAdmin || hasPermission('Delete Section', $privileges, $roleData['role_name'])) {
-                                                        ?>
-                                                        <a href='#' id='<?php echo $row['0']; ?>'
+                                                    <?php if (
+                                                        $isAdmin ||
+                                                        hasPermission(
+                                                            "Delete Section",
+                                                            $privileges,
+                                                            $roleData[
+                                                                "role_name"
+                                                            ],
+                                                        )
+                                                    ) { ?>
+                                                        <a href='#' id='<?php echo $row[
+                                                            "0"
+                                                        ]; ?>'
                                                             class='delbutton btn btn-danger' title='Click To Delete'>
                                                             <i class='feather icon-trash'></i> &nbsp; delete
                                                         </a>
                                                     <?php } ?>
                                                 </td>
                                             </tr>
-                                            <?php
-                                            $count++;
-                                        }
+                                            <?php $count++;}
                                         ?>
                                     </tbody>
                                     <tfoot></tfoot>
@@ -286,10 +348,14 @@ $result = mysqli_query($db, $query);
                 }).then((result) => {
                     if (result.isConfirmed) {
                         $.ajax({
-                            type: "GET",
-                            url: "deletegold.php",
-                            data: info,
+                            url: window.location.href,
+                            type: 'POST',
+                            data: { sectionId: del_id },
+                            dataType: 'json',
                             success: function (response) {
+
+                                console.log(response);
+
                                 // Show success message
                                 Swal.fire({
                                     title: 'Deleted!',

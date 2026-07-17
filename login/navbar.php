@@ -380,3 +380,24 @@ $isAdmin = strtolower($roleData['role_name']) === 'admin';
         </div>
     </div>
 </nav>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll(".pcoded-navbar a").forEach(function (link) {
+        const href = link.getAttribute("href");
+
+        // Skip invalid links
+        if (
+            !href ||
+            href === "#" ||
+            href.startsWith("javascript:")
+        ) {
+            return;
+        }
+
+        // Open every navbar link in a new tab
+        link.setAttribute("target", "_blank");
+        link.setAttribute("rel", "noopener noreferrer");
+    });
+});
+</script>
