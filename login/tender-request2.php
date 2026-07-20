@@ -1952,7 +1952,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["submit"])) {
         $(document).ready(function () {
 
           $(function () {
-              $('#departmentId').select2({
+              $('#department').select2({
                   dropdownParent: $('#create-tender-request-model'),
                   width: '100%',
                   placeholder: 'Select Department'
