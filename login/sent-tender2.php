@@ -863,7 +863,7 @@ try {
                                                 <td>
                                                     <strong>
                                                         <?php if ($isAdmin || hasPermission('Sent Tender View', $privileges, $roleData['role_name'])) { ?>
-                                                            <a class='tender_id'
+                                                            <a class='tender_id' target='_blank'
                                                                 href='sent-tender3.php?tender_id=<?= base64_encode($row['tenderID']) ?>'>
                                                                 <?= htmlspecialchars($row['tenderID']) ?>
                                                             </a>

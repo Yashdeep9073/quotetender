@@ -246,15 +246,43 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["departmentId"])) {
             }
         }
 
-        $departmentId = trim($_POST["departmentId"]);
+        $departmentId = (int) $_POST["departmentId"];
 
         $db->begin_transaction();
 
-        // Fetch unique, non-empty cities only
-        $stmtFetchSections = $db->prepare(
-            "SELECT * FROM section WHERE department_id = ? AND status = 1",
+        // Get department name
+        $stmtDept = $db->prepare(
+            "SELECT department_name FROM department WHERE department_id = ?",
         );
-        $stmtFetchSections->bind_param("i", $departmentId);
+        $stmtDept->bind_param("i", $departmentId);
+        $stmtDept->execute();
+
+        $department = $stmtDept->get_result()->fetch_assoc();
+        $departmentName = strtolower(
+            trim($department["department_name"] ?? ""),
+        );
+
+        if ($departmentName === "private") {
+            // Private department
+            $stmtFetchSections = $db->prepare(
+                "SELECT *
+                 FROM section
+                 WHERE department_id = ?
+                 AND status = 1
+                 ORDER BY section_name ASC",
+            );
+            $stmtFetchSections->bind_param("i", $departmentId);
+        } else {
+            // All other departments
+            $stmtFetchSections = $db->prepare(
+                "SELECT *
+                 FROM section
+                 WHERE department_id = 0
+                 AND status = 1
+                 ORDER BY section_name ASC",
+            );
+        }
+
         $stmtFetchSections->execute();
         $sections = $stmtFetchSections->get_result()->fetch_all(MYSQLI_ASSOC);
 
@@ -667,27 +695,7 @@ function sendMail(
 
 if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["submit"])) {
     try {
-        $member_id = $_POST["member_id"];
-
-        $stmt = $db->prepare("
-            SELECT member_id, name, email_id, max_request
-            FROM members
-            WHERE member_id = ?
-        ");
-
-        $stmt->bind_param("i", $member_id);
-        $stmt->execute();
-
-        $member = $stmt->get_result()->fetch_assoc();
-        $stmt->close();
-
-        if (!$member || (int) $member["max_request"] <= 0) {
-            $_SESSION["error"] =
-                "You have reached the maximum allowed requests." .
-                $member["max_request"];
-            header("Location: tender-request2.php");
-            exit();
-        }
+        $memberIds = $_POST["member_id"] ?? [];
 
         //  Validate tender
         $tender = trim($_POST["tenderid"]);
@@ -732,86 +740,124 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["submit"])) {
             ? json_encode($uploadedFiles)
             : null;
 
-        // Process tender (SERVICE)
-        $result = processTenderRequest($db, [
-            "member_id" => (int) $member["member_id"],
-            "tender_id" => $tender,
-            "department_id" => $_POST["dept"],
-            "section_id" => $_POST["sectionId"] ?? null,
-            "project_name" => $_POST["projectName"] ?? null,
-            "project_location" => $_POST["projectLocation"] ?? null,
-            "due_date" => $_POST["datepicker"],
-            "user_additional_files" => $userAdditionalFilesJson,
-            "updated_by" => $_SESSION["login_user"],
-        ]);
+        $successCount = 0;
+        $failedMembers = [];
 
-        if (!$result["success"]) {
-            $_SESSION["error"] = $result["message"];
-            header("Location: tender-request2");
-            exit();
-        }
+        foreach ($memberIds as $member_id) {
+            $member_id = (int) $member_id;
 
-        // 🔹 Fetch quotation files ONLY if auto quotation applied
-        $quotationFiles = [];
-
-        if ($result["status"] === "Sent") {
             $stmt = $db->prepare("
-            SELECT additional_files
-            FROM user_tender_requests
-            WHERE tenderID = ?
-              AND status = 'Sent'
-              AND auto_quotation = '1'
-            ORDER BY created_at ASC
-            LIMIT 1
-        ");
-            $stmt->bind_param("s", $tender);
+                    SELECT member_id,
+                           name,
+                           email_id,
+                           firm_name,
+                           max_request
+                    FROM members
+                    WHERE member_id = ?
+                ");
+
+            $stmt->bind_param("i", $member_id);
             $stmt->execute();
-            $stmt->bind_result($quotationFilesJson);
-            $stmt->fetch();
+
+            $member = $stmt->get_result()->fetch_assoc();
             $stmt->close();
 
-            if (!empty($quotationFilesJson)) {
-                $quotationFiles = json_decode($quotationFilesJson, true) ?? [];
+            if (!$member || (int) $member["max_request"] <= 0) {
+                $failedMembers[] = $member_id;
+                continue;
+            }
+
+            // Process Tender
+            $result = processTenderRequest($db, [
+                "member_id" => (int) $member["member_id"],
+                "tender_id" => $tender,
+                "department_id" => $_POST["dept"],
+                "section_id" => $_POST["sectionId"] ?? null,
+                "project_name" => $_POST["projectName"] ?? null,
+                "project_location" => $_POST["projectLocation"] ?? null,
+                "due_date" => $_POST["datepicker"],
+                "user_additional_files" => $userAdditionalFilesJson,
+                "updated_by" => $_SESSION["login_user"],
+            ]);
+
+            if (!$result["success"]) {
+                $failedMembers[] = $member["name"];
+                continue;
+            }
+
+            $successCount++;
+
+            $quotationFiles = [];
+
+            if ($result["status"] === "Sent") {
+                $stmt = $db->prepare("
+                        SELECT additional_files
+                        FROM user_tender_requests
+                        WHERE tenderID = ?
+                          AND status = 'Sent'
+                          AND auto_quotation = '1'
+                        ORDER BY created_at ASC
+                        LIMIT 1
+                    ");
+
+                $stmt->bind_param("s", $tender);
+                $stmt->execute();
+                $stmt->bind_result($quotationFilesJson);
+                $stmt->fetch();
+                $stmt->close();
+
+                if (!empty($quotationFilesJson)) {
+                    $quotationFiles =
+                        json_decode($quotationFilesJson, true) ?? [];
+                }
+            }
+
+      
+
+            // Send Email
+            $template = emailTemplate($db, $result["email_template"]);
+
+            $mailSent = sendMail(
+                template: $template,
+                toEmail: $member["email_id"],
+                toName: $member["name"],
+                placeholders: [
+                    "name" => $member["name"],
+                    "tenderId" => $tender,
+                    "firmName" => $member["firm_name"] ?? "",
+                    "supportPhone" => $supportPhone ?? "N/A",
+                    "enquiryEmail" => $enquiryMail ?? "N/A",
+                    "supportEmail" => $supportEmail ?? "N/A",
+                ],
+                ccEmails: array_column($ccEmailData ?? [], "cc_email"),
+                logo: $logo ?? null,
+                attachments: $quotationFiles,
+            );
+
+            if ($mailSent && $result["status"] === "Sent") {
+                $stmt = $db->prepare("
+                        UPDATE user_tender_requests
+                        SET email_sent_date = NOW()
+                        WHERE tenderID = ?
+                          AND member_id = ?
+                        ORDER BY created_at DESC
+                        LIMIT 1
+                    ");
+
+                $stmt->bind_param("si", $tender, $member["member_id"]);
+                $stmt->execute();
+                $stmt->close();
             }
         }
 
-        // 🔹 Send email
-        $template = emailTemplate($db, $result["email_template"]);
-
-        $mailSent = sendMail(
-            template: $template,
-            toEmail: $member["email_id"],
-            toName: $member["name"],
-            placeholders: [
-                "name" => $member["name"],
-                "tenderId" => $tender,
-                "firmName" => $member["firm_name"] ?? "",
-                "supportPhone" => $supportPhone ?? "N/A",
-                "enquiryEmail" => $enquiryMail ?? "N/A",
-                "supportEmail" => $supportEmail ?? "N/A",
-            ],
-            ccEmails: array_column($ccEmailData ?? [], "cc_email"),
-            logo: $logo ?? null,
-            attachments: $quotationFiles,
-        );
-
-        if ($mailSent && $result["status"] === "Sent") {
-            $stmt = $db->prepare("
-                UPDATE user_tender_requests
-                SET email_sent_date = NOW()
-                WHERE tenderID = ?
-                AND member_id = ?
-                ORDER BY created_at DESC
-                LIMIT 1
-            ");
-
-            $stmt->bind_param("si", $tender, $member["member_id"]);
-
-            $stmt->execute();
-            $stmt->close();
+        if ($successCount > 0) {
+            $_SESSION[
+                "success"
+            ] = "{$successCount} tender request(s) submitted successfully.";
+        } else {
+            $_SESSION["error"] = "No tender requests were submitted.";
         }
 
-        $_SESSION["success"] = "Tender request submitted successfully.";
         header("Location: tender-request2.php");
         exit();
     } catch (\Throwable $th) {
@@ -1257,7 +1303,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["submit"])) {
                                                                 ],
                                                             )
                                                         ) { ?>
-                                                            <a class='tender_id'
+                                                            <a class='tender_id' target='_blank'
                                                                 href='tender-request3.php?tender_id=<?php echo base64_encode(
                                                                     $row[
                                                                         "tenderID"
@@ -1459,10 +1505,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["submit"])) {
                             </div>
 
                             <!-- Section -->
-                            <div class="col-md-12 mb-3" id="sectionIdContainer" style="display:none;">
-                                <label class="form-label">Section</label>
+                            <div class="col-md-12 mb-3" id="sectionIdContainer" style="">
+                                <label class="form-label">Section <span class="text-danger">*</span></label>
 
-                                <select id="sectionId" name="sectionId" class="form-select">
+                                <select id="sectionId" name="sectionId" class="form-select" required>
                                     <option value="">Select Section</option>
                                 </select>
                             </div>
@@ -1536,8 +1582,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["submit"])) {
                                     Members <span class="text-danger">*</span>
                                 </label>
 
-                                <select class="js-example-basic-single form-select" id="members" name="member_id" required>
-                                    <option value="">Select Member</option>
+                                <select
+                                    class="form-select"
+                                    id="members"
+                                    name="member_id[]"
+                                    multiple
+                                    required>
 
                                     <?php foreach ($members as $member) { ?>
                                         <option value="<?= $member[
@@ -1547,9 +1597,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["submit"])) {
                                             (<?= $member["firm_name"] ?>)
                                             (<?= $member["email_id"] ?>)
                                             (<?= $member["mobile"] ?>)
-
                                         </option>
                                     <?php } ?>
+
                                 </select>
                             </div>
 
@@ -1902,12 +1952,30 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["submit"])) {
         $(document).ready(function () {
 
           $(function () {
+              $('#departmentId').select2({
+                  dropdownParent: $('#create-tender-request-model'),
+                  width: '100%',
+                  placeholder: 'Select Department'
+              });
+          });
+
+          $(function () {
               $('#members').select2({
                   dropdownParent: $('#create-tender-request-model'),
                   width: '100%',
-                  placeholder: 'Select Member'
+                  placeholder: 'Select Members',
+                  closeOnSelect: false
               });
           });
+
+          $(function () {
+              $('#sectionId').select2({
+                  dropdownParent: $('#create-tender-request-model'),
+                  width: '100%',
+                  placeholder: 'Select Section'
+              });
+          });
+
 
 
 
@@ -2271,6 +2339,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["submit"])) {
                 let departmentId = $(this).val();
 
 
+
                 await $.ajax({
                     url: window.location.href,
                     type: 'POST',
@@ -2301,28 +2370,30 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["submit"])) {
             });
 
 
-            $(document).on("change", "#department", async function (e) {
-                const $department = $('select[name="dept"]');
+            $(document).on("change", "#department", function () {
 
+                const selectedDepartment = $.trim(
+                    $("#department option:selected").text()
+                ).toLowerCase();
 
-                const selectedValue = $.trim(
-                    $department.find('option:selected').text()
-                );
+                if (selectedDepartment === "private") {
 
-
-                if (selectedValue === 'Private') {
-                    $("#sectionIdContainer").show();
                     $("#projectNameContainer").show();
                     $("#projectLocationContainer").show();
+
+                    $("#projectName").prop("required", true);
+                    $("#projectLocation").prop("required", true);
+
                 } else {
-                    $("#sectionIdContainer").hide();
-                    $("#sectionId").val("");
+
                     $("#projectNameContainer").hide();
                     $("#projectLocationContainer").hide();
-                    return;
-                }
-            });
 
+                    $("#projectName").val("").prop("required", false);
+                    $("#projectLocation").val("").prop("required", false);
+                }
+
+            });
 
         });
     </script>

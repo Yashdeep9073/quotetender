@@ -1,6 +1,6 @@
 <?php
 
-include("db/config.php");
+include "db/config.php";
 session_start();
 require_once "../vendor/autoload.php";
 require_once "../env.php";
@@ -14,41 +14,38 @@ if (!isset($_SESSION["login_user"])) {
     header("location: index.php");
 }
 
-
-$name = $_SESSION['login_user'];
+$name = $_SESSION["login_user"];
 $en = $_GET["id"];
 $d = base64_decode($en);
 
-if (isset($_GET['is_update'])) {
-    $isUpdate = (int) $_GET['is_update'] ?? null;
+if (isset($_GET["is_update"])) {
+    $isUpdate = (int) $_GET["is_update"] ?? null;
 }
 
-if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['departmentId'])) {
-
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["departmentId"])) {
     try {
-        $required_fields = ['departmentId'];
+        $required_fields = ["departmentId"];
         foreach ($required_fields as $field) {
             if (!isset($_POST[$field])) {
                 echo json_encode([
                     "status" => 400,
-                    "error" => "Missing required field: " . $field
+                    "error" => "Missing required field: " . $field,
                 ]);
-                exit;
+                exit();
             }
         }
 
-        $departmentId = trim($_POST['departmentId']);
-
-
+        $departmentId = trim($_POST["departmentId"]);
 
         $db->begin_transaction();
 
         // Fetch unique, non-empty cities only
-        $stmtFetchSections = $db->prepare("SELECT * FROM section WHERE department_id = ? AND status = 1");
+        $stmtFetchSections = $db->prepare(
+            "SELECT * FROM section WHERE department_id = ? AND status = 1",
+        );
         $stmtFetchSections->bind_param("i", $departmentId);
         $stmtFetchSections->execute();
         $sections = $stmtFetchSections->get_result()->fetch_all(MYSQLI_ASSOC);
-
 
         echo json_encode([
             "status" => 200,
@@ -56,44 +53,42 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['departmentId'])) {
         ]);
 
         $db->commit();
-        exit;
-
-
+        exit();
     } catch (\Throwable $th) {
         //throw $th;
         echo json_encode([
             "status" => 500,
             "error" => $th->getMessage(),
         ]);
-        exit;
+        exit();
     }
-
 }
 
 try {
-
     // Lock the sequence row
-    $stmtCount = $db->prepare("SELECT last_sequence FROM reference_sequence WHERE id = 1 ");
+    $stmtCount = $db->prepare(
+        "SELECT last_sequence FROM reference_sequence WHERE id = 1 ",
+    );
     $stmtCount->execute();
     $lastCount = $stmtCount->get_result()->fetch_array();
 
-    $stmtFetchTenderData = $db->prepare("SELECT 
-    m.name, 
-    m.firm_name, 
-    m.mobile, 
-    ur.tender_no, 
-    dept.department_name, 
+    $stmtFetchTenderData = $db->prepare("SELECT
+    m.name,
+    m.firm_name,
+    m.mobile,
+    ur.tender_no,
+    dept.department_name,
     ur.name_of_work,
-    ur.due_date, 
-    ur.created_at, 
-    ur.sent_at, 
-    ur.file_name, 
-    ur.tenderID, 
-    ur.id, 
-    ur.reference_code, 
-    ur.file_name2, 
-    ur.tentative_cost, 
-    ur.section_id, 
+    ur.due_date,
+    ur.created_at,
+    ur.sent_at,
+    ur.file_name,
+    ur.tenderID,
+    ur.id,
+    ur.reference_code,
+    ur.file_name2,
+    ur.tentative_cost,
+    ur.section_id,
     ur.division_id,
     ur.sub_division_id,
     ur.department_id,
@@ -105,25 +100,25 @@ try {
     MAX(sd.subdivision) AS subdivision,
     ur.auto_quotation,
     ur.email_sent_date
-FROM 
+FROM
     user_tender_requests ur
-INNER JOIN 
+INNER JOIN
     members m ON ur.member_id = m.member_id
-LEFT JOIN 
+LEFT JOIN
     department dept ON ur.department_id = dept.department_id
-LEFT JOIN 
+LEFT JOIN
     section s ON ur.section_id = s.section_id
-LEFT JOIN 
+LEFT JOIN
     division dv ON ur.division_id = dv.division_id
 LEFT JOIN
     sub_division sd ON ur.sub_division_id = sd.id
-WHERE 
+WHERE
     ur.delete_tender = '0' ANd ur.id = ?
-GROUP BY 
+GROUP BY
     ur.id
-ORDER BY 
-    NOW() >= CAST(ur.sent_at AS DATE), 
-    CAST(ur.sent_at AS DATE) ASC, 
+ORDER BY
+    NOW() >= CAST(ur.sent_at AS DATE),
+    CAST(ur.sent_at AS DATE) ASC,
     ABS(DATEDIFF(NOW(), CAST(ur.sent_at AS DATE)))
     ");
 
@@ -132,23 +127,16 @@ ORDER BY
     $stmtFetchTenderData->execute();
     $tenderData = $stmtFetchTenderData->get_result()->fetch_array(MYSQLI_ASSOC);
 
-
-
-
     // $requestQuery = mysqli_query($db, "SELECT department.department_name, ur.file_name, ur.tenderID, ur.id ,ur.reference_code,
     // ur.tender_no,ur.name_of_work,ur.tentative_cost,ur.auto_quotation
-    // FROM user_tender_requests ur 
+    // FROM user_tender_requests ur
     // inner join members m on ur.member_id= m.member_id
     // inner join department on ur.department_id = department.department_id where ur.id='" . $d . "'");
 
     // $requestData = mysqli_fetch_row($requestQuery);
 
-
     $departmentQuery = "SELECT * FROM department ";
     $departments = mysqli_query($db, $departmentQuery);
-
-   
-
 
     $sectionQuery = "SELECT * FROM section where status= 1 ";
     $sections = mysqli_query($db, $sectionQuery);
@@ -157,16 +145,17 @@ ORDER BY
     // print_r($tenderData);
 
     // echo "</pre>";
-    // exit;    
+    // exit;
 
     $stmtFetchDivision = $db->prepare("SELECT * FROM division ");
     $stmtFetchDivision->execute();
     $divisions = $stmtFetchDivision->get_result()->fetch_all(MYSQLI_ASSOC);
 
-
     $stmtFetchSubDivision = $db->prepare("SELECT * FROM sub_division ");
     $stmtFetchSubDivision->execute();
-    $subDivisions = $stmtFetchSubDivision->get_result()->fetch_all(MYSQLI_ASSOC);
+    $subDivisions = $stmtFetchSubDivision
+        ->get_result()
+        ->fetch_all(MYSQLI_ASSOC);
     // echo "<pre>";
     // // print_r($divisions);
 
@@ -174,87 +163,96 @@ ORDER BY
     //     print_r($value);
     // }
     // exit;
-
 } catch (\Throwable $th) {
-    $_SESSION['error'] = $th->getMessage();
+    $_SESSION["error"] = $th->getMessage();
 }
 
-if ($_SERVER['REQUEST_METHOD'] == "POST") {
-
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
     try {
-
-        $updatedBy = $_SESSION['login_user'];
+        $updatedBy = $_SESSION["login_user"];
 
         if (isset($isUpdate) && $isUpdate === 1) {
-
-            // echo json_encode([ 
+            // echo json_encode([
             //     "status" => 400,
             //     "error" => "debugging",
             //     "data" => $tenderData,
             // ]);
 
             // Check if files were actually uploaded
-            if (isset($_FILES['multi_file']) && !empty($_FILES['multi_file']['name'][0])) {
-
-                $tender = $_POST['tenderno'];
-                $code = $_POST['code'];
-                $work = $_POST['work'];
-                $tender1 = $_POST['tender'];
-                $dept = $_POST['department'];
-                $section = $_POST['coutrycode'];
-                $division_id = $_POST['statelist'];
-                $sub_division_id = $_POST['city'];
-                $tentative_cost = $_POST['tentative_cost'];
-                $autoEmail = $_POST['autoEmail'];
+            if (
+                isset($_FILES["multi_file"]) &&
+                !empty($_FILES["multi_file"]["name"][0])
+            ) {
+                $tender = $_POST["tenderno"];
+                $code = $_POST["code"];
+                $work = $_POST["work"];
+                $tender1 = $_POST["tender"];
+                $dept = $_POST["department"];
+                $section = $_POST["coutrycode"];
+                $division_id = $_POST["statelist"];
+                $sub_division_id = $_POST["city"];
+                $tentative_cost = $_POST["tentative_cost"];
+                $autoEmail = $_POST["autoEmail"];
 
                 // Upload new files
-                $multiUploadResult = uploadMedia($_FILES['multi_file'], $upload_directory, [
-                    // Images
-                    'jpg',
-                    'jpeg',
-                    'png',
-                    'gif',
-                    'webp',
-                    'bmp',
-                    'svg',
-                    'tiff',
-                    'ico',
-                    // Documents
-                    'pdf',
-                    'doc',
-                    'docx',
-                    'xls',
-                    'xlsx',
-                    'ppt',
-                    'pptx',
-                    'txt',
-                    'rtf',
-                    // Data
-                    'csv',
-                ], 2 * 1024 * 1024);
+                $multiUploadResult = uploadMedia(
+                    $_FILES["multi_file"],
+                    $upload_directory,
+                    [
+                        // Images
+                        "jpg",
+                        "jpeg",
+                        "png",
+                        "gif",
+                        "webp",
+                        "bmp",
+                        "svg",
+                        "tiff",
+                        "ico",
+                        // Documents
+                        "pdf",
+                        "doc",
+                        "docx",
+                        "xls",
+                        "xlsx",
+                        "ppt",
+                        "pptx",
+                        "txt",
+                        "rtf",
+                        // Data
+                        "csv",
+                    ],
+                    2 * 1024 * 1024,
+                );
 
                 $newMediaUrls = [];
                 foreach ($multiUploadResult as $result) {
-                    if (isset($result['error'])) {
+                    if (isset($result["error"])) {
                         echo json_encode([
                             "status" => 400,
-                            "error" => "Error:" . $result['error'],
+                            "error" => "Error:" . $result["error"],
                         ]);
-                        exit;
+                        exit();
                     } else {
-                        $newMediaUrls[] = $result['filename'];
+                        $newMediaUrls[] = $result["filename"];
                     }
                 }
 
                 // Get existing additional files to append to them
                 mysqli_select_db($db, DB_NAME);
-                $query = "SELECT additional_files FROM user_tender_requests WHERE id='" . $d . "'";
+                $query =
+                    "SELECT additional_files FROM user_tender_requests WHERE id='" .
+                    $d .
+                    "'";
                 $result = mysqli_query($db, $query);
                 $row = mysqli_fetch_assoc($result);
 
                 $existingFiles = [];
-                if ($row && !empty($row['additional_files'])) {
-                    $existingFiles = json_decode($row['additional_files'], true);
+                if ($row && !empty($row["additional_files"])) {
+                    $existingFiles = json_decode(
+                        $row["additional_files"],
+                        true,
+                    );
                     if (!is_array($existingFiles)) {
                         $existingFiles = [];
                     }
@@ -264,17 +262,19 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
                 $allMediaUrls = array_merge($existingFiles, $newMediaUrls);
                 $mediaUrlsJson = json_encode($allMediaUrls);
 
-                date_default_timezone_set('Asia/Kolkata');
-                $sent_at = date('Y-m-d H:i:s');
+                date_default_timezone_set("Asia/Kolkata");
+                $sent_at = date("Y-m-d H:i:s");
 
-                $tender2 = $tenderData['tenderID']; // Use the tenderID from $tenderData
+                $tender2 = $tenderData["tenderID"]; // Use the tenderID from $tenderData
 
                 // Update main fields
-                mysqli_query($db, "UPDATE user_tender_requests SET 
-                    `tender_no` = '$tender', 
+                mysqli_query(
+                    $db,
+                    "UPDATE user_tender_requests SET
+                    `tender_no` = '$tender',
                     `reference_code` = '$code',
-                    `tenderID` = '$tender1', 
-                    `tentative_cost` = '$tentative_cost', 
+                    `tenderID` = '$tender1',
+                    `tentative_cost` = '$tentative_cost',
                     `department_id` = '$dept',
                     `section_id` = '$section',
                     `sub_division_id` = '$sub_division_id',
@@ -282,41 +282,47 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
                     `name_of_work` = '$work',
                     `file_name` = 'null',
                     `file_name2` = 'null',
-                    `status` = 'Sent', 
-                    `sent_at` = '$sent_at', 
-                    `auto_quotation` = '$autoEmail', 
-                    `updated_by` = '$updatedBy' 
-                    WHERE `tenderID` = '" . $tender2 . "'");
+                    `status` = 'Sent',
+                    `sent_at` = '$sent_at',
+                    `auto_quotation` = '$autoEmail',
+                    `updated_by` = '$updatedBy'
+                    WHERE `tenderID` = '" .
+                        $tender2 .
+                        "'",
+                );
 
                 // Update additional_files with merged array
-                $stmtUpdateMedia = $db->prepare("UPDATE user_tender_requests SET additional_files = ? WHERE tenderID = ?");
+                $stmtUpdateMedia = $db->prepare(
+                    "UPDATE user_tender_requests SET additional_files = ? WHERE tenderID = ?",
+                );
                 $stmtUpdateMedia->bind_param("ss", $mediaUrlsJson, $tender2);
                 $stmtUpdateMedia->execute();
-
             } else {
                 // No files uploaded, just update the main fields without touching additional_files
-                $tender = $_POST['tenderno'];
-                $code = $_POST['code'];
-                $work = $_POST['work'];
-                $tender1 = $_POST['tender'];
-                $dept = $_POST['department'];
-                $section = $_POST['coutrycode'];
-                $division_id = $_POST['statelist'];
-                $sub_division_id = $_POST['city'];
-                $tentative_cost = $_POST['tentative_cost'];
-                $autoEmail = $_POST['autoEmail'];
+                $tender = $_POST["tenderno"];
+                $code = $_POST["code"];
+                $work = $_POST["work"];
+                $tender1 = $_POST["tender"];
+                $dept = $_POST["department"];
+                $section = $_POST["coutrycode"];
+                $division_id = $_POST["statelist"];
+                $sub_division_id = $_POST["city"];
+                $tentative_cost = $_POST["tentative_cost"];
+                $autoEmail = $_POST["autoEmail"];
 
-                date_default_timezone_set('Asia/Kolkata');
-                $sent_at = date('Y-m-d H:i:s');
+                date_default_timezone_set("Asia/Kolkata");
+                $sent_at = date("Y-m-d H:i:s");
 
-                $tender2 = $tenderData['tenderID']; // Use the tenderID from $tenderData
+                $tender2 = $tenderData["tenderID"]; // Use the tenderID from $tenderData
 
                 // Update main fields only (don't touch additional_files)
-                mysqli_query($db, "UPDATE user_tender_requests SET 
-                        `tender_no` = '$tender', 
+                mysqli_query(
+                    $db,
+                    "UPDATE user_tender_requests SET
+                        `tender_no` = '$tender',
                         `reference_code` = '$code',
-                        `tenderID` = '$tender1', 
-                        `tentative_cost` = '$tentative_cost', 
+                        `tenderID` = '$tender1',
+                        `tentative_cost` = '$tentative_cost',
                         `department_id` = '$dept',
                         `section_id` = '$section',
                         `sub_division_id` = '$sub_division_id',
@@ -324,95 +330,114 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
                         `name_of_work` = '$work',
                         `file_name` = 'null',
                         `file_name2` = 'null',
-                        `status` = 'Sent', 
-                        `sent_at` = '$sent_at', 
+                        `status` = 'Sent',
+                        `sent_at` = '$sent_at',
                         `auto_quotation` = '$autoEmail',
-                          `updated_by` = '$updatedBy'  
-                        WHERE `tenderID` = '" . $tender2 . "'");
+                          `updated_by` = '$updatedBy'
+                        WHERE `tenderID` = '" .
+                        $tender2 .
+                        "'",
+                );
             }
         } else {
             // DEBUG
-            $multiUploadResult = uploadMedia($_FILES['multi_file'], $upload_directory, [
-                // Images
-                'jpg',
-                'jpeg',
-                'png',
-                'gif',
-                'webp',
-                'bmp',
-                'svg',
-                'tiff',
-                'ico',
-                // Documents
-                'pdf',
-                'doc',
-                'docx',
-                'xls',
-                'xlsx',
-                'ppt',
-                'pptx',
-                'txt',
-                'rtf',
-                // Data
-                'csv',
-                // Archives (optional, be cautious with these)
-                // 'zip', 'rar', 'tar', 'gz',
-            ], 2 * 1024 * 1024);
-
+            $multiUploadResult = uploadMedia(
+                $_FILES["multi_file"],
+                $upload_directory,
+                [
+                    // Images
+                    "jpg",
+                    "jpeg",
+                    "png",
+                    "gif",
+                    "webp",
+                    "bmp",
+                    "svg",
+                    "tiff",
+                    "ico",
+                    // Documents
+                    "pdf",
+                    "doc",
+                    "docx",
+                    "xls",
+                    "xlsx",
+                    "ppt",
+                    "pptx",
+                    "txt",
+                    "rtf",
+                    // Data
+                    "csv",
+                    // Archives (optional, be cautious with these)
+                    // 'zip', 'rar', 'tar', 'gz',
+                ],
+                2 * 1024 * 1024,
+            );
 
             $mediaUrls = [];
 
             foreach ($multiUploadResult as $result) {
-                if (isset($result['error'])) {
+                if (isset($result["error"])) {
                     // echo "Upload Error: " . $result['error'] . "\n";
                 } else {
-                    $mediaUrls[] = $result['filename'];
+                    $mediaUrls[] = $result["filename"];
                 }
             }
 
             $mediaUrlsJson = json_encode($mediaUrls);
 
+            $tender = $_POST["tenderno"];
+            $code = $_POST["code"];
+            $work = $_POST["work"];
+            $tender1 = $_POST["tender"];
+            $dept = $_POST["department"];
 
-            $tender = $_POST['tenderno'];
-            $code = $_POST['code'];
-            $work = $_POST['work'];
-            $tender1 = $_POST['tender'];
-            $dept = $_POST['department'];
-
-            $section = $_POST['coutrycode'];
-            $division_id = $_POST['statelist'];
-            $sub_division_id = $_POST['city'];
-            $tentative_cost = $_POST['tentative_cost'];
-            $autoEmail = $_POST['autoEmail'];
-
+            $section = $_POST["coutrycode"];
+            $division_id = $_POST["statelist"];
+            $sub_division_id = $_POST["city"];
+            $tentative_cost = $_POST["tentative_cost"];
+            $autoEmail = $_POST["autoEmail"];
 
             mysqli_select_db($db, DB_NAME);
 
             // Delete the old file
-            $query = "SELECT user_tender_requests.file_name , user_tender_requests.file_name2,user_tender_requests.tenderID  FROM user_tender_requests WHERE id='" . $d . "'";
+            $query =
+                "SELECT user_tender_requests.file_name , user_tender_requests.file_name2,user_tender_requests.tenderID  FROM user_tender_requests WHERE id='" .
+                $d .
+                "'";
             $result = mysqli_query($db, $query);
             $row = mysqli_fetch_row($result);
 
+            date_default_timezone_set("Asia/Kolkata");
 
-            date_default_timezone_set('Asia/Kolkata');
+            $sent_at = date("Y-m-d H:i:s");
 
-            $sent_at = date('Y-m-d H:i:s');
+            $tender2 = $row["2"];
 
-            $tender2 = $row['2'];
-
-            mysqli_query($db, "UPDATE user_tender_requests set `tender_no` ='$tender', `reference_code`='$code',`tenderID`='$tender1', 
+            mysqli_query(
+                $db,
+                "UPDATE user_tender_requests set `tender_no` ='$tender', `reference_code`='$code',`tenderID`='$tender1',
             `tentative_cost`='$tentative_cost', `department_id`='$dept',`section_id`='$section',`sub_division_id`='$sub_division_id',`division_id`='$division_id',`name_of_work`='$work',
             `file_name`='null',`file_name2`='null',`status`='Sent', `sent_at`='$sent_at' , `auto_quotation`='$autoEmail',
-               `updated_by` = '$updatedBy' 
-             WHERE `tenderID`='" . $tender2 . "' ");
+               `updated_by` = '$updatedBy'
+             WHERE `tenderID`='" .
+                    $tender2 .
+                    "' ",
+            );
 
-            $stmtUpdateMedia = $db->prepare("UPDATE user_tender_requests SET additional_files = ? WHERE tenderID = ?");
+            $stmtUpdateMedia = $db->prepare(
+                "UPDATE user_tender_requests SET additional_files = ? WHERE tenderID = ?",
+            );
             $stmtUpdateMedia->bind_param("ss", $mediaUrlsJson, $tender2); // "si" means first param is string (JSON), second is integer (ID)
             $stmtUpdateMedia->execute();
         }
 
-        //auto quotation 
-        $autoEmailQuery = mysqli_query($db, "SELECT `auto_quotation` FROM user_tender_requests WHERE `id`= '" . $d . "' ");
+        //auto quotation
+        $autoEmailQuery = mysqli_query(
+            $db,
+            "SELECT `auto_quotation` FROM user_tender_requests WHERE `id`= '" .
+                $d .
+                "' ",
+        );
         $autoEmailResult = mysqli_fetch_assoc($autoEmailQuery);
         $autoEmailResponse = $autoEmailResult["auto_quotation"];
 
@@ -427,30 +452,35 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
 
             // Set PHPMailer to use SMTP.
             $mail->isSMTP();
-            $mail->Host = getenv('SMTP_HOST');
+            $mail->Host = getenv("SMTP_HOST");
             $mail->SMTPAuth = true;
-            $mail->Username = getenv('SMTP_USER_NAME');
-            $mail->Password = getenv('SMTP_PASSCODE');
+            $mail->Username = getenv("SMTP_USER_NAME");
+            $mail->Password = getenv("SMTP_PASSCODE");
             $mail->SMTPSecure = "ssl";
-            $mail->Port = getenv('SMTP_PORT');
-            $mail->From = getenv('SMTP_USER_NAME');
-            $mail->setFrom(getenv('SMTP_USER_NAME'), $emailSettingData['email_from_title'] ?? "Dvepl");
+            $mail->Port = getenv("SMTP_PORT");
+            $mail->From = getenv("SMTP_USER_NAME");
+            $mail->setFrom(
+                getenv("SMTP_USER_NAME"),
+                $emailSettingData["email_from_title"] ?? "Dvepl",
+            );
             $mail->IsHTML(true);
 
             // Add CC recipients once (outside the loop)
             foreach ($ccEmailData as $ccEmail) {
-                $mail->addCC($ccEmail['cc_email']);
+                $mail->addCC($ccEmail["cc_email"]);
             }
 
-            $membersQuery = "SELECT m.email_id, m.name, ur.file_name, ur.file_name2, ur.tenderID, ur.id, ur.additional_files FROM user_tender_requests ur 
-                    inner join members m on ur.member_id= m.member_id  
-                    WHERE ur.auto_quotation = '1' AND ur.tenderID='" . $tender2 . "'";
+            $membersQuery =
+                "SELECT m.email_id, m.name, ur.file_name, ur.file_name2, ur.tenderID, ur.id, ur.additional_files FROM user_tender_requests ur
+                    inner join members m on ur.member_id= m.member_id
+                    WHERE ur.auto_quotation = '1' AND ur.tenderID='" .
+                $tender2 .
+                "'";
             $membersResult = mysqli_query($db, $membersQuery);
 
             $sentCount = 0; // Counter for successfully sent emails
 
             while ($memberData = mysqli_fetch_row($membersResult)) {
-
                 // Clear previous attachments and addresses (except CC which we set once)
                 $mail->clearAddresses();
                 $mail->clearAttachments();
@@ -460,7 +490,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
 
                 // Add CC recipients again for each email (PHPMailer clears them with clearAddresses)
                 foreach ($ccEmailData as $ccEmail) {
-                    $mail->addCC($ccEmail['cc_email']);
+                    $mail->addCC($ccEmail["cc_email"]);
                 }
 
                 $template = emailTemplate($db, "SENT_TENDER");
@@ -474,48 +504,60 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
                 ];
 
                 $replace = [
-                    "",         // name
-                    "",         // tender id
-                    $supportPhone ?? 'N/A',
-                    $enquiryMail ?? 'N/A',
-                    $supportEmail ?? 'N/A'
+                    "", // name
+                    "", // tender id
+                    $supportPhone ?? "N/A",
+                    $enquiryMail ?? "N/A",
+                    $supportEmail ?? "N/A",
                 ];
 
-                $emailBody = nl2br($template['content_1']) . "<br><br>" . nl2br($template['content_2']);
+                $emailBody =
+                    nl2br($template["content_1"]) .
+                    "<br><br>" .
+                    nl2br($template["content_2"]);
                 $finalBody = str_replace($search, $replace, $emailBody);
 
                 // Replace placeholders in template
-                $searchInSubject = [
-                    '{$tenderId}',
-                ];
+                $searchInSubject = ['{$tenderId}'];
 
                 $replaceInSubject = [
-                    $memberData[4],         // tender id
+                    $memberData[4], // tender id
                 ];
 
-                $emailSubject = nl2br($template['email_template_subject']);
-                $finalSubject = str_replace($searchInSubject, $replaceInSubject, $emailSubject);
+                $emailSubject = nl2br($template["email_template_subject"]);
+                $finalSubject = str_replace(
+                    $searchInSubject,
+                    $replaceInSubject,
+                    $emailSubject,
+                );
                 $mail->Subject = $finalSubject;
 
                 // Handle attachments
-                if (!empty($memberData[6])) { // Use index 6 directly
+                if (!empty($memberData[6])) {
+                    // Use index 6 directly
                     $extraFiles = json_decode($memberData[6], true);
                     if (is_array($extraFiles)) {
                         foreach ($extraFiles as $filePath) {
-                            if (file_exists($filePath)) { // Check if file exists before adding
+                            if (file_exists($filePath)) {
+                                // Check if file exists before adding
                                 $mail->addAttachment($filePath);
                             } else {
-                                error_log("Attachment file not found: " . $filePath);
+                                error_log(
+                                    "Attachment file not found: " . $filePath,
+                                );
                             }
                         }
                     }
                 }
 
                 // Set email body
-                $mail->Body = "
+                $mail->Body =
+                    "
                     <div style='font-family: Arial, sans-serif; color:#333; line-height:1.6;'>
                         <div style='text-align:center;'>
-                            <img src='" . $logo . "' alt='DVEPL Logo' style='max-width:150px; height:auto; margin-bottom:20px;'>
+                            <img src='" .
+                    $logo .
+                    "' alt='DVEPL Logo' style='max-width:150px; height:auto; margin-bottom:20px;'>
                         </div>
                         $finalBody
                     </div>
@@ -528,17 +570,26 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
                     date_default_timezone_set("Asia/Calcutta");
                     $emailSentDate = date("Y-m-d h:i A");
 
-                    $stmtUpdateEmailSentAt = $db->prepare("UPDATE user_tender_requests SET email_sent_date = ? WHERE id = ?");
-                    $stmtUpdateEmailSentAt->bind_param("ss", $emailSentDate, $memberData[5]);
+                    $stmtUpdateEmailSentAt = $db->prepare(
+                        "UPDATE user_tender_requests SET email_sent_date = ? WHERE id = ?",
+                    );
+                    $stmtUpdateEmailSentAt->bind_param(
+                        "ss",
+                        $emailSentDate,
+                        $memberData[5],
+                    );
                     $stmtUpdateEmailSentAt->execute();
-
                 } else {
                     echo json_encode([
                         "status" => 400,
-                        "error" => "Mailer Error for " . $memberData[0] . ": " . $mail->ErrorInfo,
-                        "sent_count" => $sentCount
+                        "error" =>
+                            "Mailer Error for " .
+                            $memberData[0] .
+                            ": " .
+                            $mail->ErrorInfo,
+                        "sent_count" => $sentCount,
                     ]);
-                    exit;
+                    exit();
                 }
 
                 // Clear attachments for next iteration
@@ -549,30 +600,27 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
                 "status" => 201,
                 "success" => "Successfully sent $sentCount emails",
             ]);
-            exit;
+            exit();
         } else {
             echo json_encode([
                 "status" => 201,
                 "success" => "Success",
             ]);
-            exit;
+            exit();
         }
-
-
     } catch (\Throwable $th) {
         echo json_encode([
             "status" => 500,
             "error" => $th->getMessage(),
-
         ]);
-        exit;
+        exit();
     }
 }
 
-if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["refCode"])) {
     # code...
-// Get current timestamp in YYYYMMDDHHMMSS format
-    $timestamp = date('YmdHis'); // e.g., '20250725152030' for July 25, 2025, 15:20:30
+    // Get current timestamp in YYYYMMDDHHMMSS format
+    $timestamp = date("YmdHis"); // e.g., '20250725152030' for July 25, 2025, 15:20:30
 
     // Use a transaction to ensure atomicity
     try {
@@ -582,25 +630,31 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
         $prefix = "REF";
 
         // Lock the sequence row
-        $stmt = $db->prepare("SELECT last_sequence FROM reference_sequence WHERE id = 1 FOR UPDATE");
+        $stmt = $db->prepare(
+            "SELECT last_sequence FROM reference_sequence WHERE id = 1 FOR UPDATE",
+        );
         $stmt->execute();
         $result = $stmt->get_result();
 
         if ($result->num_rows === 0) {
             // No sequence row, create one
-            $stmt = $db->prepare("INSERT INTO reference_sequence (id, last_sequence) VALUES (1, 0)");
+            $stmt = $db->prepare(
+                "INSERT INTO reference_sequence (id, last_sequence) VALUES (1, 0)",
+            );
             $stmt->execute();
             $lastSequence = 0;
         } else {
             $row = $result->fetch_assoc();
-            $lastSequence = $row['last_sequence'];
+            $lastSequence = $row["last_sequence"];
         }
 
         // Increment sequence
         $newSequence = $lastSequence + 1;
 
         // Update sequence
-        $stmt = $db->prepare("UPDATE reference_sequence SET last_sequence = ? WHERE id = 1");
+        $stmt = $db->prepare(
+            "UPDATE reference_sequence SET last_sequence = ? WHERE id = 1",
+        );
         $stmt->bind_param("i", $newSequence);
         $stmt->execute();
 
@@ -610,21 +664,18 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
         $refNumber = sprintf("%s-%s-%05d", $prefix, $timestamp, $newSequence); // e.g., VIS-20250725152030-00001
         echo json_encode([
             "status" => 201,
-            "data" => $refNumber
+            "data" => $refNumber,
         ]);
-        exit;
+        exit();
     } catch (Exception $e) {
         $db->rollback();
         echo json_encode([
             "status" => 500,
-            "error" => $e->getMessage()
+            "error" => $e->getMessage(),
         ]);
-        exit;
+        exit();
     }
 }
-
-
-
 ?>
 
 <!DOCTYPE html>
@@ -649,8 +700,6 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
     <link rel="stylesheet" href="assets/css/plugins/dataTables.bootstrap4.min.css">
 
     <link rel="stylesheet" href="assets/css/style.css">
-    <script src="https://code.jquery.com/jquery-3.7.1.js"
-        integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
@@ -709,7 +758,9 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
         });
 
         async function generateReferenceNumber() {
-            const response = await fetch("tender-edit.php?id=<?php echo $_GET['id'] ?>", {
+            const response = await fetch("tender-edit.php?id=<?php echo $_GET[
+                "id"
+            ]; ?>", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/x-www-form-urlencoded"
@@ -746,7 +797,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
 
 <body class="">
 
-    <?php if (isset($_SESSION['success'])) { ?>
+    <?php if (isset($_SESSION["success"])) { ?>
         <script>
             const notyf = new Notyf({
                 position: {
@@ -763,14 +814,12 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
                     }
                 ]
             });
-            notyf.success("<?php echo $_SESSION['success']; ?>");
+            notyf.success("<?php echo $_SESSION["success"]; ?>");
         </script>
-        <?php
-        unset($_SESSION['success']);
-        ?>
+        <?php unset($_SESSION["success"]); ?>
     <?php } ?>
 
-    <?php if (isset($_SESSION['error'])) { ?>
+    <?php if (isset($_SESSION["error"])) { ?>
         <script>
             const notyf = new Notyf({
                 position: {
@@ -787,11 +836,9 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
                     }
                 ]
             });
-            notyf.error("<?php echo $_SESSION['error']; ?>");
+            notyf.error("<?php echo $_SESSION["error"]; ?>");
         </script>
-        <?php
-        unset($_SESSION['error']);
-        ?>
+        <?php unset($_SESSION["error"]); ?>
     <?php } ?>
 
 
@@ -803,7 +850,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
 
 
 
-    <?php include 'navbar.php'; ?>
+    <?php include "navbar.php"; ?>
 
     <header class="navbar pcoded-header navbar-expand-lg navbar-light headerpos-fixed header-blue">
         <div class="m-header">
@@ -845,7 +892,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
             <div class="dropdown-menu dropdown-menu-right profile-notification">
                 <div class="pro-head">
                     <img src="assets/images/user.png" class="img-radius" alt="User-Profile-Image">
-                    <span><?php echo $name ?></span>
+                    <span><?php echo $name; ?></span>
                     <a href="logout.php" class="dud-logout" title="Logout">
                         <i class="feather icon-log-out"></i>
                     </a>
@@ -869,7 +916,9 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
                     <div class="row align-items-center">
                         <div class="col-md-12">
                             <div class="page-header-title">
-                                <h5 class="m-b-10">Tender Update - Tender ID : <?php echo $tenderData['tenderID']; ?>
+                                <h5 class="m-b-10">Tender Update - Tender ID : <?php echo $tenderData[
+                                    "tenderID"
+                                ]; ?>
                                 </h5>
                             </div>
 
@@ -878,7 +927,14 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
                                     <a href="index.php"><i class="feather icon-home"></i> Home</a>
                                 </li>
                                 <li class="breadcrumb-item active"><a
-                                        href="<?= isset($_GET['is_update']) && $_GET['is_update'] == 1 ? "sent-tender2.php" : "tender-request2.php" ?>"><?= isset($_GET['is_update']) && $_GET['is_update'] == 1 ? "Sent-tender" : "Tender Request" ?></a>
+                                        href="<?= isset($_GET["is_update"]) &&
+                                        $_GET["is_update"] == 1
+                                            ? "sent-tender2.php"
+                                            : "tender-request2.php" ?>"><?= isset(
+    $_GET["is_update"],
+) && $_GET["is_update"] == 1
+    ? "Sent-tender"
+    : "Tender Request" ?></a>
                                 </li>
                             </ul>
 
@@ -893,7 +949,9 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
                         <div class="card-body">
                             <h6 class="text-white">Last Reference Code</h6>
                             <h2 class="text-right text-white"><i class="feather icon-bookmark float-left"></i><span
-                                    id="total"><?php echo $lastCount['last_sequence']; ?></span></h2>
+                                    id="total"><?php echo $lastCount[
+                                        "last_sequence"
+                                    ]; ?></span></h2>
 
                         </div>
                     </div>
@@ -907,11 +965,9 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
                     <div class="card">
 
 
-                        <?php
-                        if (isset($msg)) {
+                        <?php if (isset($msg)) {
                             echo $msg;
-                        }
-                        ?>
+                        } ?>
 
                         <div class="card-header table-card-header">
                             <form class="update-price" action="" method="post" enctype="multipart/form-data"
@@ -945,7 +1001,9 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
 
                                                 </span></label>
                                                 <input id="tenderno" name="tenderno" type="text"
-                                                    value="<?php echo $tenderData['tender_no'] ?? ""; ?>"
+                                                    value="<?php echo $tenderData[
+                                                        "tender_no"
+                                                    ] ?? ""; ?>"
                                                     placeholder=" Enter CA No *" class="form-control input-md" value="">
                                             </div>
                                         </div>
@@ -958,7 +1016,9 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
                                                 <div class="input-group">
                                                     <input id="code" name="code" type="text" placeholder="Enter Code *"
                                                         class="form-control"
-                                                        value="<?php echo $tenderData['reference_code'] ?? ""; ?>">
+                                                        value="<?php echo $tenderData[
+                                                            "reference_code"
+                                                        ] ?? ""; ?>">
                                                     <!-- <button type="button"
                                                         class="btn btn-primary refNumber">Generate</button> -->
                                                 </div>
@@ -970,7 +1030,9 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
 
                                                 <input id="work" name="work" type="text" class="form-control input-md"
                                                     placeholder="Name of the work"
-                                                    value="<?php echo $tenderData['name_of_work'] ?? ""; ?>">
+                                                    value="<?php echo $tenderData[
+                                                        "name_of_work"
+                                                    ] ?? ""; ?>">
                                             </div>
                                         </div>
 
@@ -981,7 +1043,9 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
                                                     </span></label>
                                                 <input id="tender" name="tender" type="text"
                                                     class="form-control input-md" placeholder="Enter tender id"
-                                                    value="<?php echo $tenderData['tenderID'] ?? ""; ?>">
+                                                    value="<?php echo $tenderData[
+                                                        "tenderID"
+                                                    ] ?? ""; ?>">
                                             </div>
                                         </div>
                                         <div class="col-xl-6 col-lg-6 col-md-4 col-sm-12 col-12">
@@ -991,7 +1055,9 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
                                                     </span></label>
                                                 <input id="tentative_cost" name="tentative_cost" type="number" min="0"
                                                     class="form-control input-md" placeholder="Enter Tentative Cost"
-                                                    value="<?php echo $tenderData['tentative_cost'] ?? ""; ?>">
+                                                    value="<?php echo $tenderData[
+                                                        "tentative_cost"
+                                                    ] ?? ""; ?>">
                                             </div>
                                         </div>
 
@@ -1001,8 +1067,18 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
                                                         class=" ">
                                                     </span></label>
                                                 <select class='form-control' name='department' id='department' >
-                                                <?php while ($row = mysqli_fetch_row($departments)) { ?>
-                                                    <option value="<?php echo $row['0']; ?>" <?php echo $tenderData['department_id'] == $row['0'] ? "selected=''" : ''; ?>><?php echo $row['1']; ?></option>
+                                                <?php while (
+                                                    $row = mysqli_fetch_row(
+                                                        $departments,
+                                                    )
+                                                ) { ?>
+                                                    <option value="<?php echo $row[
+                                                        "0"
+                                                    ]; ?>" <?php echo $tenderData[
+    "department_id"
+] == $row["0"]
+    ? "selected=''"
+    : ""; ?>><?php echo $row["1"]; ?></option>
                                                 <?php } ?>
                                                 </select>
                                             </div>
@@ -1015,13 +1091,23 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
                                                 <select onChange="getstate(this.value);" name="coutrycode" id="section"
                                                     class="form-control">
                                                     <option value="">Select Section</option>
-                                                    <?php
-                                                    while ($row = mysqli_fetch_row($sections)) {
-                                                        $selected = $tenderData['section_id'] == $row['0'] ? "selected=''" : '';
-                                                        echo "<option $selected value='" . $row['0'] . "'>" . $row['1'] . "</option>";
-                                                    }
-
-                                                    ?>
+                                                    <?php while (
+                                                        $row = mysqli_fetch_row(
+                                                            $sections,
+                                                        )
+                                                    ) {
+                                                        $selected =
+                                                            $tenderData[
+                                                                "section_id"
+                                                            ] == $row["0"]
+                                                                ? "selected=''"
+                                                                : "";
+                                                        echo "<option $selected value='" .
+                                                            $row["0"] .
+                                                            "'>" .
+                                                            $row["1"] .
+                                                            "</option>";
+                                                    } ?>
 
                                                 </select>
                                             </div>
@@ -1034,13 +1120,28 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
                                                 <select class='form-control' name="statelist" id="statelist"
                                                     onChange="getcity(this.value);">
                                                     <option value=''>Select Division </option>
-                                                    <?php foreach ($divisions as $key => $value) {
-                                                        $selected = $value['division_id'] == $tenderData['division_id'] ? "selected" : "";
-                                                        ?>
-                                                        <option <?= $selected ?> value='<?= $value['division_id'] ?>'>
-                                                            <?= $value['division_name'] ?>
+                                                    <?php foreach (
+                                                        $divisions
+                                                        as $key => $value
+                                                    ) {
+                                                        $selected =
+                                                            $value[
+                                                                "division_id"
+                                                            ] ==
+                                                            $tenderData[
+                                                                "division_id"
+                                                            ]
+                                                                ? "selected"
+                                                                : ""; ?>
+                                                        <option <?= $selected ?> value='<?= $value[
+     "division_id"
+ ] ?>'>
+                                                            <?= $value[
+                                                                "division_name"
+                                                            ] ?>
                                                         </option>
-                                                    <?php } ?>
+                                                    <?php
+                                                    } ?>
 
                                                 </select>
 
@@ -1053,13 +1154,26 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
 
                                                 <select name="city" id="city" class="form-control">
                                                     <option value="">Select Sub Division</option>
-                                                    <?php foreach ($subDivisions as $key => $value) {
-                                                        $selected = $value['id'] == $tenderData['sub_division_id'] ? "selected" : "";
-                                                        ?>
-                                                        <option <?= $selected ?> value='<?= $value['id'] ?>'>
-                                                            <?= $value['subdivision'] ?>
+                                                    <?php foreach (
+                                                        $subDivisions
+                                                        as $key => $value
+                                                    ) {
+                                                        $selected =
+                                                            $value["id"] ==
+                                                            $tenderData[
+                                                                "sub_division_id"
+                                                            ]
+                                                                ? "selected"
+                                                                : ""; ?>
+                                                        <option <?= $selected ?> value='<?= $value[
+     "id"
+ ] ?>'>
+                                                            <?= $value[
+                                                                "subdivision"
+                                                            ] ?>
                                                         </option>
-                                                    <?php } ?>
+                                                    <?php
+                                                    } ?>
                                                 </select>
                                             </div>
                                         </div>
@@ -1071,7 +1185,9 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
                                                     </span></label>
                                                 <input id="project_name" name="project_name" type="text"
                                                     class="form-control input-md" placeholder="Enter Project Name"
-                                                    value="<?php echo $tenderData['project_name'] ?? ""; ?>">
+                                                    value="<?php echo $tenderData[
+                                                        "project_name"
+                                                    ] ?? ""; ?>">
                                             </div>
                                         </div>
 
@@ -1082,7 +1198,9 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
                                                     </span></label>
                                                 <input id="project_location" name="project_location" type="text"
                                                     class="form-control input-md" placeholder="Enter Project Location"
-                                                    value="<?php echo $tenderData['project_location'] ?? ""; ?>">
+                                                    value="<?php echo $tenderData[
+                                                        "project_location"
+                                                    ] ?? ""; ?>">
                                             </div>
                                         </div>
 
@@ -1092,9 +1210,27 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
                                                     class="text-danger">*</span>
                                                 <select name="autoEmail" id="auto-email" class="form-control">
                                                     <option value="">Select</option>
-                                                    <option value="1" <?php echo (isset($tenderData['auto_quotation']) && $tenderData['auto_quotation'] == 1) ? 'selected' : ''; ?>>Yes
+                                                    <option value="1" <?php echo isset(
+                                                        $tenderData[
+                                                            "auto_quotation"
+                                                        ],
+                                                    ) &&
+                                                    $tenderData[
+                                                        "auto_quotation"
+                                                    ] == 1
+                                                        ? "selected"
+                                                        : ""; ?>>Yes
                                                     </option>
-                                                    <option value="0" <?php echo (isset($tenderData['auto_quotation']) && $tenderData['auto_quotation'] == 0) ? 'selected' : ''; ?>>No
+                                                    <option value="0" <?php echo isset(
+                                                        $tenderData[
+                                                            "auto_quotation"
+                                                        ],
+                                                    ) &&
+                                                    $tenderData[
+                                                        "auto_quotation"
+                                                    ] == 0
+                                                        ? "selected"
+                                                        : ""; ?>>No
                                                     </option>
                                                 </select>
                                             </div>
@@ -1129,6 +1265,14 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
         </div>
     </section>
     <script src="assets/js/vendor-all.min.js"></script>
+
+    <!-- CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+    <!-- Select2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+
     <script src="assets/js/plugins/bootstrap.min.js"></script>
     <script src="assets/js/pcoded.min.js"></script>
     <!--<script src="assets/js/menu-setting.min.js"></script>-->
@@ -1147,6 +1291,35 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
 
     <script>
         $(document).ready(function () {
+
+        $(function () {
+            $('#department').select2({
+                width: '100%',
+                placeholder: 'Select Section'
+            });
+        });
+
+        $(function () {
+            $('#section').select2({
+                width: '100%',
+                placeholder: 'Select Section'
+            });
+        });
+
+
+        $(function () {
+            $('#statelist').select2({
+                width: '100%',
+                placeholder: 'Select Section'
+            });
+        });
+        $(function () {
+            $('#city').select2({
+                width: '100%',
+                placeholder: 'Select Section'
+            });
+        });
+
 
             let fileInputCount = 1;
             const maxFiles = 10;
@@ -1358,16 +1531,16 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
                 const $department = $('select[name="department"]');
                 const $division = $('#statelist');
                 const $subDivision = $('#city');
-            
+
                 const selectedValue = $.trim(
                     $department.find('option:selected').text()
                 );
-            
+
                 if (selectedValue === 'Private') {
                     // hide parent form-groups
                     $division.closest('.form-group').hide();
                     $subDivision.closest('.form-group').hide();
-            
+
                     // reset values
                     $division.val('');
                     $subDivision.val('');
@@ -1376,12 +1549,12 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['refCode'])) {
                     $subDivision.closest('.form-group').show();
                 }
             }
-            
+
             // Run on change
             $(document).on("change", "#department", function () {
                 toggleDivisionFields();
             });
-            
+
             // Run on page reload / first load
             $(document).ready(function () {
                 toggleDivisionFields();
