@@ -957,6 +957,29 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["submit"])) {
         .dt-buttons .buttons-print:hover {
             background-color: #c82333;
         }
+
+        .select2-results__option{
+            white-space: normal;
+            word-break: break-word;
+        }
+
+        .member-table-wrapper {
+            max-height: 250px;   /* adjust as needed */
+            overflow-y: auto;
+            overflow-x: auto;
+        }
+        
+        .member-table-wrapper thead th {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            background: #fff;
+        }
+
+        #create-tender-request-model .modal-body {
+            max-height: 70vh;
+            overflow-y: auto;
+        }        
     </style>
 </head>
 
@@ -1581,26 +1604,56 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["submit"])) {
                                 <label class="form-label">
                                     Members <span class="text-danger">*</span>
                                 </label>
-
-                                <select
-                                    class="form-select"
-                                    id="members"
-                                    name="member_id[]"
-                                    multiple
-                                    required>
-
-                                    <?php foreach ($members as $member) { ?>
-                                        <option value="<?= $member[
-                                            "member_id"
-                                        ] ?>">
-                                            <?= $member["name"] ?>
-                                            (<?= $member["firm_name"] ?>)
-                                            (<?= $member["email_id"] ?>)
-                                            (<?= $member["mobile"] ?>)
-                                        </option>
-                                    <?php } ?>
-
-                                </select>
+                            
+                                <div class="row g-2">
+                                    <div class="col-md-10">
+                                        <select class="form-select" id="memberSelect">
+                                            <option value="">Select Member</option>
+                            
+                                            <?php foreach ($members as $member) { ?>
+                                                <option
+                                                    value="<?= $member['member_id'] ?>"
+                                                    data-name="<?= htmlspecialchars($member['name']) ?>"
+                                                    data-firm="<?= htmlspecialchars($member['firm_name']) ?>"
+                                                    data-email="<?= htmlspecialchars($member['email_id']) ?>"
+                                                    data-mobile="<?= htmlspecialchars($member['mobile']) ?>"
+                                                >
+                                                    <?= $member['name'] ?> |
+                                                    <?= $member['firm_name'] ?> |
+                                                    <?= $member['email_id'] ?> |
+                                                    <?= $member['mobile'] ?>
+                                                </option>
+                                            <?php } ?>
+                                        </select>
+                                    </div>
+                            
+                                    <div class="col-md-2">
+                                        <button
+                                            type="button"
+                                            id="addMember"
+                                            class="btn btn-primary w-100">
+                                            Add
+                                        </button>
+                                    </div>
+                                </div>
+                            
+                                <div class="table-responsive mt-3 member-table-wrapper">
+                                    <table class="table table-bordered mb-0" id="memberTable">
+                                        <thead class="table-light sticky-top">
+                                            <tr>
+                                                <th>Name</th>
+                                                <th>Firm</th>
+                                                <th>Email</th>
+                                                <th>Mobile</th>
+                                                <th width="80">Action</th>
+                                            </tr>
+                                        </thead>
+                                
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                            
+                                <div id="memberHiddenInputs"></div>
                             </div>
 
                             <!-- File 1 -->
@@ -1959,14 +2012,14 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["submit"])) {
               });
           });
 
-          $(function () {
-              $('#members').select2({
-                  dropdownParent: $('#create-tender-request-model'),
-                  width: '100%',
-                  placeholder: 'Select Members',
-                  closeOnSelect: false
-              });
-          });
+          // $(function () {
+          //     $('#members').select2({
+          //         dropdownParent: $('#create-tender-request-model'),
+          //         width: '100%',
+          //         placeholder: 'Select Members',
+          //         closeOnSelect: false
+          //     });
+          // });
 
           $(function () {
               $('#sectionId').select2({
@@ -2393,6 +2446,72 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["submit"])) {
                     $("#projectLocation").val("").prop("required", false);
                 }
 
+            });
+
+
+            $('#memberSelect').select2({
+                    width: '100%',
+                    placeholder: 'Search Member...',
+                    allowClear: true,
+                    dropdownParent: $('#create-tender-request-model')
+                });
+
+            const addedMembers = new Set();
+            
+            $("#addMember").on("click", function () {
+            
+                const option = $("#memberSelect option:selected");
+                const id = option.val();
+            
+                if (!id) {
+                    notyf.error("Please select a member");
+                    return;
+                }
+            
+                if (addedMembers.has(id)) {
+                    notyf.error("Member already added");
+                    return;
+                }
+            
+                addedMembers.add(id);
+            
+                $("#memberTable tbody").append(`
+                    <tr data-id="${id}">
+                        <td>${option.data("name")}</td>
+                        <td>${option.data("firm")}</td>
+                        <td>${option.data("email")}</td>
+                        <td>${option.data("mobile")}</td>
+                        <td>
+                            <button type="button"
+                                class="btn btn-danger btn-sm removeMember">
+                                Remove
+                            </button>
+                        </td>
+                    </tr>
+                `);
+            
+                $("#memberHiddenInputs").append(`
+                    <input
+                        type="hidden"
+                        name="member_id[]"
+                        value="${id}"
+                        id="member-input-${id}">
+                `);
+            
+                // Reset Select2
+                $("#memberSelect").val(null).trigger("change");
+            });
+            
+            $(document).on("click", ".removeMember", function () {
+            
+                const row = $(this).closest("tr");
+                const id = row.data("id");
+            
+                addedMembers.delete(String(id));
+            
+                row.remove();
+            
+                $("#member-input-" + id).remove();
             });
 
         });
