@@ -420,7 +420,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['deleteRoleId'])) {
                                                                 <?php if ($isAdmin || hasPermission('Assign Permissions Role', $privileges, $roleData['role_name'])) { ?>
                                                                     <a class="dropdown-item edit-role-button"
                                                                         href="assign-permissions.php?id=<?= base64_encode($value['role_id']) ?>">
-                                                                        <i class='feather icon-plus-circle'></i> &nbsp;Assign
+                                                                        <i class='feather icon-plus-circle'></i> &nbsp;Assign & View
                                                                         Permissions
                                                                     </a>
                                                                 <?php } ?>

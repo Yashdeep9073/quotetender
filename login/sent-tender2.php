@@ -445,6 +445,7 @@ try {
 
 
     <link rel="stylesheet" href="assets/css/plugins/dataTables.bootstrap4.min.css">
+    <link rel="stylesheet" href="assets/css/plugins/fixedHeader.bootstrap4.min.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <link rel="stylesheet" href="assets/css/style.css">
@@ -512,6 +513,81 @@ try {
 
         .dt-buttons .buttons-print:hover {
             background-color: #c82333;
+        }
+
+        /* ──────────────────────────────────────────────
+           Modern scrollable table — sticky first column
+           + custom scrollbars + header freeze
+           ────────────────────────────────────────────── */
+        .dataTables_scrollBody {
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .dataTables_scrollBody::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        .dataTables_scrollBody::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .dataTables_scrollBody::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 4px;
+            border: 1px solid transparent;
+            background-clip: padding-box;
+        }
+
+        .dataTables_scrollBody::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+
+        .dataTables_scrollBody::-webkit-scrollbar-corner {
+            background: #f1f1f1;
+        }
+
+        .dataTables_scrollBody {
+            scrollbar-width: thin;
+            scrollbar-color: #c1c1c1 #f1f1f1;
+        }
+
+        /* Freeze first column (SNO/checkbox) during horizontal scroll */
+        .dataTables_scrollHead .table thead th:first-child,
+        .dataTables_scrollBody .table tbody td:first-child {
+            position: sticky;
+            left: 0;
+            z-index: 5;
+            background-color: #fff;
+            box-shadow: 2px 0 6px -2px rgba(0, 0, 0, 0.12);
+        }
+
+        .dataTables_scrollHead .table thead th:first-child {
+            z-index: 15;
+            background-color: #fff;
+        }
+
+        .dataTables_scrollBody .table.table-striped tbody tr:nth-child(even) td:first-child {
+            background-color: #f9f9f9;
+        }
+
+        .dataTables_scrollBody .table tbody tr:hover td:first-child {
+            background-color: #f1f1f1;
+        }
+
+        .dataTables_scrollBody .table tbody td:first-child .custom-control,
+        .dataTables_scrollBody .table tbody td:first-child .custom-checkbox {
+            background-color: inherit;
+        }
+
+        .dataTables_scroll {
+            max-height: 70vh;
+        }
+
+        .dt-responsive.table-responsive {
+            overflow: visible !important;
         }
     </style>
 </head>
@@ -760,7 +836,7 @@ try {
                         <div class="card-header table-card-header">
                         </div>
                         <div class="card-body">
-                            <div class="dt-responsive table-responsive">
+                            <div class="dt-responsive">
 
                                 <?php
                                 if (isset($_GET['status'])) {
@@ -1040,6 +1116,7 @@ try {
 
     <script src="assets/js/plugins/jquery.dataTables.min.js"></script>
     <script src="assets/js/plugins/dataTables.bootstrap4.min.js"></script>
+    <script src="assets/js/plugins/dataTables.fixedHeader.min.js"></script>
     <script src="assets/js/plugins/dataTables.buttons.min.js"></script>
     <script src="assets/js/plugins/buttons.colVis.min.js"></script>
     <script src="assets/js/plugins/buttons.print.min.js"></script>
@@ -1304,7 +1381,18 @@ try {
             var table = $('#basic-btn2').DataTable({
                 pageLength: 100,
                 lengthMenu: [25, 50, 100, 200, 500, 1000], // Custom dropdown options
-                responsive: true,
+                /*
+                 * scrollX — enables horizontal scrollbar when columns overflow.
+                 * scrollY — constrains table body to ~70vh with vertical scroll.
+                 * fixedHeader — keeps the <thead> pinned to top during vertical scroll.
+                 * First-column freeze during horizontal scroll is handled via CSS
+                 *   position:sticky (see <style> block) to avoid DOM duplication issues
+                 *   that FixedColumns extension would cause with checkbox event handlers.
+                 */
+                scrollX: true,
+                scrollY: '70vh',
+                scrollCollapse: false,
+                fixedHeader: true,
                 ordering: true,
                 searching: true
             });
