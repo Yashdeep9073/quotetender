@@ -452,67 +452,445 @@ try {
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
-        #basic-btn2_length {
-            padding: 10px !important;
+        /* ==========================================================
+           Sent Tender page — scoped UI modernization.
+           All rules are page-scoped (.sent-tender-page) so the
+           rest of the admin panel is unaffected.
+           ========================================================== */
+        .sent-tender-page {
+            padding: 16px;
         }
 
-        .dt-buttons {
-            margin-top: 5px !important;
-        }
-
-        .btn-group {
-            display: inline-block;
-            /* margin: 0 5px; */
-            padding: 8px 16px;
+        /* ---------- shared card base ---------- */
+        .sent-tender-page .card {
+            border: 0;
             border-radius: 10px;
-            color: white;
+            box-shadow: 0 1px 2px rgba(16, 24, 40, .05), 0 1px 3px rgba(16, 24, 40, .08);
+            margin-bottom: 16px;
+        }
+
+        /* ---------- page header ---------- */
+        .sent-tender-page .st-page-header {
+            padding: 12px 20px;
+            margin-bottom: 16px;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 1px 2px rgba(16, 24, 40, .05), 0 1px 3px rgba(16, 24, 40, .08);
+        }
+
+        .sent-tender-page .st-page-header .page-block {
+            padding: 0;
+        }
+
+        .sent-tender-page .st-page-header .col-md-12 {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .sent-tender-page .st-page-header .page-header-title {
+            margin: 0;
+        }
+
+        .sent-tender-page .st-page-header .page-header-title h5 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 600;
+            color: #0f172a;
+        }
+
+        .sent-tender-page .st-page-header .breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin: 0;
+            padding: 0;
+            background: transparent;
+            font-size: 12.5px;
+        }
+
+        .sent-tender-page .st-page-header .breadcrumb a {
+            color: #64748b;
+        }
+
+        .sent-tender-page .st-page-header .breadcrumb .breadcrumb-item.active {
+            color: #94a3b8;
+        }
+
+        /* ---------- KPI card ---------- */
+        .sent-tender-page .st-kpi-card .st-kpi-body {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px 20px;
+            text-align: left;
+        }
+
+        .sent-tender-page .st-kpi-icon {
+            flex: 0 0 auto;
+            width: 48px;
+            height: 48px;
+            border-radius: 10px;
+            background: #eef2ff;
+            color: #4f46e5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .sent-tender-page .st-kpi-meta {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sent-tender-page .st-kpi-label {
+            font-size: 13px;
+            font-weight: 500;
+            color: #64748b;
+        }
+
+        .sent-tender-page .st-kpi-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #0f172a;
+            line-height: 1.2;
+        }
+
+        /* ---------- filter panel ---------- */
+        .sent-tender-page .st-filter-card .st-filter-body {
+            padding: 20px;
+            text-align: left;
+        }
+
+        .sent-tender-page .st-filter-head {
+            margin-bottom: 16px;
+        }
+
+        .sent-tender-page .st-filter-title {
+            margin: 0 0 2px;
+            font-size: 15px;
+            font-weight: 600;
+            color: #0f172a;
+        }
+
+        .sent-tender-page .st-filter-sub {
+            margin: 0;
+            font-size: 13px;
+            color: #94a3b8;
+        }
+
+        .sent-tender-page .st-filter-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 16px;
+        }
+
+        .sent-tender-page .st-filter-field label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            color: #475569;
+        }
+
+        .sent-tender-page .st-filter-grid .select2-container {
+            width: 100% !important;
+        }
+
+        .sent-tender-page .st-filter-grid .select2-container .select2-selection--single {
+            height: 42px;
+            border: 1px solid #d0d5dd;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+        }
+
+        .sent-tender-page .st-filter-grid .select2-container .select2-selection--single .select2-selection__rendered {
+            line-height: 40px;
+            padding-left: 12px;
+            padding-right: 28px;
             font-size: 14px;
-            font-weight: bold;
-            text-transform: uppercase;
-            cursor: pointer;
-
+            color: #1e293b;
         }
 
-        .dt-buttons .dt-button:hover {
-            background-color: #0056b3;
-            /* Darker blue on hover */
-            transform: scale(1.05);
-            /* Slight zoom effect */
+        .sent-tender-page .st-filter-grid .select2-container .select2-selection--single .select2-selection__arrow {
+            height: 40px;
+            right: 8px;
         }
 
-        .dt-buttons .buttons-copy {
-            background-color: #ff9f43;
-            /* Grey for Copy */
+        .sent-tender-page .st-filter-grid .select2-container--default .select2-selection--single .select2-selection__placeholder {
+            color: #94a3b8;
         }
 
-        .dt-buttons .buttons-copy:hover {
-            background-color: #ff9f43;
+        .sent-tender-page .st-filter-grid .select2-container--default.select2-container--focus .select2-selection--single,
+        .sent-tender-page .st-filter-grid .select2-container--default.select2-container--open .select2-selection--single {
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, .12);
         }
 
-        .dt-buttons .buttons-excel {
-            background-color: #28c76f;
-            /* Green for Excel */
+        .sent-tender-page .select2-container--default .select2-dropdown {
+            border-color: #e2e8f0;
+            border-radius: 8px;
+            box-shadow: 0 8px 24px rgba(16, 24, 40, .12);
         }
 
-        .dt-buttons .buttons-excel:hover {
-            background-color: #218838;
+        .sent-tender-page .st-filter-actions {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 20px;
         }
 
-        .dt-buttons .buttons-csv {
-            background-color: #00cfe8;
-            /* Teal for CSV */
+        .sent-tender-page .st-filter-actions .btn {
+            height: 40px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 0 18px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
         }
 
-        .dt-buttons .buttons-csv:hover {
-            background-color: #138496;
+        .sent-tender-page .st-filter-actions .btn-outline-secondary {
+            background: #fff;
+            border: 1px solid #d0d5dd;
+            color: #475569;
         }
 
-        .dt-buttons .buttons-print {
-            background-color: #ff4560;
+        .sent-tender-page .st-filter-actions .btn-outline-secondary:hover {
+            background: #f1f5f9;
+            color: #0f172a;
+            border-color: #cbd5e1;
         }
 
-        .dt-buttons .buttons-print:hover {
-            background-color: #c82333;
+        /* ---------- table toolbar ---------- */
+        .sent-tender-page .st-table-card .st-table-body {
+            padding: 20px;
+            text-align: left;
+        }
+
+        .sent-tender-page .st-table-body .alert {
+            margin-bottom: 16px;
+            border-radius: 8px;
+        }
+
+        .sent-tender-page .st-table-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+            padding: 12px 16px;
+            margin-bottom: 12px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+        }
+
+        .sent-tender-page .st-toolbar-left,
+        .sent-tender-page .st-toolbar-right {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .sent-tender-page .st-table-title {
+            margin: 0 8px 0 0;
+            font-size: 15px;
+            font-weight: 600;
+            color: #0f172a;
+        }
+
+        .sent-tender-page .st-table-toolbar .btn {
+            height: 36px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 0 14px;
+            border-radius: 8px;
+            font-size: 13.5px;
+            font-weight: 500;
+        }
+
+        .sent-tender-page .st-table-toolbar .btn-danger {
+            background: #dc2626;
+            border-color: #dc2626;
+        }
+
+        .sent-tender-page .st-table-toolbar .btn-danger:hover {
+            background: #b91c1c;
+            border-color: #b91c1c;
+        }
+
+        .sent-tender-page .st-toolbar-right .btn {
+            background: #fff;
+            border: 1px solid #d0d5dd;
+            color: #475569;
+        }
+
+        .sent-tender-page .st-toolbar-right .btn:hover {
+            background: #f1f5f9;
+            color: #0f172a;
+            border-color: #cbd5e1;
+        }
+
+        .sent-tender-page .st-toolbar-right .buttons-excel i {
+            color: #16a34a;
+        }
+
+        .sent-tender-page .st-toolbar-right .buttons-csv i {
+            color: #0891b2;
+        }
+
+        .sent-tender-page .st-toolbar-right .buttons-print i {
+            color: #64748b;
+        }
+
+        /* ---------- DataTable wrapper controls ---------- */
+        .sent-tender-page .st-table-card .dataTables_wrapper > .row:first-child {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 0;
+        }
+
+        .sent-tender-page .st-table-card .dataTables_wrapper > .row:first-child > div {
+            padding: 0;
+        }
+
+        .sent-tender-page .st-table-card .dataTables_length,
+        .sent-tender-page .st-table-card .dataTables_filter {
+            padding: 4px 0 12px;
+        }
+
+        .sent-tender-page .st-table-card .dataTables_length label,
+        .sent-tender-page .st-table-card .dataTables_filter label {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin: 0;
+            font-size: 13px;
+            font-weight: 500;
+            color: #475569;
+        }
+
+        .sent-tender-page .st-table-card .dataTables_length select,
+        .sent-tender-page .st-table-card .dataTables_filter input {
+            height: 34px;
+            border: 1px solid #d0d5dd;
+            border-radius: 6px;
+            background: #fff;
+            font-size: 13px;
+            color: #1e293b;
+        }
+
+        .sent-tender-page .st-table-card .dataTables_length select {
+            padding: 0 8px;
+        }
+
+        .sent-tender-page .st-table-card .dataTables_filter input {
+            padding: 0 10px;
+        }
+
+        .sent-tender-page .st-table-card .dataTables_info {
+            padding-top: 12px;
+            font-size: 13px;
+            color: #64748b;
+        }
+
+        .sent-tender-page .st-table-card .dataTables_paginate {
+            padding-top: 8px;
+        }
+
+        /* ---------- table ---------- */
+        .sent-tender-page .st-table-card .table {
+            margin-bottom: 0;
+            border-color: #e2e8f0;
+        }
+
+        .sent-tender-page .st-table-card .table thead th {
+            background: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 10px 12px;
+            font-size: 12.5px;
+            font-weight: 600;
+            color: #334155;
+            white-space: nowrap;
+            vertical-align: middle;
+        }
+
+        .sent-tender-page .st-table-card .table tbody td {
+            padding: 8px 12px;
+            font-size: 13px;
+            color: #334155;
+            vertical-align: middle;
+            white-space: nowrap;
+        }
+
+        .sent-tender-page .st-table-card .table tbody tr:hover td {
+            background-color: #f1f5f9;
+        }
+
+        .sent-tender-page .st-table-card .table .tender_id {
+            color: #2563eb;
+            font-weight: 600;
+        }
+
+        /* ---------- action dropdown ---------- */
+        .sent-tender-page .st-table-card .dropdown .st-action-btn {
+            height: 32px;
+            width: 32px;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            border: 1px solid #d0d5dd;
+            background: #fff;
+            color: #475569;
+        }
+
+        .sent-tender-page .st-table-card .dropdown .st-action-btn:hover {
+            background: #f1f5f9;
+            color: #0f172a;
+        }
+
+        .sent-tender-page .st-table-card .dropdown-menu {
+            min-width: 170px;
+            padding: 6px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            box-shadow: 0 8px 24px rgba(16, 24, 40, .12);
+        }
+
+        .sent-tender-page .st-table-card .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 10px;
+            border-radius: 6px;
+            font-size: 13.5px;
+            color: #334155;
+        }
+
+        .sent-tender-page .st-table-card .dropdown-item:hover {
+            background: #f1f5f9;
+            color: #0f172a;
+        }
+
+        .sent-tender-page .st-table-card .dropdown-item i {
+            width: 16px;
+            text-align: center;
+            color: #64748b;
         }
 
         /* ──────────────────────────────────────────────
@@ -566,7 +944,7 @@ try {
 
         .dataTables_scrollHead .table thead th:first-child {
             z-index: 15;
-            background-color: #fff;
+            background-color: #f8fafc;
         }
 
         .dataTables_scrollBody .table.table-striped tbody tr:nth-child(even) td:first-child {
@@ -574,7 +952,7 @@ try {
         }
 
         .dataTables_scrollBody .table tbody tr:hover td:first-child {
-            background-color: #f1f1f1;
+            background-color: #f1f5f9;
         }
 
         .dataTables_scrollBody .table tbody td:first-child .custom-control,
@@ -588,6 +966,165 @@ try {
 
         .dt-responsive.table-responsive {
             overflow: visible !important;
+        }
+
+        /* ---------- responsive ---------- */
+        @media (max-width: 991.98px) {
+            .sent-tender-page .st-filter-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 575.98px) {
+            .sent-tender-page .st-filter-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .sent-tender-page .st-filter-actions {
+                justify-content: stretch;
+            }
+
+            .sent-tender-page .st-filter-actions .btn {
+                flex: 1 1 auto;
+                justify-content: center;
+            }
+
+            .sent-tender-page .st-table-toolbar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+
+        /* =========================================================
+           FINAL TABLE THEME FIX
+           ========================================================= */
+        
+        /* Table header */
+        .sent-tender-page .st-table-card .table thead th {
+            background-color: #33cc33 !important;
+            color: #ffffff !important;
+            border-color: #33cc33 !important;
+        }
+        
+        /* Keep sticky first header cell green */
+        .sent-tender-page .dataTables_scrollHead .table thead th:first-child {
+            background-color: #33cc33 !important;
+            color: #ffffff !important;
+            border-color: #33cc33 !important;
+        }
+        
+        /* Tender ID links */
+        .sent-tender-page .st-table-card .table tbody .tender_id,
+        .sent-tender-page .st-table-card .table tbody a.tender_id {
+            color: #33cc33 !important;
+            font-weight: 600;
+            text-decoration: none;
+        }
+        
+        .sent-tender-page .st-table-card .table tbody .tender_id:hover,
+        .sent-tender-page .st-table-card .table tbody a.tender_id:hover {
+            color: #28a428 !important;
+            text-decoration: underline;
+        }
+        
+        
+        /* =========================================================
+           DATATABLE INFO
+           Keep "Showing 1 to 100..." OUTSIDE the scrollable table
+           ========================================================= */
+        
+        .sent-tender-page .st-table-card .dataTables_info {
+            position: relative !important;
+            z-index: 10;
+            display: block !important;
+            width: 100% !important;
+            padding: 12px 0 4px !important;
+            margin: 0 !important;
+            background: #fff !important;
+            color: #64748b !important;
+            font-size: 13px;
+            line-height: 20px;
+            clear: both;
+        }
+        
+        /* DataTables bottom row */
+        .sent-tender-page .st-table-card .dataTables_wrapper > .row:last-child {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            margin: 0 !important;
+            padding-top: 8px;
+            background: #fff;
+        }
+        
+        /* Prevent the info/pagination area from being clipped */
+        .sent-tender-page .st-table-card .dataTables_wrapper {
+            overflow: visible !important;
+        }
+        
+        /* Scroll only the actual table body */
+        .sent-tender-page .st-table-card .dataTables_scroll {
+            overflow: visible !important;
+        }
+        
+        .sent-tender-page .st-table-card .dataTables_scrollBody {
+            overflow-x: auto !important;
+            overflow-y: auto !important;
+        }
+
+        /* ==========================================
+           KPI + BREADCRUMB COMBINED
+           ========================================== */
+        
+        .sent-tender-page .st-kpi-card {
+            margin-bottom: 14px !important;
+        }
+        
+        /* KPI */
+        .sent-tender-page .st-kpi-card .st-kpi-body {
+            padding: 14px 20px !important;
+            margin: 0;
+        }
+        
+        /* Breadcrumb section */
+        .sent-tender-page .st-kpi-breadcrumb {
+            padding: 0 20px 12px;
+        }
+        
+        /* Breadcrumb itself */
+        .sent-tender-page .st-kpi-breadcrumb .breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        
+            margin: 0;
+            padding: 0;
+        
+            background: transparent;
+            font-size: 12px;
+        }
+        
+        /* Home link */
+        .sent-tender-page .st-kpi-breadcrumb .breadcrumb a {
+            color: #33cc33 !important;
+            text-decoration: none;
+        }
+        
+        .sent-tender-page .st-kpi-breadcrumb .breadcrumb a:hover {
+            color: #28a428 !important;
+        }
+        
+        /* Current page */
+        .sent-tender-page .st-kpi-breadcrumb .breadcrumb-item.active {
+            color: #64748b;
+        }
+        
+        /* Small separator */
+        .sent-tender-page .st-kpi-breadcrumb .breadcrumb-item + .breadcrumb-item::before {
+            color: #cbd5e1;
         }
     </style>
 </head>
@@ -653,13 +1190,13 @@ try {
     </header>
 
     <section class="pcoded-main-container">
-        <div class="pcoded-content">
-            <div class="page-header">
+        <div class="pcoded-content sent-tender-page">
+            <!--<div class="page-header st-page-header">
                 <div class="page-block">
                     <div class="row align-items-center">
                         <div class="col-md-12">
                             <div class="page-header-title">
-                                <h5 class="m-b-10">Sent Tender</h5>
+                                <h5>Sent Tender</h5>
                             </div>
                             <ul class="breadcrumb">
                                 <li class="breadcrumb-item">
@@ -670,225 +1207,224 @@ try {
                         </div>
                     </div>
                 </div>
-            </div>
+            </div>-->
             <div class="row">
-                <div class="col-md-6 col-xl-3">
-                    <div class="card bg-c-green order-card">
-                        <div class="card-body">
-                            <h6 class="text-white">Sent Tenders</h6>
-                            <h2 class="text-right text-white"><i
-                                    class="feather icon-message-square float-left"></i><span id="total">
-
-
+                <div class="col-12">
+            
+                    <div class="card st-kpi-card">
+            
+                        <!-- KPI -->
+                        <div class="card-body st-kpi-body">
+                            <div class="st-kpi-icon">
+                                <i class="feather icon-message-square"></i>
+                            </div>
+            
+                            <div class="st-kpi-meta">
+                                <span class="st-kpi-label">Sent Tenders</span>
+            
+                                <span class="st-kpi-value" id="total">
                                     <?php
-                                    $sentTendersCountValue = 0; // Default value
-                                    
-                                    if ($isAdmin || hasPermission('Sent Tenders Count', $privileges, $roleData['role_name'])) {
-                                        $sentTendersCountValue = $tenderSentCount['COUNT'] ?? 0;
-                                    } else {
-                                        $sentTendersCountValue = 0;
+                                    $sentTendersCountValue = 0;
+            
+                                    if (
+                                        $isAdmin ||
+                                        hasPermission(
+                                            'Sent Tenders Count',
+                                            $privileges,
+                                            $roleData['role_name']
+                                        )
+                                    ) {
+                                        $sentTendersCountValue =
+                                            $tenderSentCount['COUNT'] ?? 0;
                                     }
+            
                                     echo $sentTendersCountValue;
                                     ?>
-                                </span></h2>
-
+                                </span>
+                            </div>
                         </div>
+            
+                        <!-- Navigation -->
+                        <div class="st-kpi-breadcrumb">
+                            <ul class="breadcrumb">
+                                <li class="breadcrumb-item">
+                                    <a href="index.php">
+                                        <i class="feather icon-home"></i> Home
+                                    </a>
+                                </li>
+            
+                                <li class="breadcrumb-item active">
+                                    Sent Tender
+                                </li>
+                            </ul>
+                        </div>
+            
                     </div>
+            
                 </div>
             </div>
             <?php if ($isAdmin || hasPermission('Sent Tenders Filter', $privileges, $roleData['role_name'])) { ?>
-                <div class="page-header">
-                    <div class="page-block">
-                        <div class="row align-items-center">
-                            <div class="col-md-12">
-                                <!-- Filters Section -->
-                                <form method="get" id="filterForm">
-                                    <div class="row">
-                                        <div class="col-md-4">
-                                            <div class="form-group">
-                                                <label for="faculty">Department <span class="text-danger">*</span></label>
-                                                <select class="form-control" name="department-search"
-                                                    id="department-search">
-                                                    <option value="0">All</option>
-                                                    <?php foreach ($departments as $department) { ?>
-                                                        <option value="<?php echo $department['department_id']; ?>" <?php echo isset($_GET['department-search']) && $_GET['department-search'] == $department['department_id'] ? 'selected' : ''; ?>>
-                                                            <?php echo $department['department_name']; ?>
-                                                        </option>
-                                                    <?php } ?>
-                                                </select>
-                                                <div class="invalid-feedback">Please select a faculty.</div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <div class="form-group">
-                                                <label for="program">Section <span class="text-danger">*</span></label>
-                                                <select class="form-control" name="section-search" id="section-search">
-                                                    <option value="0">All</option>
-                                                    <?php foreach ($sections as $section) {
-                                                        $selectedSection = (isset($_GET['section-search']) && urldecode($_GET['section-search']) == $section['section_id']) ? 'selected' : '';
-
-                                                        ?>
-                                                        <option <?= $selectedSection ?>
-                                                            value="<?php echo $section['section_id']; ?>">
-                                                            <?php echo $section['section_name']; ?>
-                                                        </option>
-                                                    <?php } ?>
-                                                </select>
-                                                <div class="invalid-feedback">Please select a program.</div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <div class="form-group">
-                                                <label for="session">Division <span class="text-danger">*</span></label>
-                                                <select class="form-control" name="division-search" id="division-search">
-                                                    <option value="0">All</option>
-                                                    <?php foreach ($divisions as $division) { ?>
-                                                        <option value="<?php echo $division['division_id']; ?>" <?php echo isset($_GET['division-search']) && $_GET['division-search'] == $division['division_id'] ? 'selected' : ''; ?>>
-                                                            <?php echo $division['division_name']; ?>
-                                                        </option>
-                                                    <?php } ?>
-                                                </select>
-                                                <div class="invalid-feedback">Please select a session.</div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <div class="form-group">
-                                                <label for="semester">Sub Division <span
-                                                        class="text-danger">*</span></label>
-                                                <select class="form-control" name="sub-division-search"
-                                                    id="sub-division-search" required>
-                                                    <option value="0">All</option>
-
-                                                </select>
-                                                <div class="invalid-feedback">Please select a semester.</div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <div class="form-group">
-                                                <label for="semester">Firm <span class="text-danger">*</span></label>
-                                                <select class="form-control select-firm" name="firm" required>
-                                                    <option value="0">All</option>
-                                                    <?php foreach ($firms as $firm) {
-                                                        $selectedFirm = (isset($_GET['firm']) && urldecode($_GET['firm']) == $firm['firm_name']) ? 'selected' : '';
-                                                        ?>
-                                                        <option value="<?= htmlspecialchars($firm['firm_name']) ?>"
-                                                            <?= $selectedFirm ?>>
-                                                            <?= htmlspecialchars($firm['firm_name']) ?>
-                                                        </option>
-                                                    <?php } ?>
-                                                </select>
-                                                <div class="invalid-feedback">Please select a semester.</div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <div class="form-group">
-                                                <label for="semester">State <span class="text-danger">*</span></label>
-                                                <select class="form-control select-state" name="state" required>
-                                                    <option value="0">All</option>
-                                                    <?php foreach ($states as $state) {
-                                                        $selectedState = (isset($_GET['state']) && urldecode($_GET['state']) == $state['state_code']) ? 'selected' : '';
-                                                        ?>
-                                                        <option value="<?= $state['state_code'] ?>" <?= $selectedState ?>>
-                                                            <?= $state['state_name'] ?>
-                                                        </option>
-                                                    <?php } ?>
-                                                </select>
-                                                <div class="invalid-feedback">Please select a semester.</div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <div class="form-group">
-                                                <label for="semester">City <span class="text-danger">*</span></label>
-                                                <select class="form-control select-city" name="city">
-                                                    <option value="0">All</option>
-                                                </select>
-                                                <div class="invalid-feedback">Please select a semester.</div>
-                                            </div>
-                                        </div>
-
-                                        <!-- Buttons -->
-                                        <div class="col-md-6 col-sm-12 d-flex align-items-center mt-3">
-                                            <!-- Submit Button -->
-                                            <button type="submit" class="btn btn-primary btn-md d-flex align-items-center">
-                                                <i class="fas fa-search" style="margin-right: 8px;"></i> Search
-                                            </button>
-                                            &nbsp;
-                                            <!-- Reset Button -->
-                                            <a href="sent-tender2.php"
-                                                class="btn btn-primary btn-md d-flex align-items-center"
-                                                id="filterResetButton">
-                                                <i class="fas fa-undo" style="margin-right: 8px;"></i>
-                                                Reset
-                                            </a>
-                                        </div>
-                                    </div>
-                                </form>
-
-
-                            </div>
+                <div class="card st-filter-card">
+                    <div class="card-body st-filter-body">
+                        <div class="st-filter-head">
+                            <h6 class="st-filter-title">Filters</h6>
+                            <p class="st-filter-sub">Narrow down sent tenders</p>
                         </div>
+                        <form method="get" id="filterForm">
+                            <div class="st-filter-grid">
+                                <div class="st-filter-field">
+                                    <label for="department-search">Department</label>
+                                    <select class="form-control" name="department-search"
+                                        id="department-search">
+                                        <option value="0">All</option>
+                                        <?php foreach ($departments as $department) { ?>
+                                            <option value="<?php echo $department['department_id']; ?>" <?php echo isset($_GET['department-search']) && $_GET['department-search'] == $department['department_id'] ? 'selected' : ''; ?>>
+                                                <?php echo $department['department_name']; ?>
+                                            </option>
+                                        <?php } ?>
+                                    </select>
+                                </div>
+                                <div class="st-filter-field">
+                                    <label for="section-search">Section</label>
+                                    <select class="form-control" name="section-search" id="section-search">
+                                        <option value="0">All</option>
+                                        <?php foreach ($sections as $section) {
+                                            $selectedSection = (isset($_GET['section-search']) && urldecode($_GET['section-search']) == $section['section_id']) ? 'selected' : '';
+
+                                            ?>
+                                            <option <?= $selectedSection ?>
+                                                value="<?php echo $section['section_id']; ?>">
+                                                <?php echo $section['section_name']; ?>
+                                            </option>
+                                        <?php } ?>
+                                    </select>
+                                </div>
+                                <div class="st-filter-field">
+                                    <label for="division-search">Division</label>
+                                    <select class="form-control" name="division-search" id="division-search">
+                                        <option value="0">All</option>
+                                        <?php foreach ($divisions as $division) { ?>
+                                            <option value="<?php echo $division['division_id']; ?>" <?php echo isset($_GET['division-search']) && $_GET['division-search'] == $division['division_id'] ? 'selected' : ''; ?>>
+                                                <?php echo $division['division_name']; ?>
+                                            </option>
+                                        <?php } ?>
+                                    </select>
+                                </div>
+                                <div class="st-filter-field">
+                                    <label for="sub-division-search">Sub Division</label>
+                                    <select class="form-control" name="sub-division-search"
+                                        id="sub-division-search">
+                                        <option value="0">All</option>
+                                    </select>
+                                </div>
+                                <div class="st-filter-field">
+                                    <label for="firm">Firm</label>
+                                    <select class="form-control select-firm" name="firm" id="firm">
+                                        <option value="0">All</option>
+                                        <?php foreach ($firms as $firm) {
+                                            $selectedFirm = (isset($_GET['firm']) && urldecode($_GET['firm']) == $firm['firm_name']) ? 'selected' : '';
+                                            ?>
+                                            <option value="<?= htmlspecialchars($firm['firm_name']) ?>"
+                                                <?= $selectedFirm ?>>
+                                                <?= htmlspecialchars($firm['firm_name']) ?>
+                                            </option>
+                                        <?php } ?>
+                                    </select>
+                                </div>
+                                <div class="st-filter-field">
+                                    <label for="state">State</label>
+                                    <select class="form-control select-state" name="state" id="state">
+                                        <option value="0">All</option>
+                                        <?php foreach ($states as $state) {
+                                            $selectedState = (isset($_GET['state']) && urldecode($_GET['state']) == $state['state_code']) ? 'selected' : '';
+                                            ?>
+                                            <option value="<?= $state['state_code'] ?>" <?= $selectedState ?>>
+                                                <?= $state['state_name'] ?>
+                                            </option>
+                                        <?php } ?>
+                                    </select>
+                                </div>
+                                <div class="st-filter-field">
+                                    <label for="city">City</label>
+                                    <select class="form-control select-city" name="city" id="city">
+                                        <option value="0">All</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="st-filter-actions">
+                                <a href="sent-tender2.php" class="btn btn-outline-secondary"
+                                    id="filterResetButton">
+                                    <i class="feather icon-refresh-ccw"></i> Reset
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="feather icon-search"></i> Search
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             <?php } ?>
             <div class="row">
                 <div class="col-sm-12">
-                    <div class="card">
-                        <div class="card-header table-card-header">
-                        </div>
-                        <div class="card-body">
-                            <div class="dt-responsive">
+                    <div class="card st-table-card">
+                        <div class="card-body st-table-body">
 
-                                <?php
-                                if (isset($_GET['status'])) {
-                                    $st = $_GET['status'];
-                                    $st1 = base64_decode($st);
-                                    if ($st1 > 0) {
-                                        echo " <div class='alert alert-success alert-dismissible fade show' role='alert' style='font-size:16px;' id='updateuser'>
-                                        <strong><i class='feather icon-check'></i>Thanks!</strong> Tender has been Updated Successfully.
-                                        <button type='button' class='close' data-dismiss='alert' aria-label='Close'>
-                                            <span aria-hidden='true'>&times;</span>
-                                        </button>
-                                        </div> ";
-                                    } else {
-                                        echo " <div class='alert alert-danger alert-dismissible fade show' role='alert' style='font-size:16px;' id='updateuser'>
-                                        <strong>Error!</strong> Tender has been not Updated
-                                        <button type='button' class='close' data-dismiss='alert' aria-label='Close'>
-                                            <span aria-hidden='true'>&times;</span>
-                                        </button>
-                                        </div> ";
+                            <?php
+                            if (isset($_GET['status'])) {
+                                $st = $_GET['status'];
+                                $st1 = base64_decode($st);
+                                if ($st1 > 0) {
+                                    echo " <div class='alert alert-success alert-dismissible fade show' role='alert' style='font-size:16px;' id='updateuser'>
+                                    <strong><i class='feather icon-check'></i>Thanks!</strong> Tender has been Updated Successfully.
+                                    <button type='button' class='close' data-dismiss='alert' aria-label='Close'>
+                                        <span aria-hidden='true'>&times;</span>
+                                    </button>
+                                    </div> ";
+                                } else {
+                                    echo " <div class='alert alert-danger alert-dismissible fade show' role='alert' style='font-size:16px;' id='updateuser'>
+                                    <strong>Error!</strong> Tender has been not Updated
+                                    <button type='button' class='close' data-dismiss='alert' aria-label='Close'>
+                                        <span aria-hidden='true'>&times;</span>
+                                    </button>
+                                    </div> ";
+                                }
+                            }
+                            ?>
+
+                            <div class="st-table-toolbar">
+                                <div class="st-toolbar-left">
+                                    <h6 class="st-table-title">Sent Tenders</h6>
+                                    <?php
+                                    if ($isAdmin || hasPermission('Bulk Delete Sent Tender', $privileges, $roleData['role_name'])) {
+                                        echo "<a href='javascript:void(0);' id='recycle_records' class='btn btn-danger'>
+                                        <i class='feather icon-trash'></i> Move to Bin
+                                        </a>";
                                     }
-                                }
-                                ?>
-                                <br />
-                                <?php
-                                if ($isAdmin || hasPermission('Bulk Delete Sent Tender', $privileges, $roleData['role_name'])) {
-                                    echo "<a href='javascript:void(0);' id='recycle_records' class='btn btn-danger me-3 rounded-sm'> 
-                                    <i class='feather icon-trash'></i> &nbsp; Move to Bin
-                                    </a>&nbsp&nbsp";
-                                }
-                                ?>
-                                <div class="dt-buttons btn-group">
+                                    ?>
+                                </div>
+                                <div class="st-toolbar-right">
                                     <?php if ($isAdmin || hasPermission('Sent Tender Excel', $privileges, $roleData['role_name'])) { ?>
-                                        <button class="btn btn-secondary buttons-excel buttons-html5 btn-primary rounded-sm"
-                                            tabindex="0" aria-controls="basic-btn2" type="button"
-                                            onclick="exportTableToExcel()" title="Export to Excel"><span><i
-                                                    class="fas fa-file-excel"></i>
-                                                Excel</span></button>
+                                        <button class="btn buttons-excel" tabindex="0" aria-controls="basic-btn2"
+                                            type="button" onclick="exportTableToExcel()" title="Export to Excel">
+                                            <span><i class="fas fa-file-excel"></i> Excel</span>
+                                        </button>
                                     <?php } ?>
                                     <?php if ($isAdmin || hasPermission('Sent Tender CSV', $privileges, $roleData['role_name'])) { ?>
-
-                                        <button class="btn btn-secondary buttons-csv buttons-html5 btn-primary rounded-sm"
-                                            tabindex="0" aria-controls="basic-btn2" type="button"
-                                            onclick="exportTableToCSV()" title="Export to CSV"><span><i
-                                                    class="fas fa-file-csv"></i> CSV</span></button>
+                                        <button class="btn buttons-csv" tabindex="0" aria-controls="basic-btn2"
+                                            type="button" onclick="exportTableToCSV()" title="Export to CSV">
+                                            <span><i class="fas fa-file-csv"></i> CSV</span>
+                                        </button>
                                     <?php } ?>
-
                                     <?php if ($isAdmin || hasPermission('Sent Tender Print', $privileges, $roleData['role_name'])) { ?>
-                                        <button class="btn btn-secondary buttons-print btn-primary rounded-sm" tabindex="0"
-                                            onclick="printTable()" aria-controls="basic-btn2" type="button"
-                                            title="Print"><span><i class="fas fa-print"></i> Print</span></button>
+                                        <button class="btn buttons-print" tabindex="0" onclick="printTable()"
+                                            aria-controls="basic-btn2" type="button" title="Print">
+                                            <span><i class="fas fa-print"></i> Print</span>
+                                        </button>
                                     <?php } ?>
                                 </div>
+                            </div>
+
+                            <div class="dt-responsive">
 
                                 <table id="basic-btn2" class="table table-striped table-bordered">
                                     <thead>
@@ -959,7 +1495,7 @@ try {
                                                 <td><?= htmlspecialchars($formattedCreatedDate) ?></td>
                                                 <td>
                                                     <div class="dropdown">
-                                                        <button class="btn btn-secondary " type="button"
+                                                        <button class="btn btn-secondary st-action-btn" type="button"
                                                             id="actionMenu<?php echo $row['t_id']; ?>"
                                                             data-bs-toggle="dropdown" aria-expanded="false">
                                                             <i class="feather icon-more-vertical"></i>
