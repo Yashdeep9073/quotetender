@@ -381,7 +381,7 @@ $isAdmin = strtolower($roleData['role_name']) === 'admin';
     </div>
 </nav>
 
-<script>
+<!--<script>
 document.addEventListener("DOMContentLoaded", function () {
     document.querySelectorAll(".pcoded-navbar a").forEach(function (link) {
         const href = link.getAttribute("href");
@@ -400,4 +400,4 @@ document.addEventListener("DOMContentLoaded", function () {
         link.setAttribute("rel", "noopener noreferrer");
     });
 });
-</script>
+</script>-->
