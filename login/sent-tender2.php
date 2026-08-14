@@ -560,8 +560,16 @@ try {
         }
 
         /* ---------- filter panel ---------- */
-        .sent-tender-page .st-filter-card .st-filter-body {
-            padding: 20px;
+        .sent-tender-page .st-filter-panel {
+            padding: 16px;
+            margin-bottom: 14px;
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+        }
+
+        .sent-tender-page .st-filter-panel .st-filter-body {
+            padding: 0;
             text-align: left;
         }
 
@@ -701,6 +709,15 @@ try {
             gap: 8px;
         }
 
+        .sent-tender-page .st-toolbar-left {
+            flex: 1 1 auto;
+        }
+
+        .sent-tender-page .st-toolbar-right {
+            flex: 0 0 auto;
+            margin-left: auto;
+        }
+
         .sent-tender-page .st-table-title {
             margin: 0 8px 0 0;
             font-size: 15px;
@@ -729,27 +746,33 @@ try {
             border-color: #b91c1c;
         }
 
+        .sent-tender-page .st-toolbar-left .buttons-excel,
+        .sent-tender-page .st-toolbar-left .buttons-csv,
+        .sent-tender-page .st-toolbar-left .buttons-print,
         .sent-tender-page .st-toolbar-right .btn {
             background: #fff;
             border: 1px solid #d0d5dd;
             color: #475569;
         }
 
+        .sent-tender-page .st-toolbar-left .buttons-excel:hover,
+        .sent-tender-page .st-toolbar-left .buttons-csv:hover,
+        .sent-tender-page .st-toolbar-left .buttons-print:hover,
         .sent-tender-page .st-toolbar-right .btn:hover {
             background: #f1f5f9;
             color: #0f172a;
             border-color: #cbd5e1;
         }
 
-        .sent-tender-page .st-toolbar-right .buttons-excel i {
+        .sent-tender-page .st-toolbar-left .buttons-excel i {
             color: #16a34a;
         }
 
-        .sent-tender-page .st-toolbar-right .buttons-csv i {
+        .sent-tender-page .st-toolbar-left .buttons-csv i {
             color: #0891b2;
         }
 
-        .sent-tender-page .st-toolbar-right .buttons-print i {
+        .sent-tender-page .st-toolbar-left .buttons-print i {
             color: #64748b;
         }
 
@@ -758,13 +781,24 @@ try {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            flex-wrap: wrap;
+            flex-wrap: nowrap;
             gap: 8px;
             margin: 0;
         }
 
         .sent-tender-page .st-table-card .dataTables_wrapper > .row:first-child > div {
+            width: auto !important;
             padding: 0;
+            max-width: none;
+        }
+
+        .sent-tender-page .st-table-card .dataTables_wrapper > .row:first-child > div:first-child {
+            flex: 0 0 auto;
+        }
+
+        .sent-tender-page .st-table-card .dataTables_wrapper > .row:first-child > div:last-child {
+            flex: 0 0 auto;
+            margin-left: auto;
         }
 
         .sent-tender-page .st-table-card .dataTables_length,
@@ -781,6 +815,11 @@ try {
             font-size: 13px;
             font-weight: 500;
             color: #475569;
+            white-space: nowrap;
+        }
+
+        .sent-tender-page .st-table-card .dataTables_filter {
+            text-align: right;
         }
 
         .sent-tender-page .st-table-card .dataTables_length select,
@@ -799,6 +838,8 @@ try {
 
         .sent-tender-page .st-table-card .dataTables_filter input {
             padding: 0 10px;
+            width: clamp(140px, 24vw, 260px);
+            margin-left: 0;
         }
 
         .sent-tender-page .st-table-card .dataTables_info {
@@ -894,8 +935,7 @@ try {
         }
 
         /* ──────────────────────────────────────────────
-           Modern scrollable table — sticky first column
-           + custom scrollbars + header freeze
+           Modern scrollable table + custom scrollbars
            ────────────────────────────────────────────── */
         .dataTables_scrollBody {
             scroll-behavior: smooth;
@@ -932,34 +972,6 @@ try {
             scrollbar-color: #c1c1c1 #f1f1f1;
         }
 
-        /* Freeze first column (SNO/checkbox) during horizontal scroll */
-        .dataTables_scrollHead .table thead th:first-child,
-        .dataTables_scrollBody .table tbody td:first-child {
-            position: sticky;
-            left: 0;
-            z-index: 5;
-            background-color: #fff;
-            box-shadow: 2px 0 6px -2px rgba(0, 0, 0, 0.12);
-        }
-
-        .dataTables_scrollHead .table thead th:first-child {
-            z-index: 15;
-            background-color: #f8fafc;
-        }
-
-        .dataTables_scrollBody .table.table-striped tbody tr:nth-child(even) td:first-child {
-            background-color: #f9f9f9;
-        }
-
-        .dataTables_scrollBody .table tbody tr:hover td:first-child {
-            background-color: #f1f5f9;
-        }
-
-        .dataTables_scrollBody .table tbody td:first-child .custom-control,
-        .dataTables_scrollBody .table tbody td:first-child .custom-checkbox {
-            background-color: inherit;
-        }
-
         .dataTables_scroll {
             max-height: 70vh;
         }
@@ -993,6 +1005,16 @@ try {
                 flex-direction: column;
                 align-items: stretch;
             }
+
+            .sent-tender-page .st-toolbar-left,
+            .sent-tender-page .st-toolbar-right {
+                width: 100%;
+            }
+
+            .sent-tender-page .st-toolbar-right {
+                margin-left: 0;
+                justify-content: flex-end;
+            }
         }
 
         /* =========================================================
@@ -1006,7 +1028,7 @@ try {
             border-color: #33cc33 !important;
         }
         
-        /* Keep sticky first header cell green */
+        /* First header cell */
         .sent-tender-page .dataTables_scrollHead .table thead th:first-child {
             background-color: #33cc33 !important;
             color: #ffffff !important;
@@ -1080,15 +1102,26 @@ try {
            ========================================== */
         
         .sent-tender-page .st-kpi-card {
+            background: linear-gradient(45deg, #33cc33, #73b4ff) !important;
             margin-bottom: 14px !important;
+            overflow: hidden;
         }
-        
+
         /* KPI */
         .sent-tender-page .st-kpi-card .st-kpi-body {
             padding: 14px 20px !important;
             margin: 0;
         }
-        
+
+        .sent-tender-page .st-kpi-card .st-kpi-icon {
+            background: rgba(255, 255, 255, .22);
+            color: #ffffff;
+        }
+
+        .sent-tender-page .st-kpi-card .st-kpi-value {
+            color: #ffffff;
+        }
+
         /* Breadcrumb section */
         .sent-tender-page .st-kpi-breadcrumb {
             padding: 0 20px 12px;
@@ -1109,22 +1142,22 @@ try {
         
         /* Home link */
         .sent-tender-page .st-kpi-breadcrumb .breadcrumb a {
-            color: #33cc33 !important;
+            color: #ffffff !important;
             text-decoration: none;
         }
-        
+
         .sent-tender-page .st-kpi-breadcrumb .breadcrumb a:hover {
-            color: #28a428 !important;
+            color: rgba(255, 255, 255, .88) !important;
         }
-        
+
         /* Current page */
         .sent-tender-page .st-kpi-breadcrumb .breadcrumb-item.active {
-            color: #64748b;
+            color: rgba(255, 255, 255, .9);
         }
-        
+
         /* Small separator */
         .sent-tender-page .st-kpi-breadcrumb .breadcrumb-item + .breadcrumb-item::before {
-            color: #cbd5e1;
+            color: rgba(255, 255, 255, .65);
         }
     </style>
 </head>
@@ -1220,8 +1253,8 @@ try {
                             </div>
             
                             <div class="st-kpi-meta">
-                                <span class="st-kpi-label">Sent Tenders</span>
-            
+                                <!--<span class="st-kpi-label">Sent Tenders</span>-->
+
                                 <span class="st-kpi-value" id="total">
                                     <?php
                                     $sentTendersCountValue = 0;
@@ -1263,107 +1296,6 @@ try {
             
                 </div>
             </div>
-            <?php if ($isAdmin || hasPermission('Sent Tenders Filter', $privileges, $roleData['role_name'])) { ?>
-                <div class="card st-filter-card">
-                    <div class="card-body st-filter-body">
-                        <div class="st-filter-head">
-                            <h6 class="st-filter-title">Filters</h6>
-                            <p class="st-filter-sub">Narrow down sent tenders</p>
-                        </div>
-                        <form method="get" id="filterForm">
-                            <div class="st-filter-grid">
-                                <div class="st-filter-field">
-                                    <label for="department-search">Department</label>
-                                    <select class="form-control" name="department-search"
-                                        id="department-search">
-                                        <option value="0">All</option>
-                                        <?php foreach ($departments as $department) { ?>
-                                            <option value="<?php echo $department['department_id']; ?>" <?php echo isset($_GET['department-search']) && $_GET['department-search'] == $department['department_id'] ? 'selected' : ''; ?>>
-                                                <?php echo $department['department_name']; ?>
-                                            </option>
-                                        <?php } ?>
-                                    </select>
-                                </div>
-                                <div class="st-filter-field">
-                                    <label for="section-search">Section</label>
-                                    <select class="form-control" name="section-search" id="section-search">
-                                        <option value="0">All</option>
-                                        <?php foreach ($sections as $section) {
-                                            $selectedSection = (isset($_GET['section-search']) && urldecode($_GET['section-search']) == $section['section_id']) ? 'selected' : '';
-
-                                            ?>
-                                            <option <?= $selectedSection ?>
-                                                value="<?php echo $section['section_id']; ?>">
-                                                <?php echo $section['section_name']; ?>
-                                            </option>
-                                        <?php } ?>
-                                    </select>
-                                </div>
-                                <div class="st-filter-field">
-                                    <label for="division-search">Division</label>
-                                    <select class="form-control" name="division-search" id="division-search">
-                                        <option value="0">All</option>
-                                        <?php foreach ($divisions as $division) { ?>
-                                            <option value="<?php echo $division['division_id']; ?>" <?php echo isset($_GET['division-search']) && $_GET['division-search'] == $division['division_id'] ? 'selected' : ''; ?>>
-                                                <?php echo $division['division_name']; ?>
-                                            </option>
-                                        <?php } ?>
-                                    </select>
-                                </div>
-                                <div class="st-filter-field">
-                                    <label for="sub-division-search">Sub Division</label>
-                                    <select class="form-control" name="sub-division-search"
-                                        id="sub-division-search">
-                                        <option value="0">All</option>
-                                    </select>
-                                </div>
-                                <div class="st-filter-field">
-                                    <label for="firm">Firm</label>
-                                    <select class="form-control select-firm" name="firm" id="firm">
-                                        <option value="0">All</option>
-                                        <?php foreach ($firms as $firm) {
-                                            $selectedFirm = (isset($_GET['firm']) && urldecode($_GET['firm']) == $firm['firm_name']) ? 'selected' : '';
-                                            ?>
-                                            <option value="<?= htmlspecialchars($firm['firm_name']) ?>"
-                                                <?= $selectedFirm ?>>
-                                                <?= htmlspecialchars($firm['firm_name']) ?>
-                                            </option>
-                                        <?php } ?>
-                                    </select>
-                                </div>
-                                <div class="st-filter-field">
-                                    <label for="state">State</label>
-                                    <select class="form-control select-state" name="state" id="state">
-                                        <option value="0">All</option>
-                                        <?php foreach ($states as $state) {
-                                            $selectedState = (isset($_GET['state']) && urldecode($_GET['state']) == $state['state_code']) ? 'selected' : '';
-                                            ?>
-                                            <option value="<?= $state['state_code'] ?>" <?= $selectedState ?>>
-                                                <?= $state['state_name'] ?>
-                                            </option>
-                                        <?php } ?>
-                                    </select>
-                                </div>
-                                <div class="st-filter-field">
-                                    <label for="city">City</label>
-                                    <select class="form-control select-city" name="city" id="city">
-                                        <option value="0">All</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="st-filter-actions">
-                                <a href="sent-tender2.php" class="btn btn-outline-secondary"
-                                    id="filterResetButton">
-                                    <i class="feather icon-refresh-ccw"></i> Reset
-                                </a>
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="feather icon-search"></i> Search
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            <?php } ?>
             <div class="row">
                 <div class="col-sm-12">
                     <div class="card st-table-card">
@@ -1401,8 +1333,6 @@ try {
                                         </a>";
                                     }
                                     ?>
-                                </div>
-                                <div class="st-toolbar-right">
                                     <?php if ($isAdmin || hasPermission('Sent Tender Excel', $privileges, $roleData['role_name'])) { ?>
                                         <button class="btn buttons-excel" tabindex="0" aria-controls="basic-btn2"
                                             type="button" onclick="exportTableToExcel()" title="Export to Excel">
@@ -1422,7 +1352,120 @@ try {
                                         </button>
                                     <?php } ?>
                                 </div>
+                                <?php if ($isAdmin || hasPermission('Sent Tenders Filter', $privileges, $roleData['role_name'])) { ?>
+                                    <div class="st-toolbar-right">
+                                        <button class="btn" type="button" data-bs-toggle="collapse"
+                                            data-bs-target="#sentTenderFilters" aria-expanded="false"
+                                            aria-controls="sentTenderFilters" title="Filters">
+                                            <i class="feather icon-filter"></i> Filters
+                                        </button>
+                                    </div>
+                                <?php } ?>
                             </div>
+
+                            <?php if ($isAdmin || hasPermission('Sent Tenders Filter', $privileges, $roleData['role_name'])) { ?>
+                                <div class="collapse st-filter-collapse" id="sentTenderFilters">
+                                    <div class="st-filter-panel">
+                                        <div class="st-filter-body">
+                                            <div class="st-filter-head">
+                                                <h6 class="st-filter-title">Filters</h6>
+                                                <p class="st-filter-sub">Narrow down sent tenders</p>
+                                            </div>
+                                            <form method="get" id="filterForm">
+                                                <div class="st-filter-grid">
+                                                    <div class="st-filter-field">
+                                                        <label for="department-search">Department</label>
+                                                        <select class="form-control" name="department-search"
+                                                            id="department-search">
+                                                            <option value="0">All</option>
+                                                            <?php foreach ($departments as $department) { ?>
+                                                                <option value="<?php echo $department['department_id']; ?>" <?php echo isset($_GET['department-search']) && $_GET['department-search'] == $department['department_id'] ? 'selected' : ''; ?>>
+                                                                    <?php echo $department['department_name']; ?>
+                                                                </option>
+                                                            <?php } ?>
+                                                        </select>
+                                                    </div>
+                                                    <div class="st-filter-field">
+                                                        <label for="section-search">Section</label>
+                                                        <select class="form-control" name="section-search" id="section-search">
+                                                            <option value="0">All</option>
+                                                            <?php foreach ($sections as $section) {
+                                                                $selectedSection = (isset($_GET['section-search']) && urldecode($_GET['section-search']) == $section['section_id']) ? 'selected' : '';
+
+                                                                ?>
+                                                                <option <?= $selectedSection ?>
+                                                                    value="<?php echo $section['section_id']; ?>">
+                                                                    <?php echo $section['section_name']; ?>
+                                                                </option>
+                                                            <?php } ?>
+                                                        </select>
+                                                    </div>
+                                                    <div class="st-filter-field">
+                                                        <label for="division-search">Division</label>
+                                                        <select class="form-control" name="division-search" id="division-search">
+                                                            <option value="0">All</option>
+                                                            <?php foreach ($divisions as $division) { ?>
+                                                                <option value="<?php echo $division['division_id']; ?>" <?php echo isset($_GET['division-search']) && $_GET['division-search'] == $division['division_id'] ? 'selected' : ''; ?>>
+                                                                    <?php echo $division['division_name']; ?>
+                                                                </option>
+                                                            <?php } ?>
+                                                        </select>
+                                                    </div>
+                                                    <div class="st-filter-field">
+                                                        <label for="sub-division-search">Sub Division</label>
+                                                        <select class="form-control" name="sub-division-search"
+                                                            id="sub-division-search">
+                                                            <option value="0">All</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="st-filter-field">
+                                                        <label for="firm">Firm</label>
+                                                        <select class="form-control select-firm" name="firm" id="firm">
+                                                            <option value="0">All</option>
+                                                            <?php foreach ($firms as $firm) {
+                                                                $selectedFirm = (isset($_GET['firm']) && urldecode($_GET['firm']) == $firm['firm_name']) ? 'selected' : '';
+                                                                ?>
+                                                                <option value="<?= htmlspecialchars($firm['firm_name']) ?>"
+                                                                    <?= $selectedFirm ?>>
+                                                                    <?= htmlspecialchars($firm['firm_name']) ?>
+                                                                </option>
+                                                            <?php } ?>
+                                                        </select>
+                                                    </div>
+                                                    <div class="st-filter-field">
+                                                        <label for="state">State</label>
+                                                        <select class="form-control select-state" name="state" id="state">
+                                                            <option value="0">All</option>
+                                                            <?php foreach ($states as $state) {
+                                                                $selectedState = (isset($_GET['state']) && urldecode($_GET['state']) == $state['state_code']) ? 'selected' : '';
+                                                                ?>
+                                                                <option value="<?= $state['state_code'] ?>" <?= $selectedState ?>>
+                                                                    <?= $state['state_name'] ?>
+                                                                </option>
+                                                            <?php } ?>
+                                                        </select>
+                                                    </div>
+                                                    <div class="st-filter-field">
+                                                        <label for="city">City</label>
+                                                        <select class="form-control select-city" name="city" id="city">
+                                                            <option value="0">All</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                                <div class="st-filter-actions">
+                                                    <a href="sent-tender2.php" class="btn btn-outline-secondary"
+                                                        id="filterResetButton">
+                                                        <i class="feather icon-refresh-ccw"></i> Reset
+                                                    </a>
+                                                    <button type="submit" class="btn btn-primary">
+                                                        <i class="feather icon-search"></i> Search
+                                                    </button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            <?php } ?>
 
                             <div class="dt-responsive">
 
@@ -1921,9 +1964,6 @@ try {
                  * scrollX — enables horizontal scrollbar when columns overflow.
                  * scrollY — constrains table body to ~70vh with vertical scroll.
                  * fixedHeader — keeps the <thead> pinned to top during vertical scroll.
-                 * First-column freeze during horizontal scroll is handled via CSS
-                 *   position:sticky (see <style> block) to avoid DOM duplication issues
-                 *   that FixedColumns extension would cause with checkbox event handlers.
                  */
                 scrollX: true,
                 scrollY: '70vh',
