@@ -354,68 +354,504 @@ inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_i
     <link rel="stylesheet" href="assets/css/style.css">
 
     <style>
-        .dt-buttons {
-            margin-top: 5px !important;
+        /* ==========================================================
+           Alot Tender page — scoped UI modernization.
+           All rules are page-scoped (.alot-tender-page) so the
+           rest of the admin panel is unaffected.
+           ========================================================== */
+        .alot-tender-page {
+            padding: 10px;
         }
 
-        .btn-group {
-            display: inline-block;
-            /* margin: 0 5px; */
-            padding: 8px 16px;
+        /* ---------- shared card base ---------- */
+        .alot-tender-page .card {
+            border: 0;
             border-radius: 10px;
-            color: white;
+            box-shadow: 0 1px 2px rgba(16, 24, 40, .05), 0 1px 3px rgba(16, 24, 40, .08);
+            margin-bottom: 10px;
+        }
+
+        /* ---------- KPI card ---------- */
+        .alot-tender-page .st-kpi-card .st-kpi-body {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 14px 20px;
+            text-align: left;
+            margin: 0;
+        }
+
+        .alot-tender-page .st-kpi-icon {
+            flex: 0 0 auto;
+            width: 48px;
+            height: 48px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, .22);
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .alot-tender-page .st-kpi-meta {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .alot-tender-page .st-kpi-label {
+            font-size: 13px;
+            font-weight: 500;
+            color: rgba(255, 255, 255, .85);
+        }
+
+        .alot-tender-page .st-kpi-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #ffffff;
+            line-height: 1.2;
+        }
+
+        /* KPI card — RED theme */
+        .alot-tender-page .st-kpi-card {
+            background: linear-gradient(45deg, #dc2626, #ef4444) !important;
+            margin-bottom: 10px !important;
+            overflow: hidden;
+        }
+
+        /* Breadcrumb inside KPI */
+        .alot-tender-page .st-kpi-breadcrumb {
+            padding: 0 20px 12px;
+        }
+
+        .alot-tender-page .st-kpi-breadcrumb .breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin: 0;
+            padding: 0;
+            background: transparent;
+            font-size: 12px;
+        }
+
+        .alot-tender-page .st-kpi-breadcrumb .breadcrumb a {
+            color: #ffffff !important;
+            text-decoration: none;
+        }
+
+        .alot-tender-page .st-kpi-breadcrumb .breadcrumb a:hover {
+            color: rgba(255, 255, 255, .88) !important;
+        }
+
+        .alot-tender-page .st-kpi-breadcrumb .breadcrumb-item.active {
+            color: rgba(255, 255, 255, .9);
+        }
+
+        .alot-tender-page .st-kpi-breadcrumb .breadcrumb-item + .breadcrumb-item::before {
+            color: rgba(255, 255, 255, .65);
+        }
+
+        /* ---------- filter panel ---------- */
+        .alot-tender-page .st-filter-panel {
+            padding: 16px;
+            margin-bottom: 14px;
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+        }
+
+        .alot-tender-page .st-filter-panel .st-filter-body {
+            padding: 0;
+            text-align: left;
+        }
+
+        .alot-tender-page .st-filter-head {
+            margin-bottom: 16px;
+        }
+
+        .alot-tender-page .st-filter-title {
+            margin: 0 0 2px;
+            font-size: 15px;
+            font-weight: 600;
+            color: #0f172a;
+        }
+
+        .alot-tender-page .st-filter-sub {
+            margin: 0;
+            font-size: 13px;
+            color: #94a3b8;
+        }
+
+        .alot-tender-page .st-filter-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 16px;
+        }
+
+        .alot-tender-page .st-filter-field label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            color: #475569;
+        }
+
+        .alot-tender-page .st-filter-grid .select2-container {
+            width: 100% !important;
+        }
+
+        .alot-tender-page .st-filter-grid .select2-container .select2-selection--single {
+            height: 42px;
+            border: 1px solid #d0d5dd;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+        }
+
+        .alot-tender-page .st-filter-grid .select2-container .select2-selection--single .select2-selection__rendered {
+            line-height: 40px;
+            padding-left: 12px;
+            padding-right: 28px;
             font-size: 14px;
-            font-weight: bold;
-            text-transform: uppercase;
-            cursor: pointer;
-
+            color: #1e293b;
         }
 
-        .dt-buttons .dt-button:hover {
-            background-color: #0056b3;
-            /* Darker blue on hover */
-            transform: scale(1.05);
-            /* Slight zoom effect */
+        .alot-tender-page .st-filter-grid .select2-container .select2-selection--single .select2-selection__arrow {
+            height: 40px;
+            right: 8px;
         }
 
-        .dt-buttons .buttons-copy {
-            background-color: #ff9f43;
-            /* Grey for Copy */
+        .alot-tender-page .st-filter-grid .select2-container--default .select2-selection--single .select2-selection__placeholder {
+            color: #94a3b8;
         }
 
-        .dt-buttons .buttons-copy:hover {
-            background-color: #ff9f43;
+        .alot-tender-page .st-filter-grid .select2-container--default.select2-container--focus .select2-selection--single,
+        .alot-tender-page .st-filter-grid .select2-container--default.select2-container--open .select2-selection--single {
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, .12);
         }
 
-        .dt-buttons .buttons-excel {
-            background-color: #28c76f;
-            /* Green for Excel */
+        .alot-tender-page .select2-container--default .select2-dropdown {
+            border-color: #e2e8f0;
+            border-radius: 8px;
+            box-shadow: 0 8px 24px rgba(16, 24, 40, .12);
         }
 
-        .dt-buttons .buttons-excel:hover {
-            background-color: #218838;
+        .alot-tender-page .st-filter-actions {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 20px;
         }
 
-        .dt-buttons .buttons-csv {
-            background-color: #00cfe8;
-            /* Teal for CSV */
+        .alot-tender-page .st-filter-actions .btn {
+            height: 40px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 0 18px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
         }
 
-        .dt-buttons .buttons-csv:hover {
-            background-color: #138496;
+        .alot-tender-page .st-filter-actions .btn-outline-secondary {
+            background: #fff;
+            border: 1px solid #d0d5dd;
+            color: #475569;
         }
 
-        .dt-buttons .buttons-print {
-            background-color: #ff4560;
+        .alot-tender-page .st-filter-actions .btn-outline-secondary:hover {
+            background: #f1f5f9;
+            color: #0f172a;
+            border-color: #cbd5e1;
         }
 
-        .dt-buttons .buttons-print:hover {
-            background-color: #c82333;
+        /* ---------- table toolbar ---------- */
+        .alot-tender-page .st-table-card .st-table-body {
+            padding: 14px;
+            text-align: left;
+        }
+
+        .alot-tender-page .st-table-body .alert {
+            margin-bottom: 16px;
+            border-radius: 8px;
+        }
+
+        .alot-tender-page .st-table-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 8px 12px;
+            margin-bottom: 8px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+        }
+
+        .alot-tender-page .st-toolbar-left,
+        .alot-tender-page .st-toolbar-right {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .alot-tender-page .st-toolbar-left {
+            flex: 1 1 auto;
+        }
+
+        .alot-tender-page .st-toolbar-right {
+            flex: 0 0 auto;
+            margin-left: auto;
+        }
+
+        .alot-tender-page .st-table-title {
+            margin: 0 8px 0 0;
+            font-size: 15px;
+            font-weight: 600;
+            color: #0f172a;
+        }
+
+        .alot-tender-page .st-table-toolbar .btn {
+            height: 36px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 0 14px;
+            border-radius: 8px;
+            font-size: 13.5px;
+            font-weight: 500;
+        }
+
+        .alot-tender-page .st-table-toolbar .btn-danger {
+            background: #dc2626;
+            border-color: #dc2626;
+        }
+
+        .alot-tender-page .st-table-toolbar .btn-danger:hover {
+            background: #b91c1c;
+            border-color: #b91c1c;
+        }
+
+        .alot-tender-page .st-toolbar-left .buttons-excel,
+        .alot-tender-page .st-toolbar-left .buttons-csv,
+        .alot-tender-page .st-toolbar-left .buttons-print,
+        .alot-tender-page .st-toolbar-right .btn {
+            background: #fff;
+            border: 1px solid #d0d5dd;
+            color: #475569;
+        }
+
+        .alot-tender-page .st-toolbar-left .buttons-excel:hover,
+        .alot-tender-page .st-toolbar-left .buttons-csv:hover,
+        .alot-tender-page .st-toolbar-left .buttons-print:hover,
+        .alot-tender-page .st-toolbar-right .btn:hover {
+            background: #f1f5f9;
+            color: #0f172a;
+            border-color: #cbd5e1;
+        }
+
+        .alot-tender-page .st-toolbar-left .buttons-excel i {
+            color: #16a34a;
+        }
+
+        .alot-tender-page .st-toolbar-left .buttons-csv i {
+            color: #0891b2;
+        }
+
+        .alot-tender-page .st-toolbar-left .buttons-print i {
+            color: #64748b;
+        }
+
+        /* ---------- DataTable wrapper controls ---------- */
+        .alot-tender-page .st-table-card .dataTables_wrapper > .row:first-child {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: nowrap;
+            gap: 8px;
+            margin: 0;
+        }
+
+        .alot-tender-page .st-table-card .dataTables_wrapper > .row:first-child > div {
+            width: auto !important;
+            padding: 0;
+            max-width: none;
+        }
+
+        .alot-tender-page .st-table-card .dataTables_wrapper > .row:first-child > div:first-child {
+            flex: 0 0 auto;
+        }
+
+        .alot-tender-page .st-table-card .dataTables_wrapper > .row:first-child > div:last-child {
+            flex: 0 0 auto;
+            margin-left: auto;
+        }
+
+        .alot-tender-page .st-table-card .dataTables_length,
+        .alot-tender-page .st-table-card .dataTables_filter {
+            padding: 2px 0 6px;
+        }
+
+        .alot-tender-page .st-table-card .dataTables_length label,
+        .alot-tender-page .st-table-card .dataTables_filter label {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin: 0;
+            font-size: 13px;
+            font-weight: 500;
+            color: #475569;
+            white-space: nowrap;
+        }
+
+        .alot-tender-page .st-table-card .dataTables_filter {
+            text-align: right;
+        }
+
+        .alot-tender-page .st-table-card .dataTables_length select,
+        .alot-tender-page .st-table-card .dataTables_filter input {
+            height: 34px;
+            border: 1px solid #d0d5dd;
+            border-radius: 6px;
+            background: #fff;
+            font-size: 13px;
+            color: #1e293b;
+        }
+
+        .alot-tender-page .st-table-card .dataTables_length select {
+            padding: 0 8px;
+        }
+
+        .alot-tender-page .st-table-card .dataTables_filter input {
+            padding: 0 10px;
+            width: clamp(140px, 24vw, 260px);
+            margin-left: 0;
+        }
+
+        .alot-tender-page .st-table-card .dataTables_info {
+            position: relative !important;
+            z-index: 10;
+            display: block !important;
+            width: 100% !important;
+            padding: 6px 0 2px !important;
+            margin: 0 !important;
+            background: #fff !important;
+            color: #64748b !important;
+            font-size: 12.5px;
+            line-height: 18px;
+            clear: both;
+        }
+
+        .alot-tender-page .st-table-card .dataTables_paginate {
+            padding-top: 4px;
+        }
+
+        /* ---------- table ---------- */
+        .alot-tender-page .st-table-card .table {
+            margin-bottom: 0;
+            border-color: #e2e8f0;
+        }
+
+        .alot-tender-page .st-table-card .table thead th {
+            background-color: #33cc33 !important;
+            color: #ffffff !important;
+            border-color: #33cc33 !important;
+            padding: 7px 10px;
+            font-size: 12px;
+            font-weight: 600;
+            white-space: nowrap;
+            vertical-align: middle;
+        }
+
+        .alot-tender-page .st-table-card .table tbody td {
+            padding: 5px 10px;
+            font-size: 12.5px;
+            color: #334155;
+            vertical-align: middle;
+            white-space: nowrap;
+        }
+
+        .alot-tender-page .st-table-card .table tbody tr:hover td {
+            background-color: #f1f5f9;
+        }
+
+        /* Compact reminder cell */
+        .alot-tender-page .st-table-card .table tbody td.td-reminder {
+            white-space: normal;
+            min-width: 130px;
+            max-width: 180px;
+            font-size: 11.5px;
+            line-height: 1.4;
+            padding: 5px 8px;
+        }
+
+        .alot-tender-page .st-table-card .table tbody td.td-reminder .badge-days {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            background: #16a34a;
+            color: #fff;
+            font-size: 11px;
+            font-weight: 600;
+            line-height: 1.4;
+        }
+
+        /* ---------- action dropdown ---------- */
+        .alot-tender-page .st-table-card .dropdown .st-action-btn {
+            height: 32px;
+            width: 32px;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            border: 1px solid #d0d5dd;
+            background: #fff;
+            color: #475569;
+        }
+
+        .alot-tender-page .st-table-card .dropdown .st-action-btn:hover {
+            background: #f1f5f9;
+            color: #0f172a;
+        }
+
+        .alot-tender-page .st-table-card .dropdown-menu {
+            min-width: 170px;
+            padding: 6px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            box-shadow: 0 8px 24px rgba(16, 24, 40, .12);
+        }
+
+        .alot-tender-page .st-table-card .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 10px;
+            border-radius: 6px;
+            font-size: 13.5px;
+            color: #334155;
+        }
+
+        .alot-tender-page .st-table-card .dropdown-item:hover {
+            background: #f1f5f9;
+            color: #0f172a;
+        }
+
+        .alot-tender-page .st-table-card .dropdown-item i {
+            width: 16px;
+            text-align: center;
+            color: #64748b;
         }
 
         /* ──────────────────────────────────────────────
-           Modern scrollable table — sticky first column
-           + custom scrollbars + header freeze
+           Modern scrollable table + custom scrollbars
            ────────────────────────────────────────────── */
         .dataTables_scrollBody {
             scroll-behavior: smooth;
@@ -452,40 +888,77 @@ inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_i
             scrollbar-color: #c1c1c1 #f1f1f1;
         }
 
-        /* Freeze first column (SNO/checkbox) during horizontal scroll */
-        .dataTables_scrollHead .table thead th:first-child,
-        .dataTables_scrollBody .table tbody td:first-child {
-            position: sticky;
-            left: 0;
-            z-index: 5;
-            background-color: #fff;
-            box-shadow: 2px 0 6px -2px rgba(0, 0, 0, 0.12);
-        }
-
-        .dataTables_scrollHead .table thead th:first-child {
-            z-index: 15;
-            background-color: #fff;
-        }
-
-        .dataTables_scrollBody .table.table-striped tbody tr:nth-child(even) td:first-child {
-            background-color: #f9f9f9;
-        }
-
-        .dataTables_scrollBody .table tbody tr:hover td:first-child {
-            background-color: #f1f1f1;
-        }
-
-        .dataTables_scrollBody .table tbody td:first-child .custom-control,
-        .dataTables_scrollBody .table tbody td:first-child .custom-checkbox {
-            background-color: inherit;
-        }
-
         .dataTables_scroll {
             max-height: 70vh;
         }
 
         .dt-responsive.table-responsive {
             overflow: visible !important;
+        }
+
+        /* DataTables bottom row */
+        .alot-tender-page .st-table-card .dataTables_wrapper > .row:last-child {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            margin: 0 !important;
+            padding-top: 4px;
+            background: #fff;
+        }
+
+        /* Prevent the info/pagination area from being clipped */
+        .alot-tender-page .st-table-card .dataTables_wrapper {
+            overflow: visible !important;
+        }
+
+        /* Scroll only the actual table body */
+        .alot-tender-page .st-table-card .dataTables_scroll {
+            overflow: visible !important;
+        }
+
+        .alot-tender-page .st-table-card .dataTables_scrollBody {
+            overflow-x: auto !important;
+            overflow-y: auto !important;
+        }
+
+        /* ---------- responsive ---------- */
+        @media (max-width: 991.98px) {
+            .alot-tender-page .st-filter-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 575.98px) {
+            .alot-tender-page .st-filter-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .alot-tender-page .st-filter-actions {
+                justify-content: stretch;
+            }
+
+            .alot-tender-page .st-filter-actions .btn {
+                flex: 1 1 auto;
+                justify-content: center;
+            }
+
+            .alot-tender-page .st-table-toolbar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .alot-tender-page .st-toolbar-left,
+            .alot-tender-page .st-toolbar-right {
+                width: 100%;
+            }
+
+            .alot-tender-page .st-toolbar-right {
+                margin-left: 0;
+                justify-content: flex-end;
+            }
         }
     </style>
 
@@ -553,31 +1026,21 @@ inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_i
     </header>
 
     <section class="pcoded-main-container">
-        <div class="pcoded-content">
-            <div class="page-header">
-                <div class="page-block">
-                    <div class="row align-items-center">
-                        <div class="col-md-12">
-                            <div class="page-header-title">
-                                <h5 class="m-b-10">Orders
-                                </h5>
-                            </div>
-                            <ul class="breadcrumb">
-                                <li class="breadcrumb-item"><a href="index.php"><i class="feather icon-home"></i></a>
-                                </li>
-                                <li class="breadcrumb-item"><a href="#!"></a></li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <div class="pcoded-content alot-tender-page">
             <div class="row">
-                <div class="col-md-6 col-xl-3">
-                    <div class="card bg-c-red order-card">
-                        <div class="card-body">
-                            <h6 class="text-white">Alot Tender</h6>
-                            <h2 class="text-right text-white"><i class="feather icon-home float-left"></i><span
-                                    id="category">
+                <div class="col-12">
+
+                    <div class="card st-kpi-card">
+
+                        <!-- KPI -->
+                        <div class="card-body st-kpi-body">
+                            <div class="st-kpi-icon">
+                                <i class="feather icon-home"></i>
+                            </div>
+
+                            <div class="st-kpi-meta">
+                                <span class="st-kpi-label">Alot Tender</span>
+                                <span class="st-kpi-value" id="category">
                                     <?php
                                     $alotTendersCountValue = 0; // Default value
                                     if ($isAdmin || hasPermission('Alot Tenders Count', $privileges, $roleData['role_name'])) {
@@ -587,207 +1050,202 @@ inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_i
                                     }
                                     echo $alotTendersCountValue;
                                     ?>
-                                </span></h2>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <?php
-            if ($isAdmin || hasPermission('Alot Tenders Filter', $privileges, $roleData['role_name'])) { ?>
-                <div class="page-header">
-                    <div class="page-block">
-                        <div class="row align-items-center">
-                            <div class="col-md-12">
-                                <!-- Filters Section -->
-                                <form method="get" id="filterForm">
-                                    <div class="row">
-                                        <div class="col-md-4">
-                                            <div class="form-group">
-                                                <label for="faculty">Department <span class="text-danger">*</span></label>
-                                                <select class="form-control" name="department-search"
-                                                    id="department-search">
-                                                    <option value="0">All</option>
-                                                    <?php foreach ($departments as $department) { ?>
-                                                        <option value="<?php echo $department['department_id']; ?>" <?php echo isset($_GET['department-search']) && $_GET['department-search'] == $department['department_id'] ? 'selected' : ''; ?>>
-                                                            <?php echo $department['department_name']; ?>
-                                                        </option>
-                                                    <?php } ?>
-                                                </select>
-                                                <div class="invalid-feedback">Please select a faculty.</div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <div class="form-group">
-                                                <label for="program">Section <span class="text-danger">*</span></label>
-                                                <select class="form-control" name="section-search" id="section-search">
-                                                    <option value="0">All</option>
-                                                    <?php foreach ($sections as $section) {
-                                                        $selectedSection = (isset($_GET['section-search']) && urldecode($_GET['section-search']) == $section['section_id']) ? 'selected' : '';
-
-                                                        ?>
-                                                        <option <?= $selectedSection ?>
-                                                            value="<?php echo $section['section_id']; ?>">
-                                                            <?php echo $section['section_name']; ?>
-                                                        </option>
-                                                    <?php } ?>
-                                                </select>
-                                                <div class="invalid-feedback">Please select a program.</div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <div class="form-group">
-                                                <label for="session">Division <span class="text-danger">*</span></label>
-                                                <select class="form-control" name="division-search" id="division-search">
-                                                    <option value="0">All</option>
-                                                    <?php foreach ($divisions as $division) { ?>
-                                                        <option value="<?php echo $division['division_id']; ?>" <?php echo isset($_GET['division-search']) && $_GET['division-search'] == $division['division_id'] ? 'selected' : ''; ?>>
-                                                            <?php echo $division['division_name']; ?>
-                                                        </option>
-                                                    <?php } ?>
-                                                </select>
-                                                <div class="invalid-feedback">Please select a session.</div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <div class="form-group">
-                                                <label for="semester">Sub Division <span
-                                                        class="text-danger">*</span></label>
-                                                <select class="form-control" name="sub-division-search"
-                                                    id="sub-division-search" required>
-                                                    <option value="0">All</option>
-
-                                                </select>
-                                                <div class="invalid-feedback">Please select a semester.</div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <div class="form-group">
-                                                <label for="semester">Firm <span class="text-danger">*</span></label>
-                                                <select class="form-control select-firm" name="firm" required>
-                                                    <option value="0">All</option>
-                                                    <?php foreach ($firms as $firm) {
-                                                        $selectedFirm = (isset($_GET['firm']) && urldecode($_GET['firm']) == $firm['firm_name']) ? 'selected' : '';
-                                                        ?>
-                                                        <option value="<?= htmlspecialchars($firm['firm_name']) ?>"
-                                                            <?= $selectedFirm ?>>
-                                                            <?= htmlspecialchars($firm['firm_name']) ?>
-                                                        </option>
-                                                    <?php } ?>
-                                                </select>
-                                                <div class="invalid-feedback">Please select a semester.</div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <div class="form-group">
-                                                <label for="semester">State <span class="text-danger">*</span></label>
-                                                <select class="form-control select-state" name="state" required>
-                                                    <option value="0">All</option>
-                                                    <?php foreach ($states as $state) {
-                                                        $selectedState = (isset($_GET['state']) && urldecode($_GET['state']) == $state['state_code']) ? 'selected' : '';
-                                                        ?>
-                                                        <option value="<?= $state['state_code'] ?>" <?= $selectedState ?>>
-                                                            <?= $state['state_name'] ?>
-                                                        </option>
-                                                    <?php } ?>
-                                                </select>
-                                                <div class="invalid-feedback">Please select a semester.</div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <div class="form-group">
-                                                <label for="semester">City <span class="text-danger">*</span></label>
-                                                <select class="form-control select-city" name="city">
-                                                    <option value="0">All</option>
-                                                </select>
-                                                <div class="invalid-feedback">Please select a semester.</div>
-                                            </div>
-                                        </div>
-
-                                        <!-- Buttons -->
-                                        <div class="col-md-6 col-sm-12 d-flex align-items-center mt-3">
-                                            <!-- Submit Button -->
-                                            <button type="submit" class="btn btn-primary btn-md d-flex align-items-center">
-                                                <i class="fas fa-search" style="margin-right: 8px;"></i> Search
-                                            </button>
-                                            &nbsp;
-                                            <!-- Reset Button -->
-                                            <a href="alot-tender.php"
-                                                class="btn btn-primary btn-md d-flex align-items-center"
-                                                id="filterResetButton">
-                                                <i class="fas fa-undo" style="margin-right: 8px;"></i>
-                                                Reset
-                                            </a>
-                                        </div>
-                                    </div>
-                                </form>
+                                </span>
                             </div>
                         </div>
-                    </div>
-                </div>
-            <?php } ?>
 
+                        <!-- Navigation -->
+                        <div class="st-kpi-breadcrumb">
+                            <ul class="breadcrumb">
+                                <li class="breadcrumb-item">
+                                    <a href="index.php">
+                                        <i class="feather icon-home"></i> Home
+                                    </a>
+                                </li>
+
+                                <li class="breadcrumb-item active">
+                                    Alot Tender
+                                </li>
+                            </ul>
+                        </div>
+
+                    </div>
+
+                </div>
+            </div>
             <div class="row">
                 <div class="col-sm-12">
-                    <div class="card">
-                        <div class="card-header table-card-header">
-                        </div>
-                        <div class="card-body">
-                            <div class="dt-responsive">
-                                <?php
-                                if (isset($_GET['status'])) {
-                                    $st = $_GET['status'];
-                                    $st1 = base64_decode($st);
-                                    if ($st1 > 0) {
-                                        echo " <div class='alert alert-success alert-dismissible fade show' role='alert' style='font-size:16px;' id='updateuser'>
-                                        <strong><i class='feather icon-check'></i>Thanks!</strong> Tender has been Updated Successfully.
-                                        <button type='button' class='close' data-dismiss='alert' aria-label='Close'>
-                                            <span aria-hidden='true'>&times;</span>
-                                        </button>
-                                        </div> ";
-                                    } else {
-                                        echo " <div class='alert alert-danger alert-dismissible fade show' role='alert' style='font-size:16px;' id='updateuser'>
-                                        <strong>Error!</strong> Tender has been not Updated
-                                        <button type='button' class='close' data-dismiss='alert' aria-label='Close'>
-                                            <span aria-hidden='true'>&times;</span>
-                                        </button>
-                                        </div> ";
-                                    }
-                                }
-                                ?>
-                                <br />
-                                <?php
-                                if ($isAdmin || hasPermission('Bulk Delete Alot Tender', $privileges, $roleData['role_name'])) {
-                                    echo "
-                                <a href='#' id='recycle_records' class='btn btn-danger me-3 rounded-sm'> 
-                                <i class='feather icon-trash'></i>
-                                Move to Bin</a>&nbsp&nbsp&nbsp&nbsp
-                                ";
-                                } ?>
-                                <div class="dt-buttons btn-group">
-                                    <?php
-                                    if ($isAdmin || hasPermission('Alot Tender Excel', $privileges, $roleData['role_name'])) { ?>
-                                        <button class="btn btn-secondary buttons-excel buttons-html5 btn-primary rounded-sm"
-                                            tabindex="0" aria-controls="basic-btn2" type="button"
-                                            onclick="exportTableToExcel()" title="Export to Excel"><span><i
-                                                    class="fas fa-file-excel"></i>
-                                                Excel</span></button>
-                                    <?php } ?>
-                                    <?php
-                                    if ($isAdmin || hasPermission('Alot Tender CSV', $privileges, $roleData['role_name'])) { ?>
-                                        <button class="btn btn-secondary buttons-csv buttons-html5 btn-primary rounded-sm"
-                                            tabindex="0" aria-controls="basic-btn2" type="button"
-                                            onclick="exportTableToCSV()" title="Export to CSV"><span><i
-                                                    class="fas fa-file-csv"></i> CSV</span></button>
-                                    <?php } ?>
-                                    <?php
-                                    if ($isAdmin || hasPermission('Alot Tender Print', $privileges, $roleData['role_name'])) { ?>
-                                        <button class="btn btn-secondary buttons-print btn-primary rounded-sm" tabindex="0"
-                                            onclick="printTable()" aria-controls="basic-btn2" type="button"
-                                            title="Print"><span><i class="fas fa-print"></i> Print</span></button>
-                                    <?php } ?>
+                    <div class="card st-table-card">
+                        <div class="card-body st-table-body">
 
+                            <?php
+                            if (isset($_GET['status'])) {
+                                $st = $_GET['status'];
+                                $st1 = base64_decode($st);
+                                if ($st1 > 0) {
+                                    echo " <div class='alert alert-success alert-dismissible fade show' role='alert' style='font-size:16px;' id='updateuser'>
+                                    <strong><i class='feather icon-check'></i>Thanks!</strong> Tender has been Updated Successfully.
+                                    <button type='button' class='close' data-dismiss='alert' aria-label='Close'>
+                                        <span aria-hidden='true'>&times;</span>
+                                    </button>
+                                    </div> ";
+                                } else {
+                                    echo " <div class='alert alert-danger alert-dismissible fade show' role='alert' style='font-size:16px;' id='updateuser'>
+                                    <strong>Error!</strong> Tender has been not Updated
+                                    <button type='button' class='close' data-dismiss='alert' aria-label='Close'>
+                                        <span aria-hidden='true'>&times;</span>
+                                    </button>
+                                    </div> ";
+                                }
+                            }
+                            ?>
+
+                            <div class="st-table-toolbar">
+                                <div class="st-toolbar-left">
+                                    <h6 class="st-table-title">Alot Tenders</h6>
+                                    <?php
+                                    if ($isAdmin || hasPermission('Bulk Delete Alot Tender', $privileges, $roleData['role_name'])) {
+                                        echo "<a href='javascript:void(0);' id='recycle_records' class='btn btn-danger'>
+                                        <i class='feather icon-trash'></i> Move to Bin
+                                        </a>";
+                                    }
+                                    ?>
+                                    <?php if ($isAdmin || hasPermission('Alot Tender Excel', $privileges, $roleData['role_name'])) { ?>
+                                        <button class="btn buttons-excel" tabindex="0" aria-controls="basic-btn2"
+                                            type="button" onclick="exportTableToExcel()" title="Export to Excel">
+                                            <span><i class="fas fa-file-excel"></i> Excel</span>
+                                        </button>
+                                    <?php } ?>
+                                    <?php if ($isAdmin || hasPermission('Alot Tender CSV', $privileges, $roleData['role_name'])) { ?>
+                                        <button class="btn buttons-csv" tabindex="0" aria-controls="basic-btn2"
+                                            type="button" onclick="exportTableToCSV()" title="Export to CSV">
+                                            <span><i class="fas fa-file-csv"></i> CSV</span>
+                                        </button>
+                                    <?php } ?>
+                                    <?php if ($isAdmin || hasPermission('Alot Tender Print', $privileges, $roleData['role_name'])) { ?>
+                                        <button class="btn buttons-print" tabindex="0" onclick="printTable()"
+                                            aria-controls="basic-btn2" type="button" title="Print">
+                                            <span><i class="fas fa-print"></i> Print</span>
+                                        </button>
+                                    <?php } ?>
                                 </div>
+                                <?php if ($isAdmin || hasPermission('Alot Tenders Filter', $privileges, $roleData['role_name'])) { ?>
+                                    <div class="st-toolbar-right">
+                                        <button class="btn" type="button" data-bs-toggle="collapse"
+                                            data-bs-target="#alotTenderFilters" aria-expanded="false"
+                                            aria-controls="alotTenderFilters" title="Filters">
+                                            <i class="feather icon-filter"></i> Filters
+                                        </button>
+                                    </div>
+                                <?php } ?>
+                            </div>
+
+                            <?php if ($isAdmin || hasPermission('Alot Tenders Filter', $privileges, $roleData['role_name'])) { ?>
+                                <div class="collapse st-filter-collapse" id="alotTenderFilters">
+                                    <div class="st-filter-panel">
+                                        <div class="st-filter-body">
+                                            <div class="st-filter-head">
+                                                <h6 class="st-filter-title">Filters</h6>
+                                                <p class="st-filter-sub">Narrow down alot tenders</p>
+                                            </div>
+                                            <form method="get" id="filterForm">
+                                                <div class="st-filter-grid">
+                                                    <div class="st-filter-field">
+                                                        <label for="department-search">Department</label>
+                                                        <select class="form-control" name="department-search"
+                                                            id="department-search">
+                                                            <option value="0">All</option>
+                                                            <?php foreach ($departments as $department) { ?>
+                                                                <option value="<?php echo $department['department_id']; ?>" <?php echo isset($_GET['department-search']) && $_GET['department-search'] == $department['department_id'] ? 'selected' : ''; ?>>
+                                                                    <?php echo $department['department_name']; ?>
+                                                                </option>
+                                                            <?php } ?>
+                                                        </select>
+                                                    </div>
+                                                    <div class="st-filter-field">
+                                                        <label for="section-search">Section</label>
+                                                        <select class="form-control" name="section-search" id="section-search">
+                                                            <option value="0">All</option>
+                                                            <?php foreach ($sections as $section) {
+                                                                $selectedSection = (isset($_GET['section-search']) && urldecode($_GET['section-search']) == $section['section_id']) ? 'selected' : '';
+
+                                                                ?>
+                                                                <option <?= $selectedSection ?>
+                                                                    value="<?php echo $section['section_id']; ?>">
+                                                                    <?php echo $section['section_name']; ?>
+                                                                </option>
+                                                            <?php } ?>
+                                                        </select>
+                                                    </div>
+                                                    <div class="st-filter-field">
+                                                        <label for="division-search">Division</label>
+                                                        <select class="form-control" name="division-search" id="division-search">
+                                                            <option value="0">All</option>
+                                                            <?php foreach ($divisions as $division) { ?>
+                                                                <option value="<?php echo $division['division_id']; ?>" <?php echo isset($_GET['division-search']) && $_GET['division-search'] == $division['division_id'] ? 'selected' : ''; ?>>
+                                                                    <?php echo $division['division_name']; ?>
+                                                                </option>
+                                                            <?php } ?>
+                                                        </select>
+                                                    </div>
+                                                    <div class="st-filter-field">
+                                                        <label for="sub-division-search">Sub Division</label>
+                                                        <select class="form-control" name="sub-division-search"
+                                                            id="sub-division-search">
+                                                            <option value="0">All</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="st-filter-field">
+                                                        <label for="firm">Firm</label>
+                                                        <select class="form-control select-firm" name="firm" id="firm">
+                                                            <option value="0">All</option>
+                                                            <?php foreach ($firms as $firm) {
+                                                                $selectedFirm = (isset($_GET['firm']) && urldecode($_GET['firm']) == $firm['firm_name']) ? 'selected' : '';
+                                                                ?>
+                                                                <option value="<?= htmlspecialchars($firm['firm_name']) ?>"
+                                                                    <?= $selectedFirm ?>>
+                                                                    <?= htmlspecialchars($firm['firm_name']) ?>
+                                                                </option>
+                                                            <?php } ?>
+                                                        </select>
+                                                    </div>
+                                                    <div class="st-filter-field">
+                                                        <label for="state">State</label>
+                                                        <select class="form-control select-state" name="state" id="state">
+                                                            <option value="0">All</option>
+                                                            <?php foreach ($states as $state) {
+                                                                $selectedState = (isset($_GET['state']) && urldecode($_GET['state']) == $state['state_code']) ? 'selected' : '';
+                                                                ?>
+                                                                <option value="<?= $state['state_code'] ?>" <?= $selectedState ?>>
+                                                                    <?= $state['state_name'] ?>
+                                                                </option>
+                                                            <?php } ?>
+                                                        </select>
+                                                    </div>
+                                                    <div class="st-filter-field">
+                                                        <label for="city">City</label>
+                                                        <select class="form-control select-city" name="city" id="city">
+                                                            <option value="0">All</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                                <div class="st-filter-actions">
+                                                    <a href="alot-tender.php" class="btn btn-outline-secondary"
+                                                        id="filterResetButton">
+                                                        <i class="feather icon-refresh-ccw"></i> Reset
+                                                    </a>
+                                                    <button type="submit" class="btn btn-primary">
+                                                        <i class="feather icon-search"></i> Search
+                                                    </button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            <?php } ?>
+
+                            <div class="dt-responsive">
+
                                 <table id="basic-btn2" class="table table-striped table-bordered">
                                     <thead>
                                         <tr>
@@ -853,12 +1311,10 @@ inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_i
                                                     <?php echo $row['tentative_cost']; ?> rupees /-
                                                 </td>
 
-                                                <td>
-                                                    <span
-                                                        class='btn btn-success'><?php echo $row['reminder_days']; ?>days</span>
-                                                    <br /><br />
-                                                    Alloted Date : <br />
-                                                    <?php echo date_format(date_create($row['allotted_at']), "d-m-Y "); ?>
+                                                <td class="td-reminder">
+                                                    <span class='badge-days'><?php echo $row['reminder_days']; ?> days</span>
+                                                    <br />
+                                                    Alloted: <?php echo date_format(date_create($row['allotted_at']), "d-m-Y"); ?>
                                                     <br />
                                                     <?php if (isset($row['file_name']) && $row['file_name'] == null) { ?>
                                                         <a href="<?php echo '../login/tender/' . $row['file_name']; ?>"
@@ -893,51 +1349,48 @@ inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_i
 
 
                                                 <td>
-                                                    <div class='d-flex flex-column gap-2'>
-                                                        <!-- Three-dot dropdown for other actions -->
-                                                        <div class='dropdown'>
-                                                            <button class='btn btn-secondary' type='button'
-                                                                id='dropdownMenu<?php echo $row['t_id']; ?>'
-                                                                data-bs-toggle='dropdown' aria-expanded='false'>
-                                                                <i class='feather icon-more-vertical'></i>
-                                                            </button>
-                                                            <ul class='dropdown-menu'
-                                                                aria-labelledby='dropdownMenu<?php echo $row['t_id']; ?>'>
-                                                                <?php if ($isAdmin || hasPermission('Award Alot Tender', $privileges, $roleData['role_name'])) { ?>
-                                                                    <li>
-                                                                        <a class='dropdown-item makeAward'
-                                                                            href='javascript:void(0);'
-                                                                            id='<?php echo $row['t_id']; ?>'
-                                                                            title='Click To Make Award'>
-                                                                            <i class='feather icon-award'></i> Award
-                                                                        </a>
-                                                                    </li>
-                                                                <?php } ?>
-                                                                <?php if ($isAdmin || hasPermission('Delete Alot Tender', $privileges, $roleData['role_name'])) { ?>
-                                                                    <li>
-                                                                        <a class='dropdown-item recyclebutton'
-                                                                            href='javascript:void(0);'
-                                                                            id='<?php echo $row['t_id']; ?>'
-                                                                            title='Click To Delete'>
-                                                                            <i class='feather icon-trash'></i> Move to Bin
-                                                                        </a>
-                                                                    </li>
-                                                                <?php } ?>
-                                                                <?php
-                                                                $res = $row['t_id'];
-                                                                $res = base64_encode($res);
+                                                    <div class="dropdown">
+                                                        <button class="btn btn-secondary st-action-btn" type="button"
+                                                            id="dropdownMenu<?php echo $row['t_id']; ?>"
+                                                            data-bs-toggle="dropdown" aria-expanded="false">
+                                                            <i class="feather icon-more-vertical"></i>
+                                                        </button>
+                                                        <ul class="dropdown-menu"
+                                                            aria-labelledby="dropdownMenu<?php echo $row['t_id']; ?>">
+                                                            <?php if ($isAdmin || hasPermission('Award Alot Tender', $privileges, $roleData['role_name'])) { ?>
+                                                                <li>
+                                                                    <a class='dropdown-item makeAward'
+                                                                        href='javascript:void(0);'
+                                                                        id='<?php echo $row['t_id']; ?>'
+                                                                        title='Click To Make Award'>
+                                                                        <i class='feather icon-award'></i> Award
+                                                                    </a>
+                                                                </li>
+                                                            <?php } ?>
+                                                            <?php if ($isAdmin || hasPermission('Delete Alot Tender', $privileges, $roleData['role_name'])) { ?>
+                                                                <li>
+                                                                    <a class='dropdown-item recyclebutton'
+                                                                        href='javascript:void(0);'
+                                                                        id='<?php echo $row['t_id']; ?>'
+                                                                        title='Click To Delete'>
+                                                                        <i class='feather icon-trash'></i> Move to Bin
+                                                                    </a>
+                                                                </li>
+                                                            <?php } ?>
+                                                            <?php
+                                                            $res = $row['t_id'];
+                                                            $res = base64_encode($res);
 
-                                                                if ($isAdmin || hasPermission('Re-Alot Alot Tender', $privileges, $roleData['role_name'])) {
-                                                                    ?>
-                                                                    <li>
-                                                                        <a class='dropdown-item'
-                                                                            href='alot-tender-update.php?id=<?php echo $res; ?>'>
-                                                                            <i class='feather icon-repeat'></i> Re-Alot
-                                                                        </a>
-                                                                    </li>
-                                                                <?php } ?>
-                                                            </ul>
-                                                        </div>
+                                                            if ($isAdmin || hasPermission('Re-Alot Alot Tender', $privileges, $roleData['role_name'])) {
+                                                                ?>
+                                                                <li>
+                                                                    <a class='dropdown-item'
+                                                                        href='alot-tender-update.php?id=<?php echo $res; ?>'>
+                                                                        <i class='feather icon-repeat'></i> Re-Alot
+                                                                    </a>
+                                                                </li>
+                                                            <?php } ?>
+                                                        </ul>
                                                     </div>
                                                 </td>
 
@@ -1215,9 +1668,7 @@ inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_i
                  * scrollX — enables horizontal scrollbar when columns overflow.
                  * scrollY — constrains table body to ~70vh with vertical scroll.
                  * fixedHeader — keeps the <thead> pinned to top during vertical scroll.
-                 * First-column freeze during horizontal scroll is handled via CSS
-                 *   position:sticky (see <style> block) to avoid DOM duplication issues
-                 *   that FixedColumns extension would cause with checkbox event handlers.
+                 * SNO column is NOT frozen — all columns scroll together.
                  */
                 scrollX: true,
                 scrollY: '70vh',

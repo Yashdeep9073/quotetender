@@ -384,66 +384,725 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
     <link rel="shortcut icon" href="../assets/images/x-icon.png" type="image/x-icon">
 
     <link rel="stylesheet" href="assets/css/plugins/dataTables.bootstrap4.min.css">
+    <link rel="stylesheet" href="assets/css/plugins/fixedHeader.bootstrap4.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link rel="stylesheet" href="assets/css/style.css">
     <style>
-        .dt-buttons {
-            margin-top: 5px !important;
+        /* ==========================================================
+           Award Tender page — same UI design system as Sent Tender /
+           Tender Request.
+           ========================================================== */
+        .award-tender-page {
+            padding: 16px;
         }
 
-        .btn-group {
-            display: inline-block;
-            /* margin: 0 5px; */
-            padding: 8px 16px;
+        /* ---------- shared card base ---------- */
+        .award-tender-page .card {
+            border: 0;
             border-radius: 10px;
-            color: white;
+            box-shadow: 0 1px 2px rgba(16, 24, 40, .05), 0 1px 3px rgba(16, 24, 40, .08);
+            margin-bottom: 16px;
+        }
+
+        /* ---------- page header ---------- */
+        .award-tender-page .st-page-header {
+            padding: 12px 20px;
+            margin-bottom: 16px;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 1px 2px rgba(16, 24, 40, .05), 0 1px 3px rgba(16, 24, 40, .08);
+        }
+
+        .award-tender-page .st-page-header .page-block {
+            padding: 0;
+        }
+
+        .award-tender-page .st-page-header .col-md-12 {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .award-tender-page .st-page-header .page-header-title {
+            margin: 0;
+        }
+
+        .award-tender-page .st-page-header .page-header-title h5 {
+            margin: 0;
+            padding-bottom: 0;
+            border-bottom: 0;
+            font-size: 18px;
+            font-weight: 600;
+            color: #0f172a;
+        }
+
+        .award-tender-page .st-page-header .breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin: 0;
+            padding: 0;
+            background: transparent;
+            font-size: 12.5px;
+        }
+
+        .award-tender-page .st-page-header .breadcrumb a {
+            color: #64748b;
+        }
+
+        .award-tender-page .st-page-header .breadcrumb .breadcrumb-item.active {
+            color: #94a3b8;
+        }
+
+        /* ---------- KPI card (red) ---------- */
+        .award-tender-page .st-kpi-card {
+            margin-bottom: 14px;
+        }
+
+        .award-tender-page .st-kpi-card .st-kpi-body {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px 20px;
+            text-align: left;
+        }
+
+        .award-tender-page .st-kpi-icon {
+            flex: 0 0 auto;
+            width: 48px;
+            height: 48px;
+            border-radius: 10px;
+            background: #fee2e2;
+            color: #dc2626;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .award-tender-page .st-kpi-meta {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .award-tender-page .st-kpi-label {
+            font-size: 13px;
+            font-weight: 500;
+            color: #64748b;
+        }
+
+        .award-tender-page .st-kpi-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #0f172a;
+            line-height: 1.2;
+        }
+
+        /* ---------- breadcrumb inside KPI card ---------- */
+        .award-tender-page .st-kpi-breadcrumb {
+            padding: 0 20px 12px;
+        }
+
+        .award-tender-page .st-kpi-breadcrumb .breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin: 0;
+            padding: 0;
+            background: transparent;
+            font-size: 12px;
+        }
+
+        .award-tender-page .st-kpi-breadcrumb .breadcrumb a {
+            color: #64748b;
+            text-decoration: none;
+        }
+
+        .award-tender-page .st-kpi-breadcrumb .breadcrumb a:hover {
+            color: #0f172a;
+        }
+
+        .award-tender-page .st-kpi-breadcrumb .breadcrumb-item.active {
+            color: #94a3b8;
+        }
+
+        .award-tender-page .st-kpi-breadcrumb .breadcrumb-item + .breadcrumb-item::before {
+            color: #cbd5e1;
+        }
+
+        /* ---------- filter panel ---------- */
+        .award-tender-page .st-filter-panel {
+            padding: 16px;
+            margin-bottom: 14px;
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+        }
+
+        .award-tender-page .st-filter-panel .st-filter-body {
+            padding: 0;
+            text-align: left;
+        }
+
+        .award-tender-page .st-filter-head {
+            margin-bottom: 16px;
+        }
+
+        .award-tender-page .st-filter-title {
+            margin: 0 0 2px;
+            font-size: 15px;
+            font-weight: 600;
+            color: #0f172a;
+        }
+
+        .award-tender-page .st-filter-sub {
+            margin: 0;
+            font-size: 13px;
+            color: #94a3b8;
+        }
+
+        .award-tender-page .st-filter-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 16px;
+        }
+
+        .award-tender-page .st-filter-field label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            color: #475569;
+        }
+
+        .award-tender-page .st-filter-grid .select2-container {
+            width: 100% !important;
+        }
+
+        .award-tender-page .st-filter-grid .select2-container .select2-selection--single {
+            height: 42px;
+            border: 1px solid #d0d5dd;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+        }
+
+        .award-tender-page .st-filter-grid .select2-container .select2-selection--single .select2-selection__rendered {
+            line-height: 40px;
+            padding-left: 12px;
+            padding-right: 28px;
             font-size: 14px;
-            font-weight: bold;
-            text-transform: uppercase;
-            cursor: pointer;
-
+            color: #1e293b;
         }
 
-        .dt-buttons .dt-button:hover {
-            background-color: #0056b3;
-            /* Darker blue on hover */
-            transform: scale(1.05);
-            /* Slight zoom effect */
+        .award-tender-page .st-filter-grid .select2-container .select2-selection--single .select2-selection__arrow {
+            height: 40px;
+            right: 8px;
         }
 
-        .dt-buttons .buttons-copy {
-            background-color: #ff9f43;
-            /* Grey for Copy */
+        .award-tender-page .st-filter-grid .select2-container--default .select2-selection--single .select2-selection__placeholder {
+            color: #94a3b8;
         }
 
-        .dt-buttons .buttons-copy:hover {
-            background-color: #ff9f43;
+        .award-tender-page .st-filter-grid .select2-container--default.select2-container--focus .select2-selection--single,
+        .award-tender-page .st-filter-grid .select2-container--default.select2-container--open .select2-selection--single {
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, .12);
         }
 
-        .dt-buttons .buttons-excel {
-            background-color: #28c76f;
-            /* Green for Excel */
+        .award-tender-page .select2-container--default .select2-dropdown {
+            border-color: #e2e8f0;
+            border-radius: 8px;
+            box-shadow: 0 8px 24px rgba(16, 24, 40, .12);
         }
 
-        .dt-buttons .buttons-excel:hover {
-            background-color: #218838;
+        .award-tender-page .st-filter-actions {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 20px;
         }
 
-        .dt-buttons .buttons-csv {
-            background-color: #00cfe8;
-            /* Teal for CSV */
+        .award-tender-page .st-filter-actions .btn {
+            height: 40px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 0 18px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
         }
 
-        .dt-buttons .buttons-csv:hover {
-            background-color: #138496;
+        .award-tender-page .st-filter-actions .btn-outline-secondary {
+            background: #fff;
+            border: 1px solid #d0d5dd;
+            color: #475569;
         }
 
-        .dt-buttons .buttons-print {
-            background-color: #ff4560;
+        .award-tender-page .st-filter-actions .btn-outline-secondary:hover {
+            background: #f1f5f9;
+            color: #0f172a;
+            border-color: #cbd5e1;
         }
 
-        .dt-buttons .buttons-print:hover {
-            background-color: #c82333;
+        .award-tender-page .st-filter-actions .btn-primary {
+            background: #33cc33;
+            border-color: #33cc33;
+        }
+
+        .award-tender-page .st-filter-actions .btn-primary:hover {
+            background: #28a428;
+            border-color: #28a428;
+        }
+
+        /* ---------- table toolbar ---------- */
+        .award-tender-page .st-table-card .st-table-body {
+            padding: 20px;
+            text-align: left;
+        }
+
+        .award-tender-page .st-table-body .alert {
+            margin-bottom: 16px;
+            border-radius: 8px;
+        }
+
+        .award-tender-page .st-table-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+            padding: 12px 16px;
+            margin-bottom: 12px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+        }
+
+        .award-tender-page .st-toolbar-left,
+        .award-tender-page .st-toolbar-right {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .award-tender-page .st-toolbar-left {
+            flex: 1 1 auto;
+        }
+
+        .award-tender-page .st-toolbar-right {
+            flex: 0 0 auto;
+            margin-left: auto;
+        }
+
+        .award-tender-page .st-table-title {
+            margin: 0 8px 0 0;
+            font-size: 15px;
+            font-weight: 600;
+            color: #0f172a;
+        }
+
+        .award-tender-page .st-table-toolbar .btn {
+            height: 36px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 0 14px;
+            border-radius: 8px;
+            font-size: 13.5px;
+            font-weight: 500;
+        }
+
+        .award-tender-page .st-table-toolbar .btn-danger {
+            background: #dc2626;
+            border-color: #dc2626;
+        }
+
+        .award-tender-page .st-table-toolbar .btn-danger:hover {
+            background: #b91c1c;
+            border-color: #b91c1c;
+        }
+
+        .award-tender-page .st-toolbar-left .buttons-excel,
+        .award-tender-page .st-toolbar-left .buttons-csv,
+        .award-tender-page .st-toolbar-left .buttons-print,
+        .award-tender-page .st-toolbar-right .btn {
+            background: #fff;
+            border: 1px solid #d0d5dd;
+            color: #475569;
+        }
+
+        .award-tender-page .st-toolbar-left .buttons-excel:hover,
+        .award-tender-page .st-toolbar-left .buttons-csv:hover,
+        .award-tender-page .st-toolbar-left .buttons-print:hover,
+        .award-tender-page .st-toolbar-right .btn:hover {
+            background: #f1f5f9;
+            color: #0f172a;
+            border-color: #cbd5e1;
+        }
+
+        .award-tender-page .st-toolbar-left .buttons-excel i {
+            color: #16a34a;
+        }
+
+        .award-tender-page .st-toolbar-left .buttons-csv i {
+            color: #0891b2;
+        }
+
+        .award-tender-page .st-toolbar-left .buttons-print i {
+            color: #64748b;
+        }
+
+        /* ---------- DataTable wrapper controls ---------- */
+        .award-tender-page .st-table-card .dataTables_wrapper > .row:first-child {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: nowrap;
+            gap: 8px;
+            margin: 0;
+        }
+
+        .award-tender-page .st-table-card .dataTables_wrapper > .row:first-child > div {
+            width: auto !important;
+            padding: 0;
+            max-width: none;
+        }
+
+        .award-tender-page .st-table-card .dataTables_wrapper > .row:first-child > div:first-child {
+            flex: 0 0 auto;
+        }
+
+        .award-tender-page .st-table-card .dataTables_wrapper > .row:first-child > div:last-child {
+            flex: 0 0 auto;
+            margin-left: auto;
+        }
+
+        .award-tender-page .st-table-card .dataTables_length,
+        .award-tender-page .st-table-card .dataTables_filter {
+            padding: 4px 0 12px;
+        }
+
+        .award-tender-page .st-table-card .dataTables_length label,
+        .award-tender-page .st-table-card .dataTables_filter label {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin: 0;
+            font-size: 13px;
+            font-weight: 500;
+            color: #475569;
+            white-space: nowrap;
+        }
+
+        .award-tender-page .st-table-card .dataTables_filter {
+            text-align: right;
+        }
+
+        .award-tender-page .st-table-card .dataTables_length select,
+        .award-tender-page .st-table-card .dataTables_filter input {
+            height: 34px;
+            border: 1px solid #d0d5dd;
+            border-radius: 6px;
+            background: #fff;
+            font-size: 13px;
+            color: #1e293b;
+        }
+
+        .award-tender-page .st-table-card .dataTables_length select {
+            padding: 0 8px;
+        }
+
+        .award-tender-page .st-table-card .dataTables_filter input {
+            padding: 0 10px;
+            width: clamp(140px, 24vw, 260px);
+            margin-left: 0;
+        }
+
+        .award-tender-page .st-table-card .dataTables_info {
+            padding-top: 12px;
+            font-size: 13px;
+            color: #64748b;
+        }
+
+        .award-tender-page .st-table-card .dataTables_paginate {
+            padding-top: 8px;
+        }
+
+        /* ---------- table ---------- */
+        .award-tender-page .st-table-card .table {
+            margin-bottom: 0;
+            border-color: #e2e8f0;
+        }
+
+        .award-tender-page .st-table-card .table thead th {
+            background: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 10px 12px;
+            font-size: 12.5px;
+            font-weight: 600;
+            color: #334155;
+            white-space: nowrap;
+            vertical-align: middle;
+        }
+
+        .award-tender-page .st-table-card .table tbody td {
+            padding: 8px 12px;
+            font-size: 13px;
+            color: #334155;
+            vertical-align: middle;
+            white-space: nowrap;
+        }
+
+        .award-tender-page .st-table-card .table tbody tr:hover td {
+            background-color: #f1f5f9;
+        }
+
+        .award-tender-page .st-table-card .table .tender_id {
+            color: #2563eb;
+            font-weight: 600;
+        }
+
+        /* ---------- user / state & city stacked info lines ---------- */
+        .award-tender-page .st-info-lines {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            line-height: 1.4;
+        }
+
+        .award-tender-page .st-info-lines .st-info-line {
+            white-space: nowrap;
+        }
+
+        /* ---------- status badge ---------- */
+        .award-tender-page .st-status-badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 600;
+            background: #eef2ff;
+            color: #4f46e5;
+        }
+
+        /* ---------- action buttons ---------- */
+        .award-tender-page .st-table-card .st-action-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            height: 32px;
+            padding: 0 12px;
+            border-radius: 6px;
+            border: 1px solid #d0d5dd;
+            background: #fff;
+            color: #475569;
+            font-size: 13px;
+            font-weight: 500;
+            text-decoration: none;
+        }
+
+        .award-tender-page .st-table-card .st-action-link:hover {
+            background: #f1f5f9;
+            color: #0f172a;
+            text-decoration: none;
+        }
+
+        .award-tender-page .st-table-card .st-action-link i {
+            color: #64748b;
+        }
+
+        .award-tender-page .st-table-card .st-action-link.st-action-success i {
+            color: #16a34a;
+        }
+
+        /* ---------- full-width table / no right-side whitespace ---------- */
+        .award-tender-page .dt-responsive {
+            width: 100% !important;
+            max-width: 100% !important;
+        }
+
+        .award-tender-page .dataTables_wrapper {
+            width: 100% !important;
+            max-width: 100% !important;
+        }
+
+        .award-tender-page .dataTables_scroll {
+            width: 100% !important;
+            max-width: 100% !important;
+        }
+
+        .award-tender-page .dataTables_scrollHead,
+        .award-tender-page .dataTables_scrollBody {
+            width: 100% !important;
+            max-width: 100% !important;
+        }
+
+        .award-tender-page .dataTables_scrollHeadInner {
+            width: 100% !important;
+        }
+
+        .award-tender-page .dataTables_scrollHeadInner table {
+            width: 100% !important;
+        }
+
+        .award-tender-page .dataTables_scrollBody {
+            overflow-x: auto !important;
+        }
+
+        /* ---------- scrollable table + custom scrollbars ---------- */
+        .dataTables_scrollBody {
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .dataTables_scrollBody::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        .dataTables_scrollBody::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .dataTables_scrollBody::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 4px;
+            border: 1px solid transparent;
+            background-clip: padding-box;
+        }
+
+        .dataTables_scrollBody::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+
+        .dataTables_scrollBody::-webkit-scrollbar-corner {
+            background: #f1f1f1;
+        }
+
+        .dataTables_scrollBody {
+            scrollbar-width: thin;
+            scrollbar-color: #c1c1c1 #f1f1f1;
+        }
+
+        .dataTables_scroll {
+            max-height: 70vh;
+        }
+
+        .dt-responsive.table-responsive {
+            overflow: visible !important;
+        }
+
+        /* ---------- responsive ---------- */
+        @media (max-width: 991.98px) {
+            .award-tender-page .st-filter-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 575.98px) {
+            .award-tender-page .st-filter-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .award-tender-page .st-filter-actions {
+                justify-content: stretch;
+            }
+
+            .award-tender-page .st-filter-actions .btn {
+                flex: 1 1 auto;
+                justify-content: center;
+            }
+
+            .award-tender-page .st-table-toolbar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .award-tender-page .st-toolbar-left,
+            .award-tender-page .st-toolbar-right {
+                width: 100%;
+            }
+
+            .award-tender-page .st-toolbar-right {
+                margin-left: 0;
+                justify-content: flex-end;
+            }
+        }
+
+        /* ---------- final table theme (green header) ---------- */
+        .award-tender-page .st-table-card .table thead th {
+            background-color: #33cc33 !important;
+            color: #ffffff !important;
+            border-color: #33cc33 !important;
+        }
+
+        .award-tender-page .dataTables_scrollHead .table thead th:first-child {
+            background-color: #33cc33 !important;
+            color: #ffffff !important;
+            border-color: #33cc33 !important;
+        }
+
+        .award-tender-page .st-table-card .table tbody .tender_id,
+        .award-tender-page .st-table-card .table tbody a.tender_id {
+            color: #33cc33 !important;
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        .award-tender-page .st-table-card .table tbody .tender_id:hover,
+        .award-tender-page .st-table-card .table tbody a.tender_id:hover {
+            color: #28a428 !important;
+            text-decoration: underline;
+        }
+
+        /* Keep "Showing 1 to 100..." OUTSIDE the scrollable table */
+        .award-tender-page .st-table-card .dataTables_info {
+            position: relative !important;
+            z-index: 10;
+            display: block !important;
+            width: 100% !important;
+            padding: 12px 0 4px !important;
+            margin: 0 !important;
+            background: #fff !important;
+            color: #64748b !important;
+            font-size: 13px;
+            line-height: 20px;
+            clear: both;
+        }
+
+        .award-tender-page .st-table-card .dataTables_wrapper > .row:last-child {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            margin: 0 !important;
+            padding-top: 8px;
+            background: #fff;
+        }
+
+        .award-tender-page .st-table-card .dataTables_wrapper {
+            overflow: visible !important;
+        }
+
+        .award-tender-page .st-table-card .dataTables_scroll {
+            overflow: visible !important;
+        }
+
+        .award-tender-page .st-table-card .dataTables_scrollBody {
+            overflow-x: auto !important;
+            overflow-y: auto !important;
         }
     </style>
 </head>
@@ -512,36 +1171,27 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
 
 
     <section class="pcoded-main-container">
-        <div class="pcoded-content">
-            <div class="page-header">
-                <div class="page-block">
-                    <div class="row align-items-center">
-                        <div class="col-md-12">
-                            <div class="page-header-title">
-                                <h5 class="m-b-10"> List of Award Tender
-                                </h5>
-                            </div>
-                            <ul class="breadcrumb">
-                                <li class="breadcrumb-item"><a href="index.php"><i class="feather icon-home"></i></a>
-                                </li>
-                                <li class="breadcrumb-item"><a href="#!"></a></li>
-                            </ul>
+        <div class="pcoded-content award-tender-page">
 
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <!-- KPI + Navigation (combined card, red) -->
             <div class="row">
-                <div class="col-md-6 col-xl-3">
-                    <div class="card bg-c-yellow order-card">
-                        <div class="card-body">
-                            <h6 class="text-white">Award Tender</h6>
-                            <h2 class="text-right text-white"><i class="feather icon-award float-left"></i>
-                                <span id="category">
+                <div class="col-12">
 
+                    <div class="card st-kpi-card st-kpi-red">
+
+                        <!-- KPI -->
+                        <div class="card-body st-kpi-body">
+
+                            <div class="st-kpi-icon">
+                                <i class="feather icon-award"></i>
+                            </div>
+
+                            <div class="st-kpi-meta">
+
+                                <span class="st-kpi-value" id="category">
                                     <?php
                                     $awardTenderCount = 0; // Default value
-                                    
+
                                     if ($isAdmin || hasPermission('Award Tenders Count', $privileges, $roleData['role_name'])) {
                                         $awardTenderCount = $awardTenderData['COUNT'] ?? 0;
                                     } else {
@@ -549,141 +1199,132 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
                                     }
                                     echo $awardTenderCount;
                                     ?>
-
                                 </span>
-                            </h2>
+
+                            </div>
+
                         </div>
+
+                        <!-- Navigation -->
+                        <div class="st-kpi-breadcrumb">
+                            <ul class="breadcrumb">
+
+                                <li class="breadcrumb-item">
+                                    <a href="index.php">
+                                        <i class="feather icon-home"></i> Home
+                                    </a>
+                                </li>
+
+                                <li class="breadcrumb-item active">
+                                    Award Tender
+                                </li>
+
+                            </ul>
+                        </div>
+
                     </div>
+
                 </div>
             </div>
+
             <?php if ($isAdmin || hasPermission('Award Tenders Filter', $privileges, $roleData['role_name'])) { ?>
-                <div class="page-header">
-                    <div class="page-block">
-                        <div class="row align-items-center">
-                            <div class="col-md-12">
-                                <!-- Filters Section -->
-                                <form method="get" id="filterForm">
-                                    <div class="row">
-                                        <div class="col-md-4">
-                                            <div class="form-group">
-                                                <label for="faculty">Department <span class="text-danger">*</span></label>
-                                                <select class="form-control" name="department-search"
-                                                    id="department-search">
-                                                    <option value="0">All</option>
-                                                    <?php foreach ($departments as $department) { ?>
-                                                        <option value="<?php echo $department['department_id']; ?>" <?php echo isset($_GET['department-search']) && $_GET['department-search'] == $department['department_id'] ? 'selected' : ''; ?>>
-                                                            <?php echo $department['department_name']; ?>
-                                                        </option>
-                                                    <?php } ?>
-                                                </select>
-                                                <div class="invalid-feedback">Please select a faculty.</div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <div class="form-group">
-                                                <label for="program">Section <span class="text-danger">*</span></label>
-                                                <select class="form-control" name="section-search" id="section-search">
-                                                    <option value="0">All</option>
-                                                    <?php foreach ($sections as $section) {
-                                                        $selectedSection = (isset($_GET['section-search']) && urldecode($_GET['section-search']) == $section['section_id']) ? 'selected' : '';
-
-                                                        ?>
-                                                        <option <?= $selectedSection ?>
-                                                            value="<?php echo $section['section_id']; ?>">
-                                                            <?php echo $section['section_name']; ?>
-                                                        </option>
-                                                    <?php } ?>
-                                                </select>
-                                                <div class="invalid-feedback">Please select a program.</div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <div class="form-group">
-                                                <label for="session">Division <span class="text-danger">*</span></label>
-                                                <select class="form-control" name="division-search" id="division-search">
-                                                    <option value="0">All</option>
-                                                    <?php foreach ($divisions as $division) { ?>
-                                                        <option value="<?php echo $division['division_id']; ?>" <?php echo isset($_GET['division-search']) && $_GET['division-search'] == $division['division_id'] ? 'selected' : ''; ?>>
-                                                            <?php echo $division['division_name']; ?>
-                                                        </option>
-                                                    <?php } ?>
-                                                </select>
-                                                <div class="invalid-feedback">Please select a session.</div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <div class="form-group">
-                                                <label for="semester">Sub Division <span
-                                                        class="text-danger">*</span></label>
-                                                <select class="form-control" name="sub-division-search"
-                                                    id="sub-division-search" required>
-                                                    <option value="0">All</option>
-
-                                                </select>
-                                                <div class="invalid-feedback">Please select a semester.</div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <div class="form-group">
-                                                <label for="semester">Firm <span class="text-danger">*</span></label>
-                                                <select class="form-control select-firm" name="firm" required>
-                                                    <option value="0">All</option>
-                                                    <?php foreach ($firms as $firm) {
-                                                        $selectedFirm = (isset($_GET['firm']) && urldecode($_GET['firm']) == $firm['firm_name']) ? 'selected' : '';
-                                                        ?>
-                                                        <option value="<?= htmlspecialchars($firm['firm_name']) ?>"
-                                                            <?= $selectedFirm ?>>
-                                                            <?= htmlspecialchars($firm['firm_name']) ?>
-                                                        </option>
-                                                    <?php } ?>
-                                                </select>
-                                                <div class="invalid-feedback">Please select a semester.</div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <div class="form-group">
-                                                <label for="semester">State <span class="text-danger">*</span></label>
-                                                <select class="form-control select-state" name="state" required>
-                                                    <option value="0">All</option>
-                                                    <?php foreach ($states as $state) {
-                                                        $selectedState = (isset($_GET['state']) && urldecode($_GET['state']) == $state['state_code']) ? 'selected' : '';
-                                                        ?>
-                                                        <option value="<?= $state['state_code'] ?>" <?= $selectedState ?>>
-                                                            <?= $state['state_name'] ?>
-                                                        </option>
-                                                    <?php } ?>
-                                                </select>
-                                                <div class="invalid-feedback">Please select a semester.</div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <div class="form-group">
-                                                <label for="semester">City <span class="text-danger">*</span></label>
-                                                <select class="form-control select-city" name="city">
-                                                    <option value="0">All</option>
-                                                </select>
-                                                <div class="invalid-feedback">Please select a semester.</div>
-                                            </div>
-                                        </div>
-
-                                        <!-- Buttons -->
-                                        <div class="col-md-6 col-sm-12 d-flex align-items-center mt-3">
-                                            <!-- Submit Button -->
-                                            <button type="submit" class="btn btn-primary btn-md d-flex align-items-center">
-                                                <i class="fas fa-search" style="margin-right: 8px;"></i> Search
-                                            </button>
-                                            &nbsp;
-                                            <!-- Reset Button -->
-                                            <a href="award-tender.php"
-                                                class="btn btn-primary btn-md d-flex align-items-center"
-                                                id="filterResetButton">
-                                                <i class="fas fa-undo" style="margin-right: 8px;"></i>
-                                                Reset
-                                            </a>
-                                        </div>
-                                    </div>
-                                </form>
+                <div class="collapse st-filter-collapse" id="awardTenderFilters">
+                    <div class="st-filter-panel">
+                        <div class="st-filter-body">
+                            <div class="st-filter-head">
+                                <h6 class="st-filter-title">Filters</h6>
+                                <p class="st-filter-sub">Narrow down awarded tenders</p>
                             </div>
+                            <form method="get" id="filterForm">
+                                <div class="st-filter-grid">
+                                    <div class="st-filter-field">
+                                        <label for="department-search">Department</label>
+                                        <select class="form-control" name="department-search"
+                                            id="department-search">
+                                            <option value="0">All</option>
+                                            <?php foreach ($departments as $department) { ?>
+                                                <option value="<?php echo $department['department_id']; ?>" <?php echo isset($_GET['department-search']) && $_GET['department-search'] == $department['department_id'] ? 'selected' : ''; ?>>
+                                                    <?php echo $department['department_name']; ?>
+                                                </option>
+                                            <?php } ?>
+                                        </select>
+                                    </div>
+                                    <div class="st-filter-field">
+                                        <label for="section-search">Section</label>
+                                        <select class="form-control" name="section-search" id="section-search">
+                                            <option value="0">All</option>
+                                            <?php foreach ($sections as $section) {
+                                                $selectedSection = (isset($_GET['section-search']) && urldecode($_GET['section-search']) == $section['section_id']) ? 'selected' : '';
+                                                ?>
+                                                <option <?= $selectedSection ?>
+                                                    value="<?php echo $section['section_id']; ?>">
+                                                    <?php echo $section['section_name']; ?>
+                                                </option>
+                                            <?php } ?>
+                                        </select>
+                                    </div>
+                                    <div class="st-filter-field">
+                                        <label for="division-search">Division</label>
+                                        <select class="form-control" name="division-search" id="division-search">
+                                            <option value="0">All</option>
+                                            <?php foreach ($divisions as $division) { ?>
+                                                <option value="<?php echo $division['division_id']; ?>" <?php echo isset($_GET['division-search']) && $_GET['division-search'] == $division['division_id'] ? 'selected' : ''; ?>>
+                                                    <?php echo $division['division_name']; ?>
+                                                </option>
+                                            <?php } ?>
+                                        </select>
+                                    </div>
+                                    <div class="st-filter-field">
+                                        <label for="sub-division-search">Sub Division</label>
+                                        <select class="form-control" name="sub-division-search"
+                                            id="sub-division-search">
+                                            <option value="0">All</option>
+                                        </select>
+                                    </div>
+                                    <div class="st-filter-field">
+                                        <label for="firm">Firm</label>
+                                        <select class="form-control select-firm" name="firm" id="firm">
+                                            <option value="0">All</option>
+                                            <?php foreach ($firms as $firm) {
+                                                $selectedFirm = (isset($_GET['firm']) && urldecode($_GET['firm']) == $firm['firm_name']) ? 'selected' : '';
+                                                ?>
+                                                <option value="<?= htmlspecialchars($firm['firm_name']) ?>"
+                                                    <?= $selectedFirm ?>>
+                                                    <?= htmlspecialchars($firm['firm_name']) ?>
+                                                </option>
+                                            <?php } ?>
+                                        </select>
+                                    </div>
+                                    <div class="st-filter-field">
+                                        <label for="state">State</label>
+                                        <select class="form-control select-state" name="state" id="state">
+                                            <option value="0">All</option>
+                                            <?php foreach ($states as $state) {
+                                                $selectedState = (isset($_GET['state']) && urldecode($_GET['state']) == $state['state_code']) ? 'selected' : '';
+                                                ?>
+                                                <option value="<?= $state['state_code'] ?>" <?= $selectedState ?>>
+                                                    <?= $state['state_name'] ?>
+                                                </option>
+                                            <?php } ?>
+                                        </select>
+                                    </div>
+                                    <div class="st-filter-field">
+                                        <label for="city">City</label>
+                                        <select class="form-control select-city" name="city" id="city">
+                                            <option value="0">All</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="st-filter-actions">
+                                    <a href="award-tender.php" class="btn btn-outline-secondary"
+                                        id="filterResetButton">
+                                        <i class="feather icon-refresh-ccw"></i> Reset
+                                    </a>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="feather icon-search"></i> Search
+                                    </button>
+                                </div>
+                            </form>
                         </div>
                     </div>
                 </div>
@@ -692,80 +1333,84 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
 
             <div class="row">
                 <div class="col-sm-12">
-                    <div class="card">
-                        <div class="card-header table-card-header">
-                        </div>
-                        <div class="card-body">
-                            <div class="dt-responsive table-responsive">
+                    <div class="card st-table-card">
+                        <div class="card-body st-table-body">
 
-                                <?php
+                            <?php
+                            if (isset($_GET['status'])) {
+                                $st = $_GET['status'];
+                                $st1 = base64_decode($st);
 
-                                if (isset($_GET['status'])) {
-                                    $st = $_GET['status'];
-                                    $st1 = base64_decode($st);
-
-                                    if ($st1 > 0) {
-                                        echo " <div class='alert alert-success alert-dismissible fade show' role='alert' style='font-size:16px;' id='updateuser'>
+                                if ($st1 > 0) {
+                                    echo " <div class='alert alert-success alert-dismissible fade show' role='alert' style='font-size:16px;' id='updateuser'>
   <strong><i class='feather icon-check'></i>Thanks!</strong> Tender has been Updated Successfully.
   <button type='button' class='close' data-dismiss='alert' aria-label='Close'>
     <span aria-hidden='true'>&times;</span>
   </button>
 </div> ";
-                                    } else {
+                                } else {
 
-                                        echo " <div class='alert alert-danger alert-dismissible fade show' role='alert' style='font-size:16px;' id='updateuser'>
+                                    echo " <div class='alert alert-danger alert-dismissible fade show' role='alert' style='font-size:16px;' id='updateuser'>
   <strong>Error!</strong> Tender has been not Updated
   <button type='button' class='close' data-dismiss='alert' aria-label='Close'>
     <span aria-hidden='true'>&times;</span>
   </button>
 </div> ";
-                                    }
                                 }
+                            }
+                            ?>
 
-                                ?>
-                                <br />
-
-
-                                <?php
-                                if ($isAdmin || hasPermission('Bulk Delete Award Tender', $privileges, $roleData['role_name'])) {
-                                    echo "
-                                <a href='#' id='recycle_records' class='btn btn-danger me-3 rounded-sm'> <i class='feather icon-trash'></i>  &nbsp;
-                                Move to Bin</a>&nbsp&nbsp&nbsp&nbsp
-                                ";
-                                } ?>
-                                <div class="dt-buttons btn-group">
+                            <div class="st-table-toolbar">
+                                <div class="st-toolbar-left">
+                                    <h6 class="st-table-title">Award Tenders</h6>
+                                    <?php
+                                    if ($isAdmin || hasPermission('Bulk Delete Award Tender', $privileges, $roleData['role_name'])) {
+                                        echo "<a href='javascript:void(0);' id='recycle_records' class='btn btn-danger'>
+                                        <i class='feather icon-trash'></i> Move to Bin
+                                        </a>";
+                                    } ?>
                                     <?php if ($isAdmin || hasPermission('Award Tender Excel', $privileges, $roleData['role_name'])) { ?>
-
-                                        <button class="btn btn-secondary buttons-excel buttons-html5 btn-primary rounded-sm"
-                                            tabindex="0" aria-controls="basic-btn2" type="button"
-                                            onclick="exportTableToExcel()" title="Export to Excel"><span><i
-                                                    class="fas fa-file-excel"></i>
-                                                Excel</span></button>
+                                        <button class="btn buttons-excel" tabindex="0" aria-controls="basic-btn3"
+                                            type="button" onclick="exportTableToExcel()" title="Export to Excel">
+                                            <span><i class="fas fa-file-excel"></i> Excel</span>
+                                        </button>
                                     <?php } ?>
                                     <?php if ($isAdmin || hasPermission('Award Tender CSV', $privileges, $roleData['role_name'])) { ?>
-
-                                        <button class="btn btn-secondary buttons-csv buttons-html5 btn-primary rounded-sm"
-                                            tabindex="0" aria-controls="basic-btn2" type="button"
-                                            onclick="exportTableToCSV()" title="Export to CSV"><span><i
-                                                    class="fas fa-file-csv"></i> CSV</span></button>
+                                        <button class="btn buttons-csv" tabindex="0" aria-controls="basic-btn3"
+                                            type="button" onclick="exportTableToCSV()" title="Export to CSV">
+                                            <span><i class="fas fa-file-csv"></i> CSV</span>
+                                        </button>
                                     <?php } ?>
                                     <?php if ($isAdmin || hasPermission('Award Tender Print', $privileges, $roleData['role_name'])) { ?>
-
-
-                                        <button class="btn btn-secondary buttons-print btn-primary rounded-sm" tabindex="0"
-                                            onclick="printTable()" aria-controls="basic-btn2" type="button"
-                                            title="Print"><span><i class="fas fa-print"></i> Print</span></button>
+                                        <button class="btn buttons-print" tabindex="0" onclick="printTable()"
+                                            aria-controls="basic-btn3" type="button" title="Print">
+                                            <span><i class="fas fa-print"></i> Print</span>
+                                        </button>
                                     <?php } ?>
-
                                 </div>
-                                <table id="basic-btn3" class="table table-striped table-bordered nowrap">
+                                <?php if ($isAdmin || hasPermission('Award Tenders Filter', $privileges, $roleData['role_name'])) { ?>
+                                    <div class="st-toolbar-right">
+                                        <button class="btn" type="button" data-bs-toggle="collapse"
+                                            data-bs-target="#awardTenderFilters" aria-expanded="false"
+                                            aria-controls="awardTenderFilters" title="Filters">
+                                            <i class="feather icon-filter"></i> Filters
+                                        </button>
+                                    </div>
+                                <?php } ?>
+                            </div>
+
+                            <div class="dt-responsive">
+                                <table id="basic-btn3" class="table table-striped table-bordered">
                                     <thead>
                                         <tr>
-                                            <th>
-                                                <label class="checkboxs">
-                                                    <input type="checkbox" id="select-all">
-                                                    <span class="checkmarks"></span>
-                                                </label> SNO
+                                            <th class="text-center">
+                                                <div class="d-flex align-items-center justify-content-center gap-2">
+                                                    <label class="checkboxs mb-0">
+                                                        <input type="checkbox" id="select-all">
+                                                        <span class="checkmarks"></span>
+                                                    </label>
+                                                    <span class="sno-number">SNO</span>
+                                                </div>
                                             </th>
                                             <th>User</th>
                                             <th>State & City</th>
@@ -788,26 +1433,32 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
                                         while ($row = mysqli_fetch_row($result)) {
                                             ?>
                                             <tr class='record'>
-                                                <td>
-                                                    <div class='custom-control custom-checkbox'>
-                                                        <input type='checkbox' class='custom-control-input request_checkbox'
-                                                            id='customCheck<?php echo $count; ?>'
-                                                            data-request-id='<?php echo $row['9']; ?>'>
-                                                        <label class='custom-control-label'
-                                                            for='customCheck<?php echo $count; ?>'><?php echo $count; ?></label>
+                                                <td class="text-center">
+                                                    <div class="d-flex align-items-center justify-content-center gap-2">
+                                                        <label class="checkboxs mb-0">
+                                                            <input type='checkbox' class='request_checkbox'
+                                                                id='customCheck<?php echo $count; ?>'
+                                                                data-request-id='<?php echo $row['9']; ?>'>
+                                                            <span class="checkmarks"></span>
+                                                        </label>
+                                                        <span class="sno-number"><?php echo $count; ?></span>
                                                     </div>
                                                 </td>
 
                                                 <td>
-                                                    Name - <?php echo $row['0']; ?><br />
-                                                    <span style=''>Mail - <?php echo $row['1']; ?></span><br />
-                                                    <span style=''>M.No - <?php echo $row['2']; ?></span><br />
-                                                    <span style=''>Firm - <?php echo $row['3']; ?></span>
+                                                    <div class="st-info-lines">
+                                                        <span class="st-info-line">Name - <?php echo $row['0']; ?></span>
+                                                        <span class="st-info-line">Mail - <?php echo $row['1']; ?></span>
+                                                        <span class="st-info-line">M.No - <?php echo $row['2']; ?></span>
+                                                        <span class="st-info-line">Firm - <?php echo $row['3']; ?></span>
+                                                    </div>
                                                 </td>
 
                                                 <td>
-                                                    State - <?php echo $row['16']; ?><br />
-                                                    <span style=''>City - <?php echo $row['17']; ?></span><br />
+                                                    <div class="st-info-lines">
+                                                        <span class="st-info-line">State - <?php echo $row['16']; ?></span>
+                                                        <span class="st-info-line">City - <?php echo $row['17']; ?></span>
+                                                    </div>
                                                 </td>
 
                                                 <td><?php echo $row['4']; ?></td>
@@ -820,36 +1471,35 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
                                                 <td><?php echo $row['6']; ?></td>
 
                                                 <td>
-                                                    Award Date :<br />
-                                                    <?php echo date_format(date_create($row['7']), "d-m-Y h:i A"); ?><br />
-                                                    <a href="../login/tender/<?php echo $row['8']; ?>" target="_blank">View
-                                                        file</a>
+                                                    <div class="st-info-lines">
+                                                        <span class="st-info-line">Award Date:</span>
+                                                        <span class="st-info-line"><?php echo date_format(date_create($row['7']), "d-m-Y h:i A"); ?></span>
+                                                        <a href="../login/tender/<?php echo $row['8']; ?>" target="_blank">View file</a>
+                                                    </div>
                                                 </td>
 
-                                                <td><?php echo $row['14']; ?></td>
+                                                <td><span class="st-status-badge"><?php echo $row['14']; ?></span></td>
 
                                                 <td>
-                                                    <?php
-                                                    if ($isAdmin || hasPermission('Edit Award Tender', $privileges, $roleData['role_name'])) {
-                                                        $res = $row[9];
-                                                        $res = base64_encode($res);
-                                                        ?>
-                                                        <a href='award-edit.php?award=<?php echo $res; ?>'>
-                                                            <button type='button' class='btn btn-warning'>
-                                                                <i class='feather icon-edit'></i> &nbsp;Edit Status
-                                                            </button>
-                                                        </a><br /></br />
-                                                    <?php } ?>
+                                                    <div class="d-flex flex-column gap-2">
+                                                        <?php
+                                                        if ($isAdmin || hasPermission('Edit Award Tender', $privileges, $roleData['role_name'])) {
+                                                            $res = $row[9];
+                                                            $res = base64_encode($res);
+                                                            ?>
+                                                            <a class="st-action-link" href='award-edit.php?award=<?php echo $res; ?>'>
+                                                                <i class='feather icon-edit'></i> Edit Status
+                                                            </a>
+                                                        <?php } ?>
 
-                                                    <?php
-                                                    if ($isAdmin || hasPermission('Awarded Award Tender', $privileges, $roleData['role_name'])) {
-                                                        ?>
-                                                        <a href='#'>
-                                                            <button type='button' class='btn btn-success'>
-                                                                <i class='feather icon-edit'></i> &nbsp;Awarded
-                                                            </button>
-                                                        </a>
-                                                    <?php } ?>
+                                                        <?php
+                                                        if ($isAdmin || hasPermission('Awarded Award Tender', $privileges, $roleData['role_name'])) {
+                                                            ?>
+                                                            <a class="st-action-link st-action-success" href='#'>
+                                                                <i class='feather icon-check'></i> Awarded
+                                                            </a>
+                                                        <?php } ?>
+                                                    </div>
                                                 </td>
                                             </tr>
                                             <?php
@@ -859,19 +1509,10 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
                                     </tbody>
                                     <tfoot></tfoot>
                                 </table>
-
                             </div>
                         </div>
                     </div>
                 </div>
-
-
-
-
-
-
-
-
             </div>
 
         </div>
@@ -890,6 +1531,7 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
 
     <script src="assets/js/plugins/jquery.dataTables.min.js"></script>
     <script src="assets/js/plugins/dataTables.bootstrap4.min.js"></script>
+    <script src="assets/js/plugins/dataTables.fixedHeader.min.js"></script>
     <script src="assets/js/plugins/buttons.colVis.min.js"></script>
     <script src="assets/js/plugins/buttons.print.min.js"></script>
     <script src="assets/js/plugins/pdfmake.min.js"></script>
@@ -1089,7 +1731,11 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
             var table = $('#basic-btn3').DataTable({
                 pageLength: 100,
                 lengthMenu: [25, 50, 100, 200, 500, 1000], // Custom dropdown options
-                responsive: true,
+                scrollX: true,
+                scrollY: '70vh',
+                scrollCollapse: false,
+                fixedHeader: true,
+                autoWidth: false,
                 ordering: true,
                 searching: true
             });

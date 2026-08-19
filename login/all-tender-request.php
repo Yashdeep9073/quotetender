@@ -107,75 +107,339 @@ $allTenderData = $stmtFetchAllTender->get_result()->fetch_array(MYSQLI_ASSOC);
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
     <style>
-        #basic-btn2_length {
-            padding: 10px !important;
-        }
-    </style>
-
-    <style>
-        .dt-buttons {
-            margin-top: 5px !important;
+        /* ==========================================================
+           All Tender Request page — same UI design system as
+           Sent Tender / Tender Request.
+           ========================================================== */
+        .all-tender-request-page {
+            padding: 16px;
         }
 
-        .btn-group {
-            display: inline-block;
-            /* margin: 0 5px; */
-            padding: 8px 16px;
+        /* ---------- shared card base ---------- */
+        .all-tender-request-page .card {
+            border: 0;
             border-radius: 10px;
-            color: white;
-            font-size: 14px;
-            font-weight: bold;
-            text-transform: uppercase;
-            cursor: pointer;
-
+            box-shadow: 0 1px 2px rgba(16, 24, 40, .05), 0 1px 3px rgba(16, 24, 40, .08);
+            margin-bottom: 16px;
         }
 
-        .dt-buttons .dt-button:hover {
-            background-color: #0056b3;
-            /* Darker blue on hover */
-            transform: scale(1.05);
-            /* Slight zoom effect */
+        /* ---------- KPI card ---------- */
+        .all-tender-request-page .st-kpi-card {
+            margin-bottom: 14px;
         }
 
-        .dt-buttons .buttons-copy {
-            background-color: #ff9f43;
-            /* Grey for Copy */
+        .all-tender-request-page .st-kpi-card .st-kpi-body {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px 20px;
+            text-align: left;
         }
 
-        .dt-buttons .buttons-copy:hover {
-            background-color: #ff9f43;
+        .all-tender-request-page .st-kpi-icon {
+            flex: 0 0 auto;
+            width: 48px;
+            height: 48px;
+            border-radius: 10px;
+            background: #eef2ff;
+            color: #4f46e5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
         }
 
-        .dt-buttons .buttons-excel {
-            background-color: #28c76f;
-            /* Green for Excel */
+        .all-tender-request-page .st-kpi-meta {
+            display: flex;
+            flex-direction: column;
         }
 
-        .dt-buttons .buttons-excel:hover {
-            background-color: #218838;
+        .all-tender-request-page .st-kpi-label {
+            font-size: 13px;
+            font-weight: 500;
+            color: #64748b;
         }
 
-        .dt-buttons .buttons-csv {
-            background-color: #00cfe8;
-            /* Teal for CSV */
+        .all-tender-request-page .st-kpi-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #0f172a;
+            line-height: 1.2;
         }
 
-        .dt-buttons .buttons-csv:hover {
-            background-color: #138496;
+        /* ---------- breadcrumb inside KPI card ---------- */
+        .all-tender-request-page .st-kpi-breadcrumb {
+            padding: 0 20px 12px;
         }
 
-        .dt-buttons .buttons-print {
-            background-color: #ff4560;
+        .all-tender-request-page .st-kpi-breadcrumb .breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin: 0;
+            padding: 0;
+            background: transparent;
+            font-size: 12px;
         }
 
-        .dt-buttons .buttons-print:hover {
-            background-color: #c82333;
+        .all-tender-request-page .st-kpi-breadcrumb .breadcrumb a {
+            color: #64748b;
+            text-decoration: none;
         }
 
-        /* ──────────────────────────────────────────────
-           Modern scrollable table — sticky first column
-           + custom scrollbars + header freeze
-           ────────────────────────────────────────────── */
+        .all-tender-request-page .st-kpi-breadcrumb .breadcrumb a:hover {
+            color: #0f172a;
+        }
+
+        .all-tender-request-page .st-kpi-breadcrumb .breadcrumb-item.active {
+            color: #94a3b8;
+        }
+
+        .all-tender-request-page .st-kpi-breadcrumb .breadcrumb-item + .breadcrumb-item::before {
+            color: #cbd5e1;
+        }
+
+        /* ---------- table toolbar ---------- */
+        .all-tender-request-page .st-table-card .st-table-body {
+            padding: 20px;
+            text-align: left;
+        }
+
+        .all-tender-request-page .st-table-body .alert {
+            margin-bottom: 16px;
+            border-radius: 8px;
+        }
+
+        .all-tender-request-page .st-table-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+            padding: 12px 16px;
+            margin-bottom: 12px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+        }
+
+        .all-tender-request-page .st-toolbar-left,
+        .all-tender-request-page .st-toolbar-right {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .all-tender-request-page .st-toolbar-left {
+            flex: 1 1 auto;
+        }
+
+        .all-tender-request-page .st-toolbar-right {
+            flex: 0 0 auto;
+            margin-left: auto;
+        }
+
+        .all-tender-request-page .st-table-title {
+            margin: 0 8px 0 0;
+            font-size: 15px;
+            font-weight: 600;
+            color: #0f172a;
+        }
+
+        .all-tender-request-page .st-table-toolbar .btn {
+            height: 36px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 0 14px;
+            border-radius: 8px;
+            font-size: 13.5px;
+            font-weight: 500;
+        }
+
+        .all-tender-request-page .st-table-toolbar .btn-danger {
+            background: #dc2626;
+            border-color: #dc2626;
+        }
+
+        .all-tender-request-page .st-table-toolbar .btn-danger:hover {
+            background: #b91c1c;
+            border-color: #b91c1c;
+        }
+
+        .all-tender-request-page .st-toolbar-left .buttons-excel,
+        .all-tender-request-page .st-toolbar-left .buttons-csv,
+        .all-tender-request-page .st-toolbar-left .buttons-print,
+        .all-tender-request-page .st-toolbar-right .btn {
+            background: #fff;
+            border: 1px solid #d0d5dd;
+            color: #475569;
+        }
+
+        .all-tender-request-page .st-toolbar-left .buttons-excel:hover,
+        .all-tender-request-page .st-toolbar-left .buttons-csv:hover,
+        .all-tender-request-page .st-toolbar-left .buttons-print:hover,
+        .all-tender-request-page .st-toolbar-right .btn:hover {
+            background: #f1f5f9;
+            color: #0f172a;
+            border-color: #cbd5e1;
+        }
+
+        .all-tender-request-page .st-toolbar-left .buttons-excel i {
+            color: #16a34a;
+        }
+
+        .all-tender-request-page .st-toolbar-left .buttons-csv i {
+            color: #0891b2;
+        }
+
+        .all-tender-request-page .st-toolbar-left .buttons-print i {
+            color: #64748b;
+        }
+
+        /* ---------- DataTable wrapper controls ---------- */
+        .all-tender-request-page .st-table-card .dataTables_wrapper > .row:first-child {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: nowrap;
+            gap: 8px;
+            margin: 0;
+        }
+
+        .all-tender-request-page .st-table-card .dataTables_wrapper > .row:first-child > div {
+            width: auto !important;
+            padding: 0;
+            max-width: none;
+        }
+
+        .all-tender-request-page .st-table-card .dataTables_wrapper > .row:first-child > div:first-child {
+            flex: 0 0 auto;
+        }
+
+        .all-tender-request-page .st-table-card .dataTables_wrapper > .row:first-child > div:last-child {
+            flex: 0 0 auto;
+            margin-left: auto;
+        }
+
+        .all-tender-request-page .st-table-card .dataTables_length,
+        .all-tender-request-page .st-table-card .dataTables_filter {
+            padding: 4px 0 12px;
+        }
+
+        .all-tender-request-page .st-table-card .dataTables_length label,
+        .all-tender-request-page .st-table-card .dataTables_filter label {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin: 0;
+            font-size: 13px;
+            font-weight: 500;
+            color: #475569;
+            white-space: nowrap;
+        }
+
+        .all-tender-request-page .st-table-card .dataTables_filter {
+            text-align: right;
+        }
+
+        .all-tender-request-page .st-table-card .dataTables_length select,
+        .all-tender-request-page .st-table-card .dataTables_filter input {
+            height: 34px;
+            border: 1px solid #d0d5dd;
+            border-radius: 6px;
+            background: #fff;
+            font-size: 13px;
+            color: #1e293b;
+        }
+
+        .all-tender-request-page .st-table-card .dataTables_length select {
+            padding: 0 8px;
+        }
+
+        .all-tender-request-page .st-table-card .dataTables_filter input {
+            padding: 0 10px;
+            width: clamp(140px, 24vw, 260px);
+            margin-left: 0;
+        }
+
+        .all-tender-request-page .st-table-card .dataTables_info {
+            padding-top: 12px;
+            font-size: 13px;
+            color: #64748b;
+        }
+
+        .all-tender-request-page .st-table-card .dataTables_paginate {
+            padding-top: 8px;
+        }
+
+        /* ---------- table ---------- */
+        .all-tender-request-page .st-table-card .table {
+            margin-bottom: 0;
+            border-color: #e2e8f0;
+        }
+
+        .all-tender-request-page .st-table-card .table thead th {
+            background: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 10px 12px;
+            font-size: 12.5px;
+            font-weight: 600;
+            color: #334155;
+            white-space: nowrap;
+            vertical-align: middle;
+        }
+
+        .all-tender-request-page .st-table-card .table tbody td {
+            padding: 8px 12px;
+            font-size: 13px;
+            color: #334155;
+            vertical-align: middle;
+            white-space: nowrap;
+        }
+
+        .all-tender-request-page .st-table-card .table tbody tr:hover td {
+            background-color: #f1f5f9;
+        }
+
+        .all-tender-request-page .st-table-card .table .tender_id {
+            color: #2563eb;
+            font-weight: 600;
+        }
+
+        /* ---------- action links ---------- */
+        .all-tender-request-page .st-table-card .st-action-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            height: 32px;
+            padding: 0 12px;
+            border-radius: 6px;
+            border: 1px solid #d0d5dd;
+            background: #fff;
+            color: #475569;
+            font-size: 13px;
+            font-weight: 500;
+            text-decoration: none;
+        }
+
+        .all-tender-request-page .st-table-card .st-action-link:hover {
+            background: #f1f5f9;
+            color: #0f172a;
+            text-decoration: none;
+        }
+
+        .all-tender-request-page .st-table-card .st-action-link i {
+            color: #64748b;
+        }
+
+        .all-tender-request-page .st-table-card .st-action-link.st-action-danger,
+        .all-tender-request-page .st-table-card .st-action-link.st-action-danger i {
+            color: #dc2626;
+        }
+
+        /* ---------- scrollable table + custom scrollbars ---------- */
         .dataTables_scrollBody {
             scroll-behavior: smooth;
             -webkit-overflow-scrolling: touch;
@@ -211,40 +475,130 @@ $allTenderData = $stmtFetchAllTender->get_result()->fetch_array(MYSQLI_ASSOC);
             scrollbar-color: #c1c1c1 #f1f1f1;
         }
 
-        /* Freeze first column (SNO/checkbox) during horizontal scroll */
-        .dataTables_scrollHead .table thead th:first-child,
-        .dataTables_scrollBody .table tbody td:first-child {
-            position: sticky;
-            left: 0;
-            z-index: 5;
-            background-color: #fff;
-            box-shadow: 2px 0 6px -2px rgba(0, 0, 0, 0.12);
-        }
-
-        .dataTables_scrollHead .table thead th:first-child {
-            z-index: 15;
-            background-color: #fff;
-        }
-
-        .dataTables_scrollBody .table.table-striped tbody tr:nth-child(even) td:first-child {
-            background-color: #f9f9f9;
-        }
-
-        .dataTables_scrollBody .table tbody tr:hover td:first-child {
-            background-color: #f1f1f1;
-        }
-
-        .dataTables_scrollBody .table tbody td:first-child .custom-control,
-        .dataTables_scrollBody .table tbody td:first-child .custom-checkbox {
-            background-color: inherit;
-        }
-
         .dataTables_scroll {
             max-height: 70vh;
         }
 
         .dt-responsive.table-responsive {
             overflow: visible !important;
+        }
+
+        /* ---------- responsive ---------- */
+        @media (max-width: 575.98px) {
+            .all-tender-request-page .st-table-toolbar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .all-tender-request-page .st-toolbar-left,
+            .all-tender-request-page .st-toolbar-right {
+                width: 100%;
+            }
+
+            .all-tender-request-page .st-toolbar-right {
+                margin-left: 0;
+                justify-content: flex-end;
+            }
+        }
+
+        /* ---------- final table theme (green header) ---------- */
+        .all-tender-request-page .st-table-card .table thead th {
+            background-color: #33cc33 !important;
+            color: #ffffff !important;
+            border-color: #33cc33 !important;
+        }
+
+        .all-tender-request-page .dataTables_scrollHead .table thead th:first-child {
+            background-color: #33cc33 !important;
+            color: #ffffff !important;
+            border-color: #33cc33 !important;
+        }
+
+        .all-tender-request-page .st-table-card .table tbody .tender_id,
+        .all-tender-request-page .st-table-card .table tbody a.tender_id {
+            color: #33cc33 !important;
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        .all-tender-request-page .st-table-card .table tbody .tender_id:hover,
+        .all-tender-request-page .st-table-card .table tbody a.tender_id:hover {
+            color: #28a428 !important;
+            text-decoration: underline;
+        }
+
+        /* Keep "Showing 1 to 100..." OUTSIDE the scrollable table */
+        .all-tender-request-page .st-table-card .dataTables_info {
+            position: relative !important;
+            z-index: 10;
+            display: block !important;
+            width: 100% !important;
+            padding: 12px 0 4px !important;
+            margin: 0 !important;
+            background: #fff !important;
+            color: #64748b !important;
+            font-size: 13px;
+            line-height: 20px;
+            clear: both;
+        }
+
+        .all-tender-request-page .st-table-card .dataTables_wrapper > .row:last-child {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            margin: 0 !important;
+            padding-top: 8px;
+            background: #fff;
+        }
+
+        .all-tender-request-page .st-table-card .dataTables_wrapper {
+            overflow: visible !important;
+        }
+
+        .all-tender-request-page .st-table-card .dataTables_scroll {
+            overflow: visible !important;
+        }
+
+        .all-tender-request-page .st-table-card .dataTables_scrollBody {
+            overflow-x: auto !important;
+            overflow-y: auto !important;
+        }
+
+        /* ---------- full-width table / no right-side whitespace ---------- */
+        .all-tender-request-page .dt-responsive {
+            width: 100% !important;
+            max-width: 100% !important;
+        }
+
+        .all-tender-request-page .dataTables_wrapper {
+            width: 100% !important;
+            max-width: 100% !important;
+        }
+
+        .all-tender-request-page .dataTables_scroll {
+            width: 100% !important;
+            max-width: 100% !important;
+        }
+
+        .all-tender-request-page .dataTables_scrollHead,
+        .all-tender-request-page .dataTables_scrollBody {
+            width: 100% !important;
+            max-width: 100% !important;
+        }
+
+        .all-tender-request-page .dataTables_scrollHeadInner {
+            width: 100% !important;
+        }
+
+        .all-tender-request-page .dataTables_scrollHeadInner table {
+            width: 100% !important;
+        }
+
+        .all-tender-request-page .dataTables_scrollBody {
+            overflow-x: auto !important;
         }
     </style>
 
@@ -313,35 +667,29 @@ $allTenderData = $stmtFetchAllTender->get_result()->fetch_array(MYSQLI_ASSOC);
     </header>
 
     <section class="pcoded-main-container">
-        <div class="pcoded-content">
-            <div class="page-header">
-                <div class="page-block">
-                    <div class="row align-items-center">
-                        <div class="col-md-12">
-                            <div class="page-header-title">
-                                <h5 class="m-b-10">All Tender Request
-                                </h5>
-                            </div>
-                            <ul class="breadcrumb">
-                                <li class="breadcrumb-item"><a href="index.php"><i class="feather icon-home"></i></a>
-                                </li>
-                                <li class="breadcrumb-item"><a href="#!"></a></li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <div class="pcoded-content all-tender-request-page">
 
+            <!-- KPI + Navigation (combined card) -->
             <div class="row">
-                <div class="col-md-6 col-xl-3">
-                    <div class="card bg-c-green order-card">
-                        <div class="card-body">
-                            <h6 class="text-white">All Tender Request</h6>
-                            <h2 class="text-right text-white"><i
-                                    class="feather icon-message-square float-left"></i><span id="total">
+                <div class="col-12">
+
+                    <div class="card st-kpi-card">
+
+                        <!-- KPI -->
+                        <div class="card-body st-kpi-body">
+
+                            <div class="st-kpi-icon">
+                                <i class="feather icon-message-square"></i>
+                            </div>
+
+                            <div class="st-kpi-meta">
+
+                                <span class="st-kpi-label">All Tender Request</span>
+
+                                <span class="st-kpi-value" id="total">
                                     <?php
                                     $allTenderCountValue = 0; // Default value
-                                    
+
                                     if ($isAdmin || hasPermission('View All Tenders Count', $privileges, $roleData['role_name'])) {
                                         $allTenderCountValue = $allTenderData['COUNT'] ?? 0;
                                     } else {
@@ -349,80 +697,105 @@ $allTenderData = $stmtFetchAllTender->get_result()->fetch_array(MYSQLI_ASSOC);
                                     }
                                     echo $allTenderCountValue;
                                     ?>
+                                </span>
 
-
-                                </span></h2>
+                            </div>
 
                         </div>
+
+                        <!-- Navigation -->
+                        <div class="st-kpi-breadcrumb">
+                            <ul class="breadcrumb">
+
+                                <li class="breadcrumb-item">
+                                    <a href="index.php">
+                                        <i class="feather icon-home"></i> Home
+                                    </a>
+                                </li>
+
+                                <li class="breadcrumb-item active">
+                                    All Tender Request
+                                </li>
+
+                            </ul>
+                        </div>
+
                     </div>
+
                 </div>
+            </div>
+
+            <!-- Table -->
+            <div class="row">
                 <div class="col-sm-12">
-                    <div class="card">
-                        <div class="card-header table-card-header">
-                        </div>
-                        <div class="card-body">
-                            <div class="dt-responsive">
-                                <?php
-                                if (isset($_GET['status'])) {
-                                    $st = $_GET['status'];
-                                    $st1 = base64_decode($st);
-                                    if ($st1 > 0) {
-                                        echo " <div class='alert alert-success alert-dismissible fade show' role='alert' style='font-size:16px;' id='updateuser'>
-                                        <strong><i class='feather icon-check'></i>Thanks!</strong> Tender has been Updated Successfully.
-                                        <button type='button' class='close' data-dismiss='alert' aria-label='Close'>
-                                            <span aria-hidden='true'>&times;</span>
-                                        </button>
-                                        </div> ";
-                                    } else {
-                                        echo " <div class='alert alert-danger alert-dismissible fade show' role='alert' style='font-size:16px;' id='updateuser'>
-                                        <strong>Error!</strong> Tender has been not Updated
-                                        <button type='button' class='close' data-dismiss='alert' aria-label='Close'>
-                                            <span aria-hidden='true'>&times;</span>
-                                        </button>
-                                        </div> ";
-                                    }
-                                }
-                                ?>
-                                <br />
-                                <?php
-                                if ($isAdmin || hasPermission('Bulk Delete View All Tenders', $privileges, $roleData['role_name'])) {
-                                    echo "<a href='#' id='recycle_records' class='btn btn-danger me-3 rounded-sm'> 
-                                    <i class='feather icon-trash'></i> &nbsp; Move to Bin Selected Items
-                                    </a>&nbsp&nbsp&nbsp&nbsp";
-                                }
-                                ?>
+                    <div class="card st-table-card">
+                        <div class="card-body st-table-body">
 
-                                <div class="dt-buttons btn-group">
+                            <?php
+                            if (isset($_GET['status'])) {
+                                $st = $_GET['status'];
+                                $st1 = base64_decode($st);
+                                if ($st1 > 0) {
+                                    echo " <div class='alert alert-success alert-dismissible fade show' role='alert' style='font-size:16px;' id='updateuser'>
+                                    <strong><i class='feather icon-check'></i>Thanks!</strong> Tender has been Updated Successfully.
+                                    <button type='button' class='close' data-dismiss='alert' aria-label='Close'>
+                                        <span aria-hidden='true'>&times;</span>
+                                    </button>
+                                    </div> ";
+                                } else {
+                                    echo " <div class='alert alert-danger alert-dismissible fade show' role='alert' style='font-size:16px;' id='updateuser'>
+                                    <strong>Error!</strong> Tender has been not Updated
+                                    <button type='button' class='close' data-dismiss='alert' aria-label='Close'>
+                                        <span aria-hidden='true'>&times;</span>
+                                    </button>
+                                    </div> ";
+                                }
+                            }
+                            ?>
+
+                            <div class="st-table-toolbar">
+                                <div class="st-toolbar-left">
+                                    <h6 class="st-table-title">All Tender Requests</h6>
                                     <?php
-                                    if ($isAdmin || hasPermission('View All Tender Excel', $privileges, $roleData['role_name'])) { ?>
-                                        <button class="btn btn-secondary buttons-excel buttons-html5 btn-primary rounded-sm"
-                                            tabindex="0" aria-controls="basic-btn2" type="button"
-                                            onclick="exportTableToExcel()" title="Export to Excel"><span><i
-                                                    class="fas fa-file-excel"></i>
-                                                Excel</span></button>
+                                    if ($isAdmin || hasPermission('Bulk Delete View All Tenders', $privileges, $roleData['role_name'])) {
+                                        echo "<a href='javascript:void(0);' id='recycle_records' class='btn btn-danger'>
+                                        <i class='feather icon-trash'></i> Move to Bin
+                                        </a>";
+                                    }
+                                    ?>
+                                    <?php if ($isAdmin || hasPermission('View All Tender Excel', $privileges, $roleData['role_name'])) { ?>
+                                        <button class="btn buttons-excel" tabindex="0" aria-controls="basic-btn2"
+                                            type="button" onclick="exportTableToExcel()" title="Export to Excel">
+                                            <span><i class="fas fa-file-excel"></i> Excel</span>
+                                        </button>
                                     <?php } ?>
-
                                     <?php if ($isAdmin || hasPermission('View All Tender CSV', $privileges, $roleData['role_name'])) { ?>
-                                        <button class="btn btn-secondary buttons-csv buttons-html5 btn-primary rounded-sm"
-                                            tabindex="0" aria-controls="basic-btn2" type="button"
-                                            onclick="exportTableToCSV()" title="Export to CSV"><span><i
-                                                    class="fas fa-file-csv"></i> CSV</span></button>
+                                        <button class="btn buttons-csv" tabindex="0" aria-controls="basic-btn2"
+                                            type="button" onclick="exportTableToCSV()" title="Export to CSV">
+                                            <span><i class="fas fa-file-csv"></i> CSV</span>
+                                        </button>
                                     <?php } ?>
-
                                     <?php if ($isAdmin || hasPermission('View All Tender Print', $privileges, $roleData['role_name'])) { ?>
-                                        <button class="btn btn-secondary buttons-print btn-primary rounded-sm" tabindex="0"
-                                            onclick="printTable()" aria-controls="basic-btn2" type="button"
-                                            title="Print"><span><i class="fas fa-print"></i> Print</span></button>
+                                        <button class="btn buttons-print" tabindex="0" onclick="printTable()"
+                                            aria-controls="basic-btn2" type="button" title="Print">
+                                            <span><i class="fas fa-print"></i> Print</span>
+                                        </button>
                                     <?php } ?>
                                 </div>
+                            </div>
+
+                            <div class="dt-responsive">
                                 <table id="basic-btn2" class="table table-striped table-bordered">
                                     <thead>
                                         <tr>
-                                            <th>
-                                                <label class="checkboxs">
-                                                    <input type="checkbox" id="select-all">
-                                                    <span class="checkmarks"></span>
-                                                </label> SNO
+                                            <th class="text-center">
+                                                <div class="d-flex align-items-center justify-content-center gap-2">
+                                                    <label class="checkboxs mb-0">
+                                                        <input type="checkbox" id="select-all">
+                                                        <span class="checkmarks"></span>
+                                                    </label>
+                                                    <span class="sno-number">SNO</span>
+                                                </div>
                                             </th>
                                             <th>Status</th>
                                             <th>Tender ID</th>
@@ -444,13 +817,15 @@ $allTenderData = $stmtFetchAllTender->get_result()->fetch_array(MYSQLI_ASSOC);
                                         while ($row = mysqli_fetch_assoc($resultMain)) {
                                             ?>
                                             <tr class='record'>
-                                                <td>
-                                                    <div class='custom-control custom-checkbox'>
-                                                        <input type='checkbox' class='custom-control-input request_checkbox'
-                                                            id='customCheck<?php echo $row['sno']; ?>'
-                                                            data-request-id='<?php echo $row['userTenderId']; ?>'>
-                                                        <label class='custom-control-label'
-                                                            for='customCheck<?php echo $row['sno']; ?>'><?php echo $row['sno']; ?></label>
+                                                <td class="text-center">
+                                                    <div class="d-flex align-items-center justify-content-center gap-2">
+                                                        <label class="checkboxs mb-0">
+                                                            <input type='checkbox' class='request_checkbox'
+                                                                id='customCheck<?php echo $row['sno']; ?>'
+                                                                data-request-id='<?php echo $row['userTenderId']; ?>'>
+                                                            <span class="checkmarks"></span>
+                                                        </label>
+                                                        <span class="sno-number"><?php echo $row['sno']; ?></span>
                                                     </div>
                                                 </td>
 
@@ -482,32 +857,29 @@ $allTenderData = $stmtFetchAllTender->get_result()->fetch_array(MYSQLI_ASSOC);
                                                 <td><?php echo $row['created_at']; ?></td>
 
                                                 <td>
-                                                    <?php
-                                                    $res = isset($row['id']) ? base64_encode($row['id']) : '';
-
-                                                    if ($isAdmin || hasPermission('Alot View All Tender', $privileges, $roleData['role_name'])) {
-                                                        ?>
-                                                        <a href='sent-edit.php?id=<?php echo $res; ?>'>
-                                                            <button type='button' class='btn btn-warning rounded-sm'>
-                                                                <i class='feather icon-edit'></i> &nbsp;Alot
-                                                            </button>
-                                                        </a> &nbsp;
+                                                    <div class="d-flex flex-column gap-2">
                                                         <?php
-                                                    }
+                                                        $res = isset($row['id']) ? base64_encode($row['id']) : '';
 
-                                                    echo "<br/>";
-                                                    echo "<br/>";
+                                                        if ($isAdmin || hasPermission('Alot View All Tender', $privileges, $roleData['role_name'])) {
+                                                            ?>
+                                                            <a class="st-action-link" href='sent-edit.php?id=<?php echo $res; ?>'>
+                                                                <i class='feather icon-edit'></i> Alot
+                                                            </a>
+                                                            <?php
+                                                        }
 
-                                                    if ($isAdmin || hasPermission('Delete View All Tenders', $privileges, $roleData['role_name'])) {
+                                                        if ($isAdmin || hasPermission('Delete View All Tenders', $privileges, $roleData['role_name'])) {
+                                                            ?>
+                                                            <a class="st-action-link st-action-danger recyclebutton" href='#'
+                                                                id='<?php echo $row['id']; ?>'
+                                                                title='Click To Delete'>
+                                                                <i class='feather icon-trash'></i> Move to Bin
+                                                            </a>
+                                                            <?php
+                                                        }
                                                         ?>
-                                                        <a href='#' id='<?php echo $row['id']; ?>'
-                                                            class='recyclebutton btn btn-danger rounded-sm'
-                                                            title='Click To Delete'>
-                                                            <i class='feather icon-trash'></i> &nbsp; Move to Bin
-                                                        </a>
-                                                        <?php
-                                                    }
-                                                    ?>
+                                                    </div>
                                                 </td>
                                             </tr>
                                             <?php
@@ -817,6 +1189,7 @@ $allTenderData = $stmtFetchAllTender->get_result()->fetch_array(MYSQLI_ASSOC);
                 scrollY: '70vh',
                 scrollCollapse: false,
                 fixedHeader: true,
+                autoWidth: false,
                 ordering: true,
                 searching: true
             });
