@@ -81,6 +81,7 @@ if (
     // Ensure static conditions are always present
     $conditions[] = "ur.status = 'Allotted'";
     $conditions[] = "ur.delete_tender = '0'";
+    $conditions[] = "ur.remark != 'accepted'";
 
     // Construct the WHERE clause dynamically
     $whereClause = "WHERE " . implode(' AND ', $conditions);
@@ -187,7 +188,9 @@ LEFT JOIN
 LEFT JOIN
          cities ct ON CAST(sm.city_state AS UNSIGNED) = ct.city_id  -- Convert string to number
 WHERE
-    ur.status = 'Allotted' AND ur.delete_tender = '0'
+    ur.status = 'Allotted'
+    AND ur.delete_tender = '0'
+    AND (ur.remark IS NULL OR ur.remark != 'accepted')
 GROUP BY
     ur.id
 ORDER BY
@@ -245,7 +248,10 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
 try {
 
     $stmtFetchTenderAllotted = $db->prepare("SELECT count(*) AS COUNT FROM user_tender_requests 
-    WHERE status = 'Allotted' AND delete_tender = 0;");
+    WHERE
+    status = 'Allotted'
+    AND delete_tender = '0'
+    AND (remark IS NULL OR remark != 'accepted')");
     $stmtFetchTenderAllotted->execute();
     $tenderAllottedCount = $stmtFetchTenderAllotted->get_result()->fetch_array(MYSQLI_ASSOC);
 
