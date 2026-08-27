@@ -59,14 +59,16 @@ try {
 }
 
 // Function to check if admin has a specific permission
-function hasPermission($privilege, $privileges, $roleName)
-{
-    // If role is admin, grant all permissions
-    if (strtolower($roleName) === 'admin') {
-        return true;
+if (!function_exists('hasPermission')) {
+    function hasPermission($privilege, $privileges, $roleName)
+    {
+        // If role is admin, grant all permissions
+        if (strtolower($roleName) === 'admin') {
+            return true;
+        }
+        // For other roles, check specific permissions
+        return in_array($privilege, $privileges);
     }
-    // For other roles, check specific permissions
-    return in_array($privilege, $privileges);
 }
 
 // Check if user is admin
@@ -269,6 +271,20 @@ $isAdmin = strtolower($roleData['role_name']) === 'admin';
                                 <li><a href='all-tender-request.php'>View All Tenders</a></li>
                             <?php endif; ?>
                         </ul>
+                    </li>
+                <?php endif; ?>
+
+                <?php if ($isAdmin || hasPermission('Task Management', $privileges, $roleData['role_name'])): ?>
+                    <!-- Task Management Menu (all tasks + full CRUD for managers/admins) -->
+                    <li class="nav-item">
+                        <a href="../task-management/index.php" class="nav-link"><span class="pcoded-micon"><i
+                                    class="feather icon-check-square"></i></span><span class="">Task Management</span></a>
+                    </li>
+                <?php else: ?>
+                    <!-- My Tasks (employees see only tasks assigned to them) -->
+                    <li class="nav-item">
+                        <a href="../task-management/index.php" class="nav-link"><span class="pcoded-micon"><i
+                                    class="feather icon-check-square"></i></span><span class="">My Tasks</span></a>
                     </li>
                 <?php endif; ?>
 
