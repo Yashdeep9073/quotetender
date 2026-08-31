@@ -204,7 +204,7 @@ if ($empResult) {
 <html lang="en">
 <head>
     <title>Edit Task</title>
-    <base href="../login/">
+    <base href="../">
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimal-ui">
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
@@ -221,7 +221,7 @@ if ($empResult) {
         </div>
     </div>
 
-    <?php include '../login/navbar.php'; ?>
+    <?php include '../navbar.php'; ?>
 
     <header class="navbar pcoded-header navbar-expand-lg navbar-light headerpos-fixed header-blue">
         <div class="m-header">
@@ -266,7 +266,7 @@ if ($empResult) {
                             </div>
                             <ul class="breadcrumb">
                                 <li class="breadcrumb-item"><a href="dashboard.php"><i class="feather icon-home"></i></a></li>
-                                <li class="breadcrumb-item"><a href="../task-management/index.php">Tasks</a></li>
+                                <li class="breadcrumb-item"><a href="task-management/index.php">Tasks</a></li>
                                 <li class="breadcrumb-item"><a href="#!">Edit Task #<?php echo (int) $task['id']; ?></a></li>
                             </ul>
                         </div>
@@ -395,7 +395,7 @@ if ($empResult) {
 
                                 <div class="row mt-3">
                                     <div class="col-md-12 text-right">
-                                        <a href="../task-management/view.php?id=<?php echo (int) $task['id']; ?>" class="btn btn-secondary">Cancel</a>
+                                        <a href="task-management/view.php?id=<?php echo (int) $task['id']; ?>" class="btn btn-secondary">Cancel</a>
                                         <button type="submit" class="btn btn-warning">Update Task</button>
                                     </div>
                                 </div>
@@ -427,7 +427,7 @@ if ($empResult) {
                 allowClear: true,
                 minimumInputLength: 2,
                 ajax: {
-                    url: '../task-management/ajax-tenders.php',
+                    url: 'task-management/ajax-tenders.php',
                     dataType: 'json',
                     delay: 300,
                     data: function (params) {

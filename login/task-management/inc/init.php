@@ -12,11 +12,11 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 if (!isset($_SESSION["login_user"])) {
-    header("location: ../login/index.php");
+    header("location: ../index.php");
     exit;
 }
 
-require_once __DIR__ . '/../../login/db/config.php';
+require_once __DIR__ . '/../../db/config.php';
 
 if (!$db) {
     die('Database connection failed. Please check your configuration.');
@@ -33,7 +33,7 @@ $taskUserRow = $stmtUser->get_result()->fetch_assoc();
 if (!$taskUserRow) {
     session_unset();
     session_destroy();
-    header("location: ../login/index.php");
+    header("location: ../index.php");
     exit;
 }
 $taskUserId = (int) $taskUserRow['id'];

@@ -146,17 +146,17 @@ if (
         ur.due_date, 
         ur.file_name, 
         ur.tenderID, 
-        ur.created_at, 
+        ur.created_at AS tender_created_at, 
         ur.file_name2,
         ur.additional_files,
         ur.reference_code,
         ur.tentative_cost,
         ur.tender_no, 
-        s.*, 
-        dv.*, 
-        sd.*,
-         st.*, 
-        ct.*  
+        s.section_name, 
+        dv.division_name, 
+        sd.subdivision,
+        st.state_name, 
+        ct.city_name  
     FROM 
         user_tender_requests ur
     INNER JOIN 
@@ -211,17 +211,17 @@ if (
         ur.due_date, 
         ur.file_name, 
         ur.tenderID, 
-        ur.created_at, 
+        ur.created_at AS tender_created_at, 
         ur.file_name2,
         ur.additional_files,
         ur.reference_code,
         ur.tentative_cost,
         ur.tender_no, 
-        s.*, 
-        dv.*, 
-        sd.*,
-        st.*,  -- Select state name
-        ct.*   -- Select city name
+        s.section_name, 
+        dv.division_name, 
+        sd.subdivision,
+        st.state_name,  -- Select state name
+        ct.city_name   -- Select city name
     FROM 
         user_tender_requests ur
     INNER JOIN 
@@ -380,16 +380,16 @@ try {
         ur.due_date, 
         ur.file_name, 
         ur.tenderID, 
-        ur.created_at, 
+        ur.created_at AS tender_created_at, 
         ur.file_name2,
         ur.reference_code,
         ur.tentative_cost,
         ur.tender_no, 
-        s.*, 
-        dv.*, 
-        sd.*,
-         st.*, 
-        ct.*  
+        s.section_name, 
+        dv.division_name, 
+        sd.subdivision,
+        st.state_name, 
+        ct.city_name  
     FROM 
         user_tender_requests ur
     INNER JOIN 
@@ -1102,7 +1102,8 @@ try {
            ========================================== */
         
         .sent-tender-page .st-kpi-card {
-            background: linear-gradient(45deg, #33cc33, #73b4ff) !important;
+            /* Sent Tender — Yellow (matches dashboard bg-c-yellow) */
+            background: linear-gradient(45deg, #FFB64D, #ffcb80) !important;
             margin-bottom: 14px !important;
             overflow: hidden;
         }
@@ -1500,7 +1501,7 @@ try {
                                             $dueDate = new DateTime($row['due_date']);
                                             $formattedDueDate = $dueDate->format('d-m-Y');
 
-                                            $createdDate = new DateTime($row['created_at']);
+                                            $createdDate = new DateTime($row['tender_created_at']);
                                             $formattedCreatedDate = $createdDate->format('d-m-Y H:i:s');
                                             ?>
                                             <tr class="record">
@@ -1544,7 +1545,7 @@ try {
                                                             <i class="feather icon-more-vertical"></i>
                                                         </button>
                                                         <ul class="dropdown-menu"
-                                                            aria-labelledby="actionMenu<?php echo $row['id']; ?>">
+                                                            aria-labelledby="actionMenu<?php echo $row['t_id']; ?>">
 
                                                             <?php if ($isAdmin || hasPermission('Alot Sent Tender', $privileges, $roleData['role_name'])) { ?>
                                                                 <li>

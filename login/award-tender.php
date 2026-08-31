@@ -471,17 +471,36 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
             text-align: left;
         }
 
+        /* Green KPI card (Award/Confirm Tender) — matches dashboard bg-c-green */
+        .award-tender-page .st-kpi-card.st-kpi-green {
+            background: linear-gradient(45deg, #2ed8b6, #59e0c5) !important;
+            overflow: hidden;
+        }
+
         .award-tender-page .st-kpi-icon {
             flex: 0 0 auto;
             width: 48px;
             height: 48px;
             border-radius: 10px;
-            background: #fee2e2;
-            color: #dc2626;
+            background: rgba(255, 255, 255, .22);
+            color: #ffffff;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 20px;
+        }
+
+        .award-tender-page .st-kpi-green .st-kpi-icon {
+            background: rgba(255, 255, 255, .22);
+            color: #ffffff;
+        }
+
+        .award-tender-page .st-kpi-green .st-kpi-label {
+            color: rgba(255, 255, 255, .85);
+        }
+
+        .award-tender-page .st-kpi-green .st-kpi-value {
+            color: #ffffff;
         }
 
         .award-tender-page .st-kpi-meta {
@@ -518,20 +537,20 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
         }
 
         .award-tender-page .st-kpi-breadcrumb .breadcrumb a {
-            color: #64748b;
+            color: #ffffff;
             text-decoration: none;
         }
 
         .award-tender-page .st-kpi-breadcrumb .breadcrumb a:hover {
-            color: #0f172a;
+            color: rgba(255, 255, 255, .88);
         }
 
         .award-tender-page .st-kpi-breadcrumb .breadcrumb-item.active {
-            color: #94a3b8;
+            color: rgba(255, 255, 255, .9);
         }
 
         .award-tender-page .st-kpi-breadcrumb .breadcrumb-item + .breadcrumb-item::before {
-            color: #cbd5e1;
+            color: rgba(255, 255, 255, .65);
         }
 
         /* ---------- filter panel ---------- */
@@ -1177,7 +1196,7 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
             <div class="row">
                 <div class="col-12">
 
-                    <div class="card st-kpi-card st-kpi-red">
+                    <div class="card st-kpi-card st-kpi-green">
 
                         <!-- KPI -->
                         <div class="card-body st-kpi-body">

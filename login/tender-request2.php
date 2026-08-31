@@ -989,16 +989,42 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["submit"])) {
             font-size: 20px;
         }
 
-        /* Blue KPI (Tender Request) */
-        .tender-request-page .st-kpi-blue .st-kpi-icon {
-            background: #eef2ff;
-            color: #4f46e5;
+        /* Red KPI card (Tender Request) — matches dashboard bg-c-red */
+        .tender-request-page .st-kpi-card.st-kpi-red {
+            background: linear-gradient(45deg, #FF5370, #ff869a) !important;
+            overflow: hidden;
         }
 
-        /* Red KPI (Last Reference Code) */
         .tender-request-page .st-kpi-red .st-kpi-icon {
-            background: #fee2e2;
-            color: #dc2626;
+            background: rgba(255, 255, 255, .22);
+            color: #ffffff;
+        }
+
+        .tender-request-page .st-kpi-red .st-kpi-label {
+            color: rgba(255, 255, 255, .85);
+        }
+
+        .tender-request-page .st-kpi-red .st-kpi-value {
+            color: #ffffff;
+        }
+
+        /* Blue KPI card (Last Reference Code) */
+        .tender-request-page .st-kpi-card.st-kpi-blue {
+            background: linear-gradient(45deg, #4099ff, #73b4ff) !important;
+            overflow: hidden;
+        }
+
+        .tender-request-page .st-kpi-blue .st-kpi-icon {
+            background: rgba(255, 255, 255, .22);
+            color: #ffffff;
+        }
+
+        .tender-request-page .st-kpi-blue .st-kpi-label {
+            color: rgba(255, 255, 255, .85);
+        }
+
+        .tender-request-page .st-kpi-blue .st-kpi-value {
+            color: #ffffff;
         }
 
         .tender-request-page .st-kpi-meta {
@@ -1593,7 +1619,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["submit"])) {
             <!-- KPI cards -->
             <div class="row">
                 <div class="col-md-6">
-                    <div class="card st-kpi-card st-kpi-blue">
+                    <div class="card st-kpi-card st-kpi-red">
                         <div class="card-body st-kpi-body">
                             <div class="st-kpi-icon">
                                 <i class="feather icon-message-square"></i>
@@ -1625,7 +1651,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["submit"])) {
                 </div>
 
                 <div class="col-md-6">
-                    <div class="card st-kpi-card st-kpi-red">
+                    <div class="card st-kpi-card st-kpi-blue">
                         <div class="card-body st-kpi-body">
                             <div class="st-kpi-icon">
                                 <i class="feather icon-bookmark"></i>
@@ -1880,8 +1906,13 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["submit"])) {
                                                 <td><?php echo $row[
                                                     "updated_by"
                                                 ]; ?></td>
-                                                <td>
-
+                                                <td class="d-flex align-items-center">
+                                                    <a href="javascript:void(0);"
+                                                       class="btn btn-primary btn-sm assign-task-btn me-2"
+                                                       data-tender-id="<?= htmlspecialchars($row['id']) ?>">
+                                                        <i class="feather icon-check-square"></i>
+                                                        Assign Task
+                                                    </a>
                                                     <div class="dropdown">
                                                         <button class="btn btn-secondary st-action-btn" type="button"
                                                             id="actionMenu<?php echo $row[

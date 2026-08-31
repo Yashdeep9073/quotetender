@@ -277,13 +277,13 @@ $isAdmin = strtolower($roleData['role_name']) === 'admin';
                 <?php if ($isAdmin || hasPermission('Task Management', $privileges, $roleData['role_name'])): ?>
                     <!-- Task Management Menu (all tasks + full CRUD for managers/admins) -->
                     <li class="nav-item">
-                        <a href="../task-management/index.php" class="nav-link"><span class="pcoded-micon"><i
+                        <a href="task-management/index.php" class="nav-link"><span class="pcoded-micon"><i
                                     class="feather icon-check-square"></i></span><span class="">Task Management</span></a>
                     </li>
                 <?php else: ?>
                     <!-- My Tasks (employees see only tasks assigned to them) -->
                     <li class="nav-item">
-                        <a href="../task-management/index.php" class="nav-link"><span class="pcoded-micon"><i
+                        <a href="task-management/index.php" class="nav-link"><span class="pcoded-micon"><i
                                     class="feather icon-check-square"></i></span><span class="">My Tasks</span></a>
                     </li>
                 <?php endif; ?>

@@ -418,9 +418,9 @@ inner join navigation_menus nm on ap.navigation_menu_id = nm.id where ap.admin_i
             line-height: 1.2;
         }
 
-        /* KPI card — RED theme */
+        /* KPI card — ORANGE theme (Alot Tender, matches dashboard) */
         .alot-tender-page .st-kpi-card {
-            background: linear-gradient(45deg, #dc2626, #ef4444) !important;
+            background: linear-gradient(to right, #ff8c00, #ffba56) !important;
             margin-bottom: 10px !important;
             overflow: hidden;
         }

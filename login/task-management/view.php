@@ -9,6 +9,7 @@ if ($taskId === false) {
 $task = task_load($db, $taskId);
 if (!task_can_view_row($task, $taskUserId, $taskCanViewAll)) {
     task_redirect('index.php', 'danger', 'Task not found or you do not have permission to view it.');
+    return;
 }
 
 // ---------- POST actions ----------
@@ -94,7 +95,7 @@ $canUpdateStatus = $taskCanEdit || ((int) $task['assigned_to'] === $taskUserId);
 <html lang="en">
 <head>
     <title>View Task</title>
-    <base href="../login/">
+    <base href="../">
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimal-ui">
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
@@ -109,7 +110,7 @@ $canUpdateStatus = $taskCanEdit || ((int) $task['assigned_to'] === $taskUserId);
         </div>
     </div>
 
-    <?php include '../login/navbar.php'; ?>
+    <?php include '../navbar.php'; ?>
 
     <header class="navbar pcoded-header navbar-expand-lg navbar-light headerpos-fixed header-blue">
         <div class="m-header">
@@ -154,7 +155,7 @@ $canUpdateStatus = $taskCanEdit || ((int) $task['assigned_to'] === $taskUserId);
                             </div>
                             <ul class="breadcrumb">
                                 <li class="breadcrumb-item"><a href="dashboard.php"><i class="feather icon-home"></i></a></li>
-                                <li class="breadcrumb-item"><a href="../task-management/index.php">Tasks</a></li>
+                                <li class="breadcrumb-item"><a href="task-management/index.php">Tasks</a></li>
                                 <li class="breadcrumb-item"><a href="#!">View Task #<?php echo (int) $task['id']; ?></a></li>
                             </ul>
                         </div>
@@ -172,10 +173,10 @@ $canUpdateStatus = $taskCanEdit || ((int) $task['assigned_to'] === $taskUserId);
                             <h5>Task #<?php echo (int) $task['id']; ?>: <?php echo e($task['title']); ?></h5>
                             <div>
                                 <?php if ($taskCanEdit): ?>
-                                    <a href="../task-management/edit.php?id=<?php echo (int) $task['id']; ?>" class="btn btn-warning btn-sm"><i class="feather icon-edit"></i> Edit Task</a>
+                                    <a href="task-management/edit.php?id=<?php echo (int) $task['id']; ?>" class="btn btn-warning btn-sm"><i class="feather icon-edit"></i> Edit Task</a>
                                 <?php endif; ?>
                                 <?php if ($taskCanDelete): ?>
-                                    <form action="../task-management/delete.php" method="post" class="d-inline delete-task-form">
+                                    <form action="task-management/delete.php" method="post" class="d-inline delete-task-form">
                                         <input type="hidden" name="id" value="<?php echo (int) $task['id']; ?>">
                                         <button type="submit" class="btn btn-danger btn-sm"><i class="feather icon-trash-2"></i> Delete</button>
                                     </form>
@@ -213,7 +214,7 @@ $canUpdateStatus = $taskCanEdit || ((int) $task['assigned_to'] === $taskUserId);
                                     <div class="row">
                                         <div class="col-md-6">
                                             <p><strong>Related Tender:</strong>
-                                                <a href="../login/sent-edit.php?id=<?php echo base64_encode((string) $task['tender_request_id']); ?>">
+                                                <a href="sent-edit.php?id=<?php echo base64_encode((string) $task['tender_request_id']); ?>">
                                                     <?php echo e($task['tender_id_number']); ?>
                                                 </a>
                                             </p>

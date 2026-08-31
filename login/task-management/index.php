@@ -112,7 +112,7 @@ if ($taskCanViewAll) {
 <html lang="en">
 <head>
     <title>Task Management</title>
-    <base href="../login/">
+    <base href="../">
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimal-ui">
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
@@ -127,7 +127,7 @@ if ($taskCanViewAll) {
         </div>
     </div>
 
-    <?php include '../login/navbar.php'; ?>
+    <?php include '../navbar.php'; ?>
 
     <header class="navbar pcoded-header navbar-expand-lg navbar-light headerpos-fixed header-blue">
         <div class="m-header">
@@ -172,7 +172,7 @@ if ($taskCanViewAll) {
                             </div>
                             <ul class="breadcrumb">
                                 <li class="breadcrumb-item"><a href="dashboard.php"><i class="feather icon-home"></i></a></li>
-                                <li class="breadcrumb-item"><a href="../task-management/index.php">Tasks</a></li>
+                                <li class="breadcrumb-item"><a href="task-management/index.php">Tasks</a></li>
                             </ul>
                         </div>
                     </div>
@@ -187,12 +187,12 @@ if ($taskCanViewAll) {
                         <div class="card-header table-card-header d-flex justify-content-between align-items-center">
                             <h5><?php echo $taskCanViewAll ? 'Task List' : 'My Tasks'; ?></h5>
                             <?php if ($taskCanCreate): ?>
-                                <a href="../task-management/create.php" class="btn btn-primary"><i class="feather icon-plus"></i> Create Task</a>
+                                <a href="task-management/create.php" class="btn btn-primary"><i class="feather icon-plus"></i> Create Task</a>
                             <?php endif; ?>
                         </div>
                         <div class="card-body">
                             <!-- Filters (server-side) -->
-                            <form method="get" action="../task-management/index.php" class="row mb-4">
+                            <form method="get" action="task-management/index.php" class="row mb-4">
                                 <div class="col-md-3">
                                     <input type="text" name="q" class="form-control" placeholder="Search tasks..." value="<?php echo e($filters['q']); ?>">
                                 </div>
@@ -237,7 +237,7 @@ if ($taskCanViewAll) {
                                     <button type="submit" class="btn btn-primary btn-block"><i class="feather icon-filter"></i> Filter</button>
                                 </div>
                                 <div class="col-md-3 mt-2">
-                                    <a href="../task-management/index.php" class="btn btn-secondary btn-block">Reset</a>
+                                    <a href="task-management/index.php" class="btn btn-secondary btn-block">Reset</a>
                                 </div>
                             </form>
 
@@ -270,7 +270,7 @@ if ($taskCanViewAll) {
                                             <?php foreach ($tasks as $task): ?>
                                             <tr>
                                                 <td>
-                                                    <a href="../task-management/view.php?id=<?php echo (int) $task['id']; ?>"><?php echo e($task['title']); ?></a>
+                                                    <a href="task-management/view.php?id=<?php echo (int) $task['id']; ?>"><?php echo e($task['title']); ?></a>
                                                 </td>
                                                 <td>
                                                     <?php if ($task['task_type'] === 'Tender/Query'): ?>
@@ -281,7 +281,7 @@ if ($taskCanViewAll) {
                                                 </td>
                                                 <td>
                                                     <?php if ($task['tender_id_number'] !== null): ?>
-                                                        <a href="../login/sent-edit.php?id=<?php echo base64_encode((string) $task['tender_request_id']); ?>"
+                                                        <a href="sent-edit.php?id=<?php echo base64_encode((string) $task['tender_request_id']); ?>"
                                                            title="Open tender/query">
                                                             <?php echo e($task['tender_id_number']); ?>
                                                         </a>
@@ -313,12 +313,12 @@ if ($taskCanViewAll) {
                                                     ?>
                                                 </td>
                                                 <td>
-                                                    <a href="../task-management/view.php?id=<?php echo (int) $task['id']; ?>" class="btn btn-info btn-sm"><i class="feather icon-eye"></i> View</a>
+                                                    <a href="task-management/view.php?id=<?php echo (int) $task['id']; ?>" class="btn btn-info btn-sm"><i class="feather icon-eye"></i> View</a>
                                                     <?php if ($taskCanEdit): ?>
-                                                        <a href="../task-management/edit.php?id=<?php echo (int) $task['id']; ?>" class="btn btn-warning btn-sm"><i class="feather icon-edit"></i> Edit</a>
+                                                        <a href="task-management/edit.php?id=<?php echo (int) $task['id']; ?>" class="btn btn-warning btn-sm"><i class="feather icon-edit"></i> Edit</a>
                                                     <?php endif; ?>
                                                     <?php if ($taskCanDelete): ?>
-                                                        <form action="../task-management/delete.php" method="post" class="d-inline delete-task-form">
+                                                        <form action="task-management/delete.php" method="post" class="d-inline delete-task-form">
                                                             <input type="hidden" name="id" value="<?php echo (int) $task['id']; ?>">
                                                             <button type="submit" class="btn btn-danger btn-sm"><i class="feather icon-trash-2"></i> Delete</button>
                                                         </form>
