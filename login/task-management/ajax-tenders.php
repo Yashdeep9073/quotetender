@@ -65,8 +65,15 @@ foreach ($rows as $row) {
         $parts[] = date('d M Y', strtotime($row['created_at']));
     }
     $results[] = [
-        'id'   => (int) $row['id'],
-        'text' => implode(' | ', $parts),
+        'id'            => (int) $row['id'],
+        'text'          => implode(' | ', $parts),
+        // Structured fields for the richer create.php selector UI (extra fields are ignored by plain Select2 consumers)
+        'tenderID'      => $row['tenderID'] !== null ? $row['tenderID'] : '',
+        'reference_code'=> $row['reference_code'] !== null ? $row['reference_code'] : '',
+        'status'        => $row['status'] !== null ? $row['status'] : '',
+        'member_name'   => $row['member_name'] !== null ? $row['member_name'] : '',
+        'member_firm'   => $row['member_firm'] !== null ? $row['member_firm'] : '',
+        'created_date'  => $row['created_at'] !== null ? date('d M Y', strtotime($row['created_at'])) : '',
     ];
 }
 

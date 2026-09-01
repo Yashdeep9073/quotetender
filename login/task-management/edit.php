@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/inc/init.php';
+require_once __DIR__ . '/../service/NotificationService.php';
 
 if (!$taskCanEdit) {
     task_redirect('index.php', 'danger', 'You do not have permission to edit tasks.');
@@ -167,6 +168,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             if ($dueDate !== $old['due_date']) {
                 task_log_history($db, $taskId, $taskUserId, 'Due date changed', (string) $old['due_date'], $dueDate);
+            }
+
+            // Notify participants only when something actually changed.
+            $changed = (
+                $form['title'] !== (string) $old['title']
+                || $form['description'] !== (string) ($old['description'] ?? '')
+                || $form['task_type'] !== (string) $old['task_type']
+                || $oldTenderId !== $tenderRequestId
+                || (int) $old['assigned_to'] !== $assignedTo
+                || $form['priority'] !== (string) $old['priority']
+                || $form['status'] !== (string) $old['status']
+                || $startDate !== $old['start_date']
+                || $dueDate !== $old['due_date']
+            );
+            if ($changed) {
+                $notificationService = new NotificationService($db);
+                if ((int) $old['assigned_to'] !== $assignedTo) {
+                    // Reassignment -> notify only the new assignee
+                    $notificationService->notifyTaskReassigned($taskId, $assignedTo, $form['title']);
+                } else {
+                    // General update -> notify the current assignee
+                    $notificationService->notifyTaskUpdated($taskId, $taskUserId, $assignedTo, $form['title']);
+                }
             }
 
             task_redirect('view.php?id=' . $taskId, 'success', 'Task updated successfully.');

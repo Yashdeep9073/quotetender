@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/inc/init.php';
+require_once __DIR__ . '/../service/NotificationService.php';
 
 if (!$taskCanCreate) {
     task_redirect('index.php', 'danger', 'You do not have permission to create tasks.');
@@ -129,9 +130,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($stmtInsert->execute()) {
             $newTaskId = (int) $stmtInsert->insert_id;
             task_log_history($db, $newTaskId, $taskUserId, 'Task created');
+
+            // Notify the assigned employee (in-app + email handled by the service)
+            $notificationService = new NotificationService($db);
+            if ($form['task_type'] === 'Tender/Query') {
+                $notificationService->notifyTenderTaskAssigned($newTaskId, $assignedTo, $form['title']);
+            } else {
+                $notificationService->notifyTaskAssigned($newTaskId, $assignedTo, $form['title']);
+            }
+
             task_redirect('view.php?id=' . $newTaskId, 'success', 'Task created successfully.');
         } else {
             $errors[] = 'Failed to save the task. Please try again.';
+        }
+    }
+}
+
+// Pre-selected tender/query (after a validation error) to render the summary preview
+$preselectedTender = null;
+if ($form['tender_request_id'] !== '') {
+    $ptId = task_get_int($form['tender_request_id']);
+    if ($ptId !== false) {
+        $stmtPT = $db->prepare(
+            "SELECT utr.id, utr.tenderID, utr.reference_code, utr.status, utr.created_at,
+                    m.name AS member_name, m.firm_name AS member_firm
+               FROM user_tender_requests utr
+               LEFT JOIN members m ON m.member_id = utr.member_id
+              WHERE utr.id = ? AND utr.delete_tender = '0'"
+        );
+        $stmtPT->bind_param('i', $ptId);
+        $stmtPT->execute();
+        $preselectedTender = $stmtPT->get_result()->fetch_assoc() ?: null;
+        if ($preselectedTender) {
+            $preselectedTender['created_date'] = !empty($preselectedTender['created_at'])
+                ? date('d M Y', strtotime($preselectedTender['created_at']))
+                : '';
         }
     }
 }
@@ -158,6 +191,62 @@ if ($empResult) {
     <link rel="stylesheet" href="assets/css/plugins/select2.min.css">
     <link rel="stylesheet" href="assets/css/plugins/select.bootstrap4.min.css">
     <link rel="stylesheet" href="assets/css/style.css">
+    <style>
+        /* ---- Related Tender/Query selector (create task page) ---- */
+        .tender-picker { position: relative; }
+        .tender-picker .tender-search-icon {
+            position: absolute; top: 11px; left: 12px; z-index: 1;
+            color: #6b7a8d; font-size: 15px; pointer-events: none;
+        }
+        .tender-picker .select2-container--bootstrap4 .select2-selection {
+            padding-left: 34px;
+        }
+        .tender-picker .select2-container--bootstrap4 .select2-selection--single {
+            height: 38px;
+        }
+        .tender-picker .select2-container--bootstrap4 .select2-selection--single .select2-selection__rendered {
+            line-height: 38px;
+        }
+        .tender-picker .select2-dropdown {
+            background-color: #ffffff;
+            border: 1px solid #e3e8ee;
+            border-radius: 6px;
+            box-shadow: 0 8px 24px rgba(4, 26, 55, 0.12);
+            z-index: 1060;
+            margin-top: 4px;
+        }
+        .tender-picker .select2-container--bootstrap4 .select2-results__option {
+            padding: 8px 10px;
+            border-radius: 4px;
+        }
+        .tender-picker .select2-container--bootstrap4 .select2-results__option--highlighted {
+            background-color: rgba(51, 204, 51, 0.08);
+            color: #222222;
+        }
+        .tender-chip {
+            display: inline-flex; align-items: center;
+            background-color: rgba(51, 204, 51, 0.1);
+            color: #1e7e1e; border-radius: 4px;
+            padding: 2px 8px; font-size: 13px;
+        }
+        .tender-chip i { margin-right: 4px; font-size: 13px; }
+        .tender-searching {
+            padding: 12px; text-align: center; color: #6b7a8d; font-size: 13px;
+        }
+        .tender-no-results {
+            padding: 16px 12px; text-align: center; color: #6b7a8d; font-size: 13px;
+        }
+        .tender-no-results > i {
+            font-size: 24px; display: block; margin-bottom: 6px; color: #c3cdd8;
+        }
+        #tender-summary .tender-selected-title { font-size: 14px; }
+        #tender-summary .tender-selected-sub { font-size: 12px; color: #6b7a8d; margin-top: 2px; }
+        .tender-selected-clear {
+            border: none; background: transparent; color: #b02a37;
+            font-size: 16px; line-height: 1; padding: 2px 4px; cursor: pointer;
+        }
+        .tender-selected-clear:hover { color: #8f1d29; }
+    </style>
 </head>
 <body class="">
     <div class="loader-bg">
@@ -292,15 +381,20 @@ if ($empResult) {
                                     </div>
                                     <div class="col-md-6">
                                         <div class="form-group" id="tender-select-group" style="<?php echo $form['task_type'] === 'Tender/Query' ? '' : 'display:none;'; ?>">
-                                            <label>Related Tender/Query</label>
-                                            <select name="tender_request_id" id="tender_request_id" class="form-control" style="width:100%;">
-                                                <?php if ($form['tender_request_id'] !== ''): ?>
-                                                    <option value="<?php echo e($form['tender_request_id']); ?>" selected>
-                                                        <?php echo e($form['tender_label'] !== '' ? $form['tender_label'] : 'Selected tender #' . $form['tender_request_id']); ?>
-                                                    </option>
-                                                <?php endif; ?>
-                                            </select>
-                                            <small class="form-text text-muted">Search by tender/query number, reference code, member or firm name.</small>
+                                            <label><i class="feather icon-paperclip mr-1"></i>Related Tender / Query</label>
+                                            <div class="tender-picker">
+                                                <i class="feather icon-search tender-search-icon"></i>
+                                                <select name="tender_request_id" id="tender_request_id" class="form-control" style="width:100%;">
+                                                    <?php if ($form['tender_request_id'] !== ''): ?>
+                                                        <option value="<?php echo e($form['tender_request_id']); ?>" selected>
+                                                            <?php echo e($form['tender_label'] !== '' ? $form['tender_label'] : 'Selected tender #' . $form['tender_request_id']); ?>
+                                                        </option>
+                                                    <?php endif; ?>
+                                                </select>
+                                                <small class="form-text text-muted">Search by Tender ID or Reference Code · Minimum 2 characters</small>
+                                            </div>
+                                            <!-- Selected tender/query card -->
+                                            <div id="tender-summary" class="mt-2 rounded" style="display:none;background:#f8fafc;border:1px solid #e3e8ee;padding:10px 12px;"></div>
                                         </div>
                                     </div>
                                 </div>
@@ -368,11 +462,128 @@ if ($empResult) {
             $('input.task-type-radio').on('change', toggleTenderGroup);
             toggleTenderGroup();
 
+            function esc(value) {
+                return $('<div>').text(value === null || value === undefined ? '' : String(value)).html();
+            }
+
+            // Reads a field from either the AJAX payload (snake_case) or the
+            // static preselected option (data-* attributes, camelCase).
+            function tenderField(item, key) {
+                if (item == null) { return ''; }
+                if (item[key] !== undefined && item[key] !== null && item[key] !== '') { return item[key]; }
+                var camel = key.replace(/_([a-z])/g, function (m, c) { return c.toUpperCase(); });
+                if (item[camel] !== undefined && item[camel] !== null && item[camel] !== '') { return item[camel]; }
+                var alt = camel.charAt(0).toLowerCase() + camel.slice(1);
+                return item[alt] !== undefined && item[alt] !== null ? item[alt] : '';
+            }
+
+            function tenderStatusBadge(status) {
+                var map = {
+                    'Sent': 'badge-success',
+                    'Awarded': 'badge-success',
+                    'Requested': 'badge-info',
+                    'In Progress': 'badge-warning',
+                    'Cancelled': 'badge-danger',
+                    'Pending': 'badge-secondary'
+                };
+                var cls = map[status] || 'badge-secondary';
+                return '<span class="badge ' + cls + '">' + esc(status) + '</span>';
+            }
+
+            // Dropdown result: compact card with tender ID + status, reference, member, date
+            function formatTenderResult(item) {
+                if (item.loading) { return item.text; }
+                if (!item.id) { return item.text; }
+                var $wrap = $('<div style="padding:3px 0;"></div>');
+                var $head = $('<div style="display:flex;justify-content:space-between;align-items:center;"></div>');
+                $head.append($('<strong style="font-size:13px;"></strong>').text(tenderField(item, 'tenderID') || 'No Tender ID'));
+                var status = tenderField(item, 'status');
+                if (status) { $head.append($(tenderStatusBadge(status))); }
+                $wrap.append($head);
+                var ref = tenderField(item, 'reference_code');
+                if (ref) { $wrap.append($('<div style="font-size:12px;color:#6b7a8d;"></div>').text(ref)); }
+                var meta = [];
+                var member = tenderField(item, 'member_name');
+                if (member) {
+                    var firm = tenderField(item, 'member_firm');
+                    meta.push(member + (firm ? ' (' + firm + ')' : ''));
+                }
+                var created = tenderField(item, 'created_date');
+                if (created) { meta.push(created); }
+                if (meta.length) {
+                    $wrap.append($('<div style="font-size:12px;color:#8a97a5;"></div>').text(meta.join(' · ')));
+                }
+                return $wrap;
+            }
+
+            // Selected chip inside the search control: paperclip + tender ID + status
+            function formatTenderSelection(item) {
+                if (!item.id) { return 'Search tender ID or reference…'; }
+                var id = tenderField(item, 'tenderID');
+                if (id) {
+                    var $chip = $('<span class="tender-chip"></span>');
+                    $chip.append($('<i class="feather icon-paperclip"></i>'));
+                    $chip.append($('<strong></strong>').text(id));
+                    var status = tenderField(item, 'status');
+                    if (status) { $chip.append(' ').append($(tenderStatusBadge(status))); }
+                    return $chip;
+                }
+                return item.text;
+            }
+
+            // Selected tender/query card (shown below the search control)
+            function renderSummary(item) {
+                if (!item || !item.id) {
+                    $('#tender-summary').hide().empty();
+                    return;
+                }
+                var id = tenderField(item, 'tenderID') || item.text || item.id;
+                var ref = tenderField(item, 'reference_code');
+                var status = tenderField(item, 'status');
+                var member = tenderField(item, 'member_name');
+                var firm = tenderField(item, 'member_firm');
+                var created = tenderField(item, 'created_date');
+
+                var html = '<div class="d-flex justify-content-between align-items-start">'
+                    + '<div>'
+                    + '<div class="tender-selected-title"><i class="feather icon-paperclip mr-1"></i><strong>' + esc(id) + '</strong>'
+                    + (status ? ' ' + tenderStatusBadge(status) : '')
+                    + '</div>'
+                    + (ref ? '<div class="tender-selected-sub">' + esc(ref) + '</div>' : '')
+                    + (status ? '<div class="tender-selected-sub">Status: ' + esc(status) + '</div>' : '')
+                    + (member ? '<div class="tender-selected-sub">Registered: ' + esc(member + (firm ? ' (' + firm + ')' : '')) + (created ? ' · ' + esc(created) : '') + '</div>' : '')
+                    + '</div>'
+                    + '<button type="button" class="tender-selected-clear" title="Change tender"><i class="feather icon-x"></i></button>'
+                    + '</div>';
+
+                $('#tender-summary').html(html).show();
+                $('#tender-summary .tender-selected-clear').on('click', function () {
+                    $('#tender_request_id').val(null).trigger('change');
+                    var $search = $('.tender-picker .select2-search__field');
+                    if ($search.length) { $search.focus(); }
+                });
+            }
+
             $('#tender_request_id').select2({
                 theme: 'bootstrap4',
-                placeholder: 'Search tender/query…',
+                placeholder: 'Search tender ID or reference…',
                 allowClear: true,
                 minimumInputLength: 2,
+                templateResult: formatTenderResult,
+                templateSelection: formatTenderSelection,
+                language: {
+                    inputTooShort: function () {
+                        return '<span class="tender-searching">Type at least 2 characters to search</span>';
+                    },
+                    searching: function () {
+                        return '<div class="tender-searching"><i class="feather icon-loader anim-rotate mr-1"></i>Searching tenders...</div>';
+                    },
+                    noResults: function () {
+                        return '<div class="tender-no-results"><i class="feather icon-inbox"></i>'
+                            + '<div>No tender/query found</div>'
+                            + '<div class="small text-muted">Try another Tender ID or Reference Code.</div></div>';
+                    }
+                },
                 ajax: {
                     url: 'task-management/ajax-tenders.php',
                     dataType: 'json',
@@ -385,6 +596,18 @@ if ($empResult) {
                     }
                 }
             });
+
+            $('#tender_request_id').on('select2:select', function (e) {
+                renderSummary(e.params.data);
+            });
+            $('#tender_request_id').on('select2:clear', function () {
+                renderSummary(null);
+            });
+
+            // Initial card when a tender is already selected (e.g. after a validation error)
+            <?php if ($preselectedTender): ?>
+                renderSummary(<?php echo json_encode($preselectedTender, JSON_UNESCAPED_UNICODE); ?>);
+            <?php endif; ?>
         });
     </script>
 </body>

@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/inc/init.php';
+require_once __DIR__ . '/../service/NotificationService.php';
 
 $taskId = task_get_int(isset($_GET['id']) ? $_GET['id'] : null);
 if ($taskId === false) {
@@ -33,6 +34,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmtUpd->bind_param('si', $newStatus, $taskId);
             if ($stmtUpd->execute()) {
                 task_log_history($db, $taskId, $taskUserId, 'Status changed', $task['status'], $newStatus);
+
+                // Notify the task creator when someone else changes the status
+                $notificationService = new NotificationService($db);
+                $notificationService->notifyTaskStatusChanged(
+                    $taskId,
+                    $task['status'],
+                    $newStatus,
+                    $taskUserId,
+                    (int) $task['created_by'],
+                    $task['title']
+                );
+
                 task_redirect('view.php?id=' . $taskId, 'success', 'Task status updated.');
             } else {
                 task_redirect('view.php?id=' . $taskId, 'danger', 'Failed to update task status.');
@@ -56,6 +69,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmtComment = $db->prepare("INSERT INTO task_comments (task_id, user_id, comment) VALUES (?, ?, ?)");
         $stmtComment->bind_param('iis', $taskId, $taskUserId, $comment);
         if ($stmtComment->execute()) {
+            // Notify the assignee when someone else adds a comment
+            $notificationService = new NotificationService($db);
+            $notificationService->notifyTaskCommented(
+                $taskId,
+                $taskUserId,
+                (int) $task['assigned_to'],
+                $task['title']
+            );
+
             task_redirect('view.php?id=' . $taskId, 'success', 'Comment added.');
         } else {
             task_redirect('view.php?id=' . $taskId, 'danger', 'Failed to add the comment.');
