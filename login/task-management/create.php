@@ -230,14 +230,10 @@ if ($empResult) {
             padding: 2px 8px; font-size: 13px;
         }
         .tender-chip i { margin-right: 4px; font-size: 13px; }
-        .tender-searching {
+        /* Select2 4.0.x escapes translation text, so messages must be plain text;
+           style the message container instead of injecting HTML into it. */
+        .tender-picker .select2-results__message {
             padding: 12px; text-align: center; color: #6b7a8d; font-size: 13px;
-        }
-        .tender-no-results {
-            padding: 16px 12px; text-align: center; color: #6b7a8d; font-size: 13px;
-        }
-        .tender-no-results > i {
-            font-size: 24px; display: block; margin-bottom: 6px; color: #c3cdd8;
         }
         #tender-summary .tender-selected-title { font-size: 14px; }
         #tender-summary .tender-selected-sub { font-size: 12px; color: #6b7a8d; margin-top: 2px; }
@@ -573,15 +569,13 @@ if ($empResult) {
                 templateSelection: formatTenderSelection,
                 language: {
                     inputTooShort: function () {
-                        return '<span class="tender-searching">Type at least 2 characters to search</span>';
+                        return 'Type at least 2 characters to search';
                     },
                     searching: function () {
-                        return '<div class="tender-searching"><i class="feather icon-loader anim-rotate mr-1"></i>Searching tenders...</div>';
+                        return 'Searching tenders…';
                     },
                     noResults: function () {
-                        return '<div class="tender-no-results"><i class="feather icon-inbox"></i>'
-                            + '<div>No tender/query found</div>'
-                            + '<div class="small text-muted">Try another Tender ID or Reference Code.</div></div>';
+                        return 'No tender/query found. Try another Tender ID or Reference Code.';
                     }
                 },
                 ajax: {
