@@ -40,7 +40,15 @@ if (isset($_POST['action']) && $_POST['action'] === 'assign_tender_task') {
         echo json_encode(['status' => 400, 'error' => 'Invalid input data.']);
         exit;
     }
-        // Check permission
+    // Resolve adminID if not set in session
+    if (empty($adminID) && !empty($_SESSION['login_user'])) {
+        $stmtFind = $db->prepare("SELECT id FROM admin WHERE username = ? LIMIT 1");
+        $stmtFind->bind_param('s', $_SESSION['login_user']);
+        $stmtFind->execute();
+        $adminID = $stmtFind->get_result()->fetch_assoc()['id'] ?? 0;
+    }
+
+    // Check permission
     $stmtAdminRole = $db->prepare("SELECT role_id FROM admin WHERE id = ?");
     $stmtAdminRole->bind_param('i', $adminID);
     $stmtAdminRole->execute();
@@ -55,17 +63,29 @@ if (isset($_POST['action']) && $_POST['action'] === 'assign_tender_task') {
         $stmtRolesData->execute();
         $roleName = $stmtRolesData->get_result()->fetch_assoc()['role_name'] ?? '';
         
-        if ($roleName === 'Admin' || $roleName === 'Super Admin') {
+        if (in_array(strtolower($roleName), ['admin', 'super admin'], true)) {
             $isAdminRole = true;
         }
         
+        $allowedPermissions = [
+            'Task Management',
+            'Add Task',
+            'Tender Requests',
+            'Create Tender Request',
+            'Edit Tender Request',
+            'Tender Requests View'
+        ];
+        $placeholders = implode(',', array_fill(0, count($allowedPermissions), '?'));
+        $types = 'i' . str_repeat('s', count($allowedPermissions));
+        $params = array_merge([$roleId], $allowedPermissions);
+
         $stmtPriv = $db->prepare("
             SELECT p.permission_name 
             FROM permissions p
             JOIN role_permissions rp ON p.permission_id = rp.permission_id
-            WHERE rp.role_id = ? AND p.permission_name = 'Task Management'
+            WHERE rp.role_id = ? AND p.permission_name IN ($placeholders)
         ");
-        $stmtPriv->bind_param('i', $roleId);
+        $stmtPriv->bind_param($types, ...$params);
         $stmtPriv->execute();
         if ($stmtPriv->get_result()->fetch_assoc()) {
             $hasTaskPerm = true;
@@ -73,7 +93,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'assign_tender_task') {
     }
 
     if (!$isAdminRole && !$hasTaskPerm) {
-        echo json_encode(['status' => 403, 'error' => 'Permission denied. You do not have Task Management rights.']);
+        echo json_encode(['status' => 403, 'error' => 'Permission denied. You do not have rights to assign tasks.']);
         exit;
     }
 
@@ -2086,7 +2106,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["submit"])) {
                                                             <?php } ?>
                                                             <!-- Assign Task -->
                                                             <li>
-                                                                <a class="dropdown-item assign-task-dropdown-btn" href="javascript:void(0);" 
+                                                                <a class="dropdown-item assign-task-dropdown-btn" href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#assign-task-modal" 
                                                                    data-tender-id="<?php echo htmlspecialchars($row['id'] ?? ''); ?>" 
                                                                    data-tender-no="<?php echo htmlspecialchars($row['tenderID'] ?? ''); ?>" 
                                                                    data-ref-code="<?php echo htmlspecialchars($row['reference_code'] ?? ''); ?>" 
@@ -3188,8 +3208,8 @@ while ($rowEmp = mysqli_fetch_assoc($empResult)) {
                 <h5 class="modal-title" id="assignTaskLabel">Assign Task</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
-                <form id="assign-task-form">
+            <form id="assign-task-form">
+                <div class="modal-body">
                     <input type="hidden" name="action" value="assign_tender_task">
                     <input type="hidden" name="tender_request_id" id="assign-tender-id">
                     
@@ -3241,12 +3261,12 @@ while ($rowEmp = mysqli_fetch_assoc($empResult)) {
                             <input type="date" name="due_date" id="assign-due-date" class="form-control">
                         </div>
                     </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="submit" form="assign-task-form" class="btn btn-primary">Assign Task</button>
-            </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" id="assign-task-submit-btn" class="btn btn-primary">Assign Task</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -3255,7 +3275,6 @@ while ($rowEmp = mysqli_fetch_assoc($empResult)) {
 $(document).ready(function() {
     // Open Modal and populate data
     $(document).on('click', '.assign-task-dropdown-btn', function(e) {
-        e.preventDefault();
         var tenderId = $(this).data('tender-id');
         var tenderNo = $(this).data('tender-no');
         var refCode = $(this).data('ref-code');
@@ -3271,9 +3290,8 @@ $(document).ready(function() {
         $('#assign-section').text(sec || 'N/A');
         $('#assign-division').text(div || 'N/A');
 
-        // Format dates if needed, HTML5 date input needs YYYY-MM-DD
         if (dueDate) {
-            var cleanDate = dueDate.split(' ')[0];
+            var cleanDate = String(dueDate).trim().split(' ')[0];
             $('#assign-due-date').val(cleanDate);
         } else {
             $('#assign-due-date').val('');
@@ -3290,7 +3308,16 @@ $(document).ready(function() {
                    "Due Date: " + (dueDate || 'N/A');
         $('#assign-description').val(desc);
 
-        $('#assign-task-modal').modal('show');
+        // Fallback open if data-bs-toggle didn't trigger
+        try {
+            if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                var modalEl = document.getElementById('assign-task-modal');
+                var modalInstance = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                modalInstance.show();
+            } else if (typeof $.fn.modal !== 'undefined') {
+                $('#assign-task-modal').modal('show');
+            }
+        } catch (err) {}
     });
 
     // Form submission via AJAX
@@ -3298,29 +3325,66 @@ $(document).ready(function() {
         e.preventDefault();
         var formData = $(this).serialize();
         
-        // Define Notyf locally for consistent notification
-        const taskNotyf = new Notyf({
-            duration: 3000,
-            position: { x: 'right', y: 'top' },
-            dismissible: true
-        });
+        var $submitBtn = $('#assign-task-submit-btn');
+        var originalBtnText = $submitBtn.html();
+        $submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Assigning...');
         
+        function notifyUser(type, message) {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: type === 'success' ? 'Success!' : 'Error',
+                    text: message,
+                    icon: type,
+                    confirmButtonColor: type === 'success' ? '#33cc33' : '#d33',
+                    timer: type === 'success' ? 2000 : undefined,
+                    timerProgressBar: type === 'success',
+                    showConfirmButton: type !== 'success'
+                });
+            } else if (typeof Notyf !== 'undefined') {
+                var notyf = new Notyf({ duration: 3000, position: { x: 'right', y: 'top' }, dismissible: true });
+                if (type === 'success') notyf.success(message);
+                else notyf.error(message);
+            } else {
+                alert(message);
+            }
+        }
+
         $.ajax({
-            url: window.location.href.split('?')[0],
+            url: 'tender-request2.php',
             type: 'POST',
             data: formData,
             dataType: 'json',
             success: function(response) {
                 if (response.status === 200) {
-                    $('#assign-task-modal').modal('hide');
-                    taskNotyf.success(response.message || "Task assigned successfully.");
+                    try {
+                        if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                            var modalEl = document.getElementById('assign-task-modal');
+                            var modalInstance = bootstrap.Modal.getInstance(modalEl);
+                            if (modalInstance) modalInstance.hide();
+                        }
+                    } catch (e) {}
+                    try {
+                        $('#assign-task-modal').modal('hide');
+                    } catch (e) {}
+                    $('.modal-backdrop').remove();
+                    $('body').removeClass('modal-open').css('padding-right', '');
+
+                    notifyUser('success', response.message || "Task assigned successfully.");
                     $('#assign-task-form')[0].reset();
                 } else {
-                    taskNotyf.error(response.error || "Error assigning task.");
+                    notifyUser('error', response.error || "Error assigning task.");
                 }
             },
-            error: function() {
-                taskNotyf.error("An unexpected error occurred while assigning the task.");
+            error: function(xhr) {
+                var errorMsg = "An unexpected error occurred while assigning the task.";
+                try {
+                    var res = JSON.parse(xhr.responseText);
+                    if (res && res.error) errorMsg = res.error;
+                } catch(e) {}
+                notifyUser('error', errorMsg);
+            },
+            complete: function() {
+                $submitBtn.prop('disabled', false).html(originalBtnText);
             }
         });
     });

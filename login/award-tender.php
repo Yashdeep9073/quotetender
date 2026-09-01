@@ -11,6 +11,104 @@ include("db/config.php");
 $adminID = $_SESSION['login_user_id'];
 
 
+if (isset($_POST['action']) && $_POST['action'] === 'assign_tender_task') {
+    header('Content-Type: application/json');
+    $tenderId = (int)($_POST['tender_request_id'] ?? 0);
+    $employeeId = (int)($_POST['employee_id'] ?? 0);
+    $title = trim($_POST['title'] ?? '');
+    $description = trim($_POST['description'] ?? '');
+    $priority = $_POST['priority'] ?? 'Medium';
+    $dueDate = $_POST['due_date'] ?? null;
+
+    if (empty($dueDate)) $dueDate = null;
+
+    if ($tenderId <= 0 || $employeeId <= 0 || empty($title)) {
+        echo json_encode(['status' => 400, 'error' => 'Invalid input data.']);
+        exit;
+    }
+    // Check permission
+    $stmtAdminRole = $db->prepare("SELECT role_id FROM admin WHERE id = ?");
+    $stmtAdminRole->bind_param('i', $adminID);
+    $stmtAdminRole->execute();
+    $roleId = $stmtAdminRole->get_result()->fetch_assoc()['role_id'] ?? null;
+
+    $isAdminRole = false;
+    $hasTaskPerm = false;
+
+    if ($roleId) {
+        $stmtRolesData = $db->prepare("SELECT role_name FROM roles WHERE role_id = ?");
+        $stmtRolesData->bind_param('i', $roleId);
+        $stmtRolesData->execute();
+        $roleName = $stmtRolesData->get_result()->fetch_assoc()['role_name'] ?? '';
+
+        if ($roleName === 'Admin' || $roleName === 'Super Admin') {
+            $isAdminRole = true;
+        }
+
+        $stmtPriv = $db->prepare("
+            SELECT p.permission_name
+            FROM permissions p
+            JOIN role_permissions rp ON p.permission_id = rp.permission_id
+            WHERE rp.role_id = ? AND p.permission_name = 'Task Management'
+        ");
+        $stmtPriv->bind_param('i', $roleId);
+        $stmtPriv->execute();
+        if ($stmtPriv->get_result()->fetch_assoc()) {
+            $hasTaskPerm = true;
+        }
+    }
+
+    if (!$isAdminRole && !$hasTaskPerm) {
+        echo json_encode(['status' => 403, 'error' => 'Permission denied. You do not have Task Management rights.']);
+        exit;
+    }
+
+    // Check if employee is active
+    $stmtEmp = $db->prepare("SELECT username FROM admin WHERE id = ? AND status = 1");
+    $stmtEmp->bind_param('i', $employeeId);
+    $stmtEmp->execute();
+    $empRes = $stmtEmp->get_result()->fetch_assoc();
+    if (!$empRes) {
+        echo json_encode(['status' => 400, 'error' => 'Selected employee does not exist or is inactive.']);
+        exit;
+    }
+
+    // Check duplicate
+    $stmtDup = $db->prepare("SELECT id FROM tasks WHERE tender_request_id = ? AND assigned_to = ?");
+    $stmtDup->bind_param('ii', $tenderId, $employeeId);
+    $stmtDup->execute();
+    if ($stmtDup->get_result()->fetch_assoc()) {
+        echo json_encode(['status' => 400, 'error' => 'This tender request is already assigned to this employee.']);
+        exit;
+    }
+
+    // Insert task
+    $taskType = 'Tender/Query';
+    $status = 'Pending';
+    $startDate = date('Y-m-d');
+
+    $stmtIns = $db->prepare("INSERT INTO tasks (title, description, task_type, tender_request_id, created_by, assigned_to, priority, status, start_date, due_date, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())");
+    $stmtIns->bind_param('sssiisssss', $title, $description, $taskType, $tenderId, $adminID, $employeeId, $priority, $status, $startDate, $dueDate);
+
+    try { if ($stmtIns->execute()) {
+        $newTaskId = $stmtIns->insert_id;
+
+        // Notify
+        require_once __DIR__ . '/service/NotificationService.php';
+        $ns = new NotificationService($db);
+        $ns->notifyTaskAssigned($newTaskId, $employeeId, $title);
+
+        echo json_encode(['status' => 200, 'message' => 'Task assigned successfully']);
+    } else {
+        echo json_encode(['status' => 500, 'error' => 'Database error during task creation.']);
+    }
+    } catch (\mysqli_sql_exception $e) {
+        echo json_encode(['status' => 500, 'error' => 'Invalid Tender Request ID or Database Error']);
+    }
+    exit;
+}
+
+
 if (
     $_SERVER['REQUEST_METHOD'] == 'GET' &&
     isset($_GET['department-search']) ||
@@ -86,7 +184,8 @@ if (
     ur.remark,
     ur.reference_code,
     MAX(st.state_name) AS state_name,  -- Get state_name from state table, not members
-    MAX(ct.city_name) AS city_name    -- Use MAX() for consistency
+    MAX(ct.city_name) AS city_name,    -- Use MAX() for consistency
+    MAX(ur.due_date) AS due_date
 FROM 
     user_tender_requests ur 
 LEFT JOIN
@@ -152,7 +251,8 @@ ORDER BY
     ur.remark,
     ur.reference_code,
     MAX(st.state_name) AS state_name,  -- Get state_name from state table, not members
-    MAX(ct.city_name) AS city_name    -- Use MAX() for consistency
+    MAX(ct.city_name) AS city_name,    -- Use MAX() for consistency
+    MAX(ur.due_date) AS due_date
 
 FROM 
     user_tender_requests ur 
@@ -320,6 +420,15 @@ try {
 
 } catch (\Throwable $th) {
     //throw $th;
+}
+
+// Fetch active employees for Assign Task modal
+$empResult = mysqli_query($db, "SELECT id, username, email FROM admin WHERE status = 1 ORDER BY username ASC");
+$activeEmployees = [];
+if ($empResult) {
+    while ($rowEmp = mysqli_fetch_assoc($empResult)) {
+        $activeEmployees[] = $rowEmp;
+    }
 }
 
 
@@ -1518,6 +1627,18 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
                                                                 <i class='feather icon-check'></i> Awarded
                                                             </a>
                                                         <?php } ?>
+
+                                                        <a class="st-action-link assign-task-dropdown-btn" href="javascript:void(0);"
+                                                           data-tender-id="<?php echo htmlspecialchars($row['9'] ?? ''); ?>"
+                                                           data-tender-no="<?php echo htmlspecialchars($row['13'] ?? ''); ?>"
+                                                           data-ref-code="<?php echo htmlspecialchars($row['15'] ?? ''); ?>"
+                                                           data-department="<?php echo htmlspecialchars($row['5'] ?? ''); ?>"
+                                                           data-section="<?php echo htmlspecialchars($row['10'] ?? ''); ?>"
+                                                           data-division="<?php echo htmlspecialchars($row['11'] ?? ''); ?>"
+                                                           data-due-date="<?php echo htmlspecialchars($row['18'] ?? ''); ?>"
+                                                           title="Assign Task">
+                                                            <i class='feather icon-check-square'></i> Assign Task
+                                                        </a>
                                                     </div>
                                                 </td>
                                             </tr>
@@ -2104,6 +2225,179 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
             }
         });
     </script>
+
+<!-- Assign Task Modal -->
+<div class="modal fade" id="assign-task-modal" tabindex="-1" aria-labelledby="assignTaskLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="assignTaskLabel">Assign Task</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="assign-task-form">
+                    <input type="hidden" name="action" value="assign_tender_task">
+                    <input type="hidden" name="tender_request_id" id="assign-tender-id">
+
+                    <!-- Informational summary -->
+                    <div class="alert alert-info py-2 mb-3">
+                        <small>
+                            <strong>Tender ID:</strong> <span id="assign-tender-no"></span> |
+                            <strong>Ref:</strong> <span id="assign-ref-code"></span><br>
+                            <strong>Dept:</strong> <span id="assign-dept"></span> |
+                            <strong>Sec:</strong> <span id="assign-section"></span> |
+                            <strong>Div:</strong> <span id="assign-division"></span>
+                        </small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Employee</label>
+                        <select name="employee_id" class="form-select form-control" required>
+                            <option value="">Select Employee ▼</option>
+                            <?php foreach ($activeEmployees as $emp): ?>
+                                <option value="<?php echo htmlspecialchars($emp['id']); ?>">
+                                    <?php echo htmlspecialchars($emp['username']) . (!empty($emp['email']) ? ' (' . htmlspecialchars($emp['email']) . ')' : ''); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Task Title</label>
+                        <input type="text" name="title" id="assign-title" class="form-control" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea name="description" id="assign-description" class="form-control" rows="5"></textarea>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Priority</label>
+                            <select name="priority" class="form-select form-control">
+                                <option value="Low">Low</option>
+                                <option value="Medium" selected>Medium</option>
+                                <option value="High">High</option>
+                                <option value="Urgent">Urgent</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Due Date</label>
+                            <input type="date" name="due_date" id="assign-due-date" class="form-control">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" id="assign-task-submit-btn" form="assign-task-form" class="btn btn-primary">Assign Task</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+$(document).ready(function() {
+    // Open Modal and populate data
+    $(document).on('click', '.assign-task-dropdown-btn', function(e) {
+        e.preventDefault();
+        var tenderId = $(this).data('tender-id');
+        var tenderNo = $(this).data('tender-no');
+        var refCode = $(this).data('ref-code');
+        var dept = $(this).data('department');
+        var sec = $(this).data('section');
+        var div = $(this).data('division');
+        var dueDate = $(this).data('due-date');
+
+        $('#assign-tender-id').val(tenderId);
+        $('#assign-tender-no').text(tenderNo || 'N/A');
+        $('#assign-ref-code').text(refCode || 'N/A');
+        $('#assign-dept').text(dept || 'N/A');
+        $('#assign-section').text(sec || 'N/A');
+        $('#assign-division').text(div || 'N/A');
+
+        // Format dates if needed, HTML5 date input needs YYYY-MM-DD
+        if (dueDate) {
+            var cleanDate = dueDate.split(' ')[0];
+            $('#assign-due-date').val(cleanDate);
+        } else {
+            $('#assign-due-date').val('');
+        }
+
+        var title = 'Tender Request - ' + (tenderNo ? tenderNo : tenderId);
+        $('#assign-title').val(title);
+
+        var desc = "Tender ID: " + (tenderNo || 'N/A') + "\n" +
+                   "Reference Code: " + (refCode || 'N/A') + "\n" +
+                   "Department: " + (dept || 'N/A') + "\n" +
+                   "Section: " + (sec || 'N/A') + "\n" +
+                   "Division: " + (div || 'N/A') + "\n" +
+                   "Due Date: " + (dueDate || 'N/A');
+        $('#assign-description').val(desc);
+
+        $('#assign-task-modal').modal('show');
+    });
+
+    // Form submission via AJAX
+    $('#assign-task-form').on('submit', function(e) {
+        e.preventDefault();
+        var formData = $(this).serialize();
+
+        // Show loader on the submit button while the request is in flight
+        var $submitBtn = $('#assign-task-submit-btn');
+        var originalBtnText = $submitBtn.html();
+        $submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Assigning...');
+
+        $.ajax({
+            url: window.location.href.split('?')[0],
+            type: 'POST',
+            data: formData,
+            dataType: 'json',
+            success: function(response) {
+                if (response.status === 200) {
+                    $('#assign-task-modal').modal('hide');
+                    Swal.fire({
+                        title: 'Success!',
+                        text: response.message || "Task assigned successfully.",
+                        icon: 'success',
+                        confirmButtonColor: "#33cc33",
+                        timer: 1500,
+                        timerProgressBar: true,
+                        showConfirmButton: false
+                    });
+                    $('#assign-task-form')[0].reset();
+                } else {
+                    Swal.fire({
+                        title: 'Error!',
+                        text: response.error || "Error assigning task.",
+                        icon: 'error',
+                        confirmButtonColor: "#dc3545",
+                        timer: 1500,
+                        timerProgressBar: true,
+                        showConfirmButton: false
+                    });
+                }
+            },
+            error: function() {
+                Swal.fire({
+                    title: 'Error!',
+                    text: "An unexpected error occurred while assigning the task.",
+                    icon: 'error',
+                    confirmButtonColor: "#dc3545",
+                    timer: 1500,
+                    timerProgressBar: true,
+                    showConfirmButton: false
+                });
+            },
+            complete: function() {
+                $submitBtn.prop('disabled', false).html(originalBtnText);
+            }
+        });
+    });
+});
+</script>
+
 </body>
 
 </html>
