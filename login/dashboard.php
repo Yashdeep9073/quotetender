@@ -20,15 +20,15 @@ $memberTrend      = [];
 $recentMembers    = [];
 
 try {
-    // 1. Tender Request (counts only tenders whose registered member still exists,
-    //    matching the Tender Request page's INNER JOIN members logic)
-    $stmtFetchTenderRequested = $db->prepare("SELECT COUNT(*) AS total FROM (SELECT MIN(ur.id) AS min_id FROM user_tender_requests ur INNER JOIN members m ON ur.member_id = m.member_id WHERE ur.status = 'Requested' AND ur.delete_tender = '0' GROUP BY ur.tenderID) x");
+    // 1. Tender Request (exactly mirrors tender-request2.php: pick MIN(id) per tenderID
+    //    group, then keep only rows whose registered member still exists)
+    $stmtFetchTenderRequested = $db->prepare("SELECT COUNT(*) AS total FROM (SELECT MIN(ur.id) AS min_id FROM user_tender_requests ur WHERE ur.status = 'Requested' AND ur.delete_tender = '0' GROUP BY ur.tenderID) x INNER JOIN user_tender_requests ur ON ur.id = x.min_id INNER JOIN members m ON ur.member_id = m.member_id");
     $stmtFetchTenderRequested->execute();
     $tenderRequestedCount = $stmtFetchTenderRequested->get_result()->fetch_array(MYSQLI_ASSOC);
 
-    // 2. Sent Tender (counts only tenders whose registered member still exists,
-    //    matching the Sent Tender page's INNER JOIN members logic)
-    $stmtFetchTenderSent = $db->prepare("SELECT COUNT(*) AS total FROM (SELECT MIN(sent.id) AS min_id FROM user_tender_requests sent INNER JOIN members m ON sent.member_id = m.member_id WHERE sent.status = 'Sent' AND sent.delete_tender = '0' AND NOT EXISTS (SELECT 1 FROM user_tender_requests a WHERE a.tenderID = sent.tenderID AND a.status = 'Allotted' AND a.delete_tender = '0') GROUP BY sent.tenderID) x");
+    // 2. Sent Tender (exactly mirrors sent-tender2.php: pick MIN(id) per tenderID group
+    //    with the not-yet-allotted filter, then keep only rows whose member still exists)
+    $stmtFetchTenderSent = $db->prepare("SELECT COUNT(*) AS total FROM (SELECT MIN(sent.id) AS min_id FROM user_tender_requests sent WHERE sent.status = 'Sent' AND sent.delete_tender = '0' AND NOT EXISTS (SELECT 1 FROM user_tender_requests a WHERE a.tenderID = sent.tenderID AND a.status = 'Allotted' AND a.delete_tender = '0') GROUP BY sent.tenderID) x INNER JOIN user_tender_requests ur ON ur.id = x.min_id INNER JOIN members m ON ur.member_id = m.member_id");
     $stmtFetchTenderSent->execute();
     $tenderSentCount = $stmtFetchTenderSent->get_result()->fetch_array(MYSQLI_ASSOC);
 
