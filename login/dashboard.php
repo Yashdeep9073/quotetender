@@ -20,13 +20,15 @@ $memberTrend      = [];
 $recentMembers    = [];
 
 try {
-    // 1. Tender Request
-    $stmtFetchTenderRequested = $db->prepare("SELECT COUNT(*) AS total FROM (SELECT MIN(id) AS min_id FROM user_tender_requests WHERE status = 'Requested' AND delete_tender = '0' GROUP BY tenderID) x");
+    // 1. Tender Request (counts only tenders whose registered member still exists,
+    //    matching the Tender Request page's INNER JOIN members logic)
+    $stmtFetchTenderRequested = $db->prepare("SELECT COUNT(*) AS total FROM (SELECT MIN(ur.id) AS min_id FROM user_tender_requests ur INNER JOIN members m ON ur.member_id = m.member_id WHERE ur.status = 'Requested' AND ur.delete_tender = '0' GROUP BY ur.tenderID) x");
     $stmtFetchTenderRequested->execute();
     $tenderRequestedCount = $stmtFetchTenderRequested->get_result()->fetch_array(MYSQLI_ASSOC);
 
-    // 2. Sent Tender
-    $stmtFetchTenderSent = $db->prepare("SELECT COUNT(*) AS total FROM (SELECT MIN(sent.id) AS min_id FROM user_tender_requests sent WHERE sent.status = 'Sent' AND sent.delete_tender = '0' AND NOT EXISTS (SELECT 1 FROM user_tender_requests a WHERE a.tenderID = sent.tenderID AND a.status = 'Allotted' AND a.delete_tender = '0') GROUP BY sent.tenderID) x");
+    // 2. Sent Tender (counts only tenders whose registered member still exists,
+    //    matching the Sent Tender page's INNER JOIN members logic)
+    $stmtFetchTenderSent = $db->prepare("SELECT COUNT(*) AS total FROM (SELECT MIN(sent.id) AS min_id FROM user_tender_requests sent INNER JOIN members m ON sent.member_id = m.member_id WHERE sent.status = 'Sent' AND sent.delete_tender = '0' AND NOT EXISTS (SELECT 1 FROM user_tender_requests a WHERE a.tenderID = sent.tenderID AND a.status = 'Allotted' AND a.delete_tender = '0') GROUP BY sent.tenderID) x");
     $stmtFetchTenderSent->execute();
     $tenderSentCount = $stmtFetchTenderSent->get_result()->fetch_array(MYSQLI_ASSOC);
 
