@@ -4,14 +4,17 @@ require_once __DIR__ . '/email/TaskAssignmentEmail.php';
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
+require_once __DIR__ . '/AiSensyService.php';
 
 class NotificationService
 {
     private $db;
+    private $aiSensy;
 
     public function __construct($db)
     {
         $this->db = $db;
+        $this->aiSensy = new AiSensyService($db);
     }
 
     /**
@@ -44,6 +47,7 @@ class NotificationService
 
         $this->createInAppNotification($assignedUserId, $type, $title, $message, $refType, $taskId);
         $this->sendTaskAssignmentEmail($assignedUserId, $taskId, $type);
+        $this->triggerWhatsApp($assignedUserId, $taskId, $type);
     }
 
     /**
@@ -58,6 +62,7 @@ class NotificationService
 
         $this->createInAppNotification($assignedUserId, $type, $title, $message, $refType, $taskId);
         $this->sendEmailNotification($assignedUserId, $type, $title, $message);
+        $this->triggerWhatsApp($assignedUserId, $taskId, $type);
     }
 
     /**
@@ -77,6 +82,7 @@ class NotificationService
         if ($actorUserId != $taskCreatorId) {
             $this->createInAppNotification($taskCreatorId, $type, $title, $message, $refType, $taskId);
             $this->sendEmailNotification($taskCreatorId, $type, $title, $message);
+        $this->triggerWhatsApp($taskCreatorId, $taskId, $type);
         }
     }
 
@@ -93,6 +99,7 @@ class NotificationService
         if ($actorUserId != $participantUserId) {
             $this->createInAppNotification($participantUserId, $type, $title, $message, $refType, $taskId);
             $this->sendEmailNotification($participantUserId, $type, $title, $message);
+        $this->triggerWhatsApp($participantUserId, $taskId, $type);
         }
     }
 
@@ -109,6 +116,7 @@ class NotificationService
         if ($commentUserId != $participantUserId) {
             $this->createInAppNotification($participantUserId, $type, $title, $message, $refType, $taskId);
             $this->sendEmailNotification($participantUserId, $type, $title, $message);
+        $this->triggerWhatsApp($participantUserId, $taskId, $type);
         }
     }
 
@@ -124,6 +132,7 @@ class NotificationService
 
         $this->createInAppNotification($assignedUserId, $type, $title, $message, $refType, $taskId);
         $this->sendTaskAssignmentEmail($assignedUserId, $taskId, $type);
+        $this->triggerWhatsApp($assignedUserId, $taskId, $type);
     }
 
     /**
@@ -138,6 +147,7 @@ class NotificationService
 
         $this->createInAppNotification($assignedUserId, $type, $title, $message, $refType, $taskId);
         $this->sendEmailNotification($assignedUserId, $type, $title, $message);
+        $this->triggerWhatsApp($assignedUserId, $taskId, $type);
     }
 
     /**
@@ -152,6 +162,7 @@ class NotificationService
 
         $this->createInAppNotification($assignedUserId, $type, $title, $message, $refType, $taskId);
         $this->sendEmailNotification($assignedUserId, $type, $title, $message);
+        $this->triggerWhatsApp($assignedUserId, $taskId, $type);
     }
 
     /**
@@ -198,7 +209,7 @@ class NotificationService
             return false;
         }
 
-        $task = $this->loadTaskAssignmentData((int) $taskId);
+        $task = $this->loadTaskAssignmentData((int) $taskId, (int)$assignedUserId);
         if (!$task || empty($task['assigned_email'])) {
             return false;
         }
@@ -219,12 +230,26 @@ class NotificationService
     }
 
     /**
-     * Load the fields required for the assignment email with a single JOIN.
+     * Helper to trigger WhatsApp notification via AiSensy if enabled.
+     */
+    private function triggerWhatsApp($userId, $taskId, $type)
+    {
+        if ($this->aiSensy->isEnabled()) {
+            $task = $this->loadTaskAssignmentData((int)$taskId, (int)$userId);
+            if ($task) {
+                $this->aiSensy->sendTaskNotification($userId, $type, $task);
+            }
+        }
+    }
+
+    /**
+     * Loads unified task and tender data required for templating emails/whatsapp.
      * No SELECT *, no per-field queries; recipient/creator/tender are all
      * resolved server-side from the task record.
      */
-    private function loadTaskAssignmentData($taskId)
+    private function loadTaskAssignmentData($taskId, $employeeId = null)
     {
+        $joinAdmin = $employeeId ? "JOIN admin a ON a.id = ?" : "JOIN admin a ON a.id = t.assigned_to";
         $stmt = $this->db->prepare(
             "SELECT
                 t.id, t.title, t.description, t.priority, t.status,
@@ -242,13 +267,17 @@ class NotificationService
                 m.name        AS member_name,
                 m.firm_name   AS member_firm
                FROM tasks t
-               JOIN admin a ON a.id = t.assigned_to
+               $joinAdmin
                LEFT JOIN admin c ON c.id = t.created_by
                LEFT JOIN user_tender_requests utr ON utr.id = t.tender_request_id
                LEFT JOIN members m ON m.member_id = utr.member_id
               WHERE t.id = ?"
         );
-        $stmt->bind_param('i', $taskId);
+        if ($employeeId) {
+            $stmt->bind_param('ii', $employeeId, $taskId);
+        } else {
+            $stmt->bind_param('i', $taskId);
+        }
         $stmt->execute();
         $row = $stmt->get_result()->fetch_assoc();
         return $row ?: null;
@@ -277,9 +306,11 @@ class NotificationService
                     $mail->Username = $smtp['username'];
                     $mail->Password = $smtp['password'];
                 }
-                $mail->SMTPSecure = ($smtp['encryption'] === 'ssl')
-                    ? PHPMailer::ENCRYPTION_SMTPS
-                    : PHPMailer::ENCRYPTION_STARTTLS;
+                if ((int)$smtp['port'] === 465) {
+                    $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+                } else {
+                    $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+                }
                 $mail->setFrom($smtp['from_email'], $smtp['from_name']);
             } else {
                 // 2. Fall back to the legacy env-based SMTP configuration
@@ -350,10 +381,11 @@ class NotificationService
     private function activeSmtpSettings()
     {
         $stmt = $this->db->prepare(
-            "SELECT host, port, username, password, encryption, from_email, from_name
-               FROM smtp_settings
+            "SELECT email_host as host, email_port as port, email_address as username, email_password as password, 
+                    'tls' as encryption, email_address as from_email, email_from_title as from_name
+               FROM email_settings
               WHERE is_active = 1
-              ORDER BY id
+              ORDER BY email_settings_id
               LIMIT 1"
         );
         $stmt->execute();

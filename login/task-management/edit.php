@@ -26,7 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'task_type'         => isset($_POST['task_type']) ? (string) $_POST['task_type'] : 'General',
         'tender_request_id' => isset($_POST['tender_request_id']) ? (string) $_POST['tender_request_id'] : '',
         'tender_label'      => '',
-        'assigned_to'       => isset($_POST['assigned_to']) ? (string) $_POST['assigned_to'] : '',
+        'assigned_user_ids' => isset($_POST['assigned_user_ids']) ? $_POST['assigned_user_ids'] : [],
         'priority'          => isset($_POST['priority']) ? (string) $_POST['priority'] : '',
         'status'            => isset($_POST['status']) ? (string) $_POST['status'] : '',
         'start_date'        => isset($_POST['start_date']) ? (string) $_POST['start_date'] : '',
@@ -44,15 +44,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = 'Invalid task type.';
     }
 
-    $assignedTo = task_get_int($form['assigned_to']);
-    if ($assignedTo === false) {
-        $errors[] = 'Please select a valid employee.';
+    $employeeIdsRaw = $form['assigned_user_ids'];
+    if (!is_array($employeeIdsRaw)) {
+        $employeeIdsRaw = [$employeeIdsRaw];
+    }
+    $employeeIds = [];
+    foreach ($employeeIdsRaw as $eid) {
+        $val = (int)$eid;
+        if ($val > 0) $employeeIds[$val] = $val;
+    }
+    $employeeIds = array_values($employeeIds);
+    $form['assigned_user_ids'] = $employeeIds;
+    
+    if (empty($employeeIds)) {
+        $errors[] = 'Please select at least one valid employee.';
     } else {
-        $stmtEmp = $db->prepare("SELECT id FROM admin WHERE id = ? AND status = 1");
-        $stmtEmp->bind_param('i', $assignedTo);
+        $placeholdersEmp = implode(',', array_fill(0, count($employeeIds), '?'));
+        $typesEmp = str_repeat('i', count($employeeIds));
+        $stmtEmp = $db->prepare("SELECT id FROM admin WHERE id IN ($placeholdersEmp) AND status = 1");
+        $stmtEmp->bind_param($typesEmp, ...$employeeIds);
         $stmtEmp->execute();
-        if (!$stmtEmp->get_result()->fetch_assoc()) {
-            $errors[] = 'The selected employee does not exist or is inactive.';
+        $validEmps = [];
+        $res = $stmtEmp->get_result();
+        while ($row = $res->fetch_assoc()) {
+            $validEmps[] = $row['id'];
+        }
+        if (count($validEmps) !== count($employeeIds)) {
+            $errors[] = 'One or more selected employees do not exist or are inactive.';
         }
     }
 
@@ -101,37 +119,62 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (empty($errors)) {
-        // Username of the new assignee (for history values)
-        $newAssignedUsername = null;
-        $stmtName = $db->prepare("SELECT username FROM admin WHERE id = ?");
-        $stmtName->bind_param('i', $assignedTo);
-        $stmtName->execute();
-        $rowName = $stmtName->get_result()->fetch_assoc();
-        if ($rowName) {
-            $newAssignedUsername = $rowName['username'];
+        $db->begin_transaction();
+        try {
+            // New assignees
+            $firstAssignedTo = $employeeIds[0];
+            $newAssignedUsername = null;
+            $stmtName = $db->prepare("SELECT GROUP_CONCAT(username SEPARATOR ', ') as unames FROM admin WHERE id IN (" . implode(',', array_fill(0, count($employeeIds), '?')) . ")");
+            $stmtName->bind_param(str_repeat('i', count($employeeIds)), ...$employeeIds);
+            $stmtName->execute();
+            $rowName = $stmtName->get_result()->fetch_assoc();
+            if ($rowName) {
+                $newAssignedUsername = $rowName['unames'];
+            }
+
+            $stmtUpdate = $db->prepare(
+                "UPDATE tasks
+                    SET title = ?, description = ?, task_type = ?, tender_request_id = ?,
+                        assigned_to = ?, priority = ?, status = ?, start_date = ?, due_date = ?
+                  WHERE id = ?"
+            );
+            $stmtUpdate->bind_param(
+                'sssiissssi',
+                $form['title'],
+                $form['description'],
+                $form['task_type'],
+                $tenderRequestId,
+                $firstAssignedTo,
+                $form['priority'],
+                $form['status'],
+                $startDate,
+                $dueDate,
+                $taskId
+            );
+
+            if (!$stmtUpdate->execute()) {
+                throw new Exception("Update failed");
+            }
+            
+            // Delete old assignees and insert new ones
+            $stmtDel = $db->prepare("DELETE FROM task_assignees WHERE task_id = ?");
+            $stmtDel->bind_param('i', $taskId);
+            $stmtDel->execute();
+            
+            $stmtAssign = $db->prepare("INSERT IGNORE INTO task_assignees (task_id, employee_id, assigned_by) VALUES (?, ?, ?)");
+            foreach ($employeeIds as $empId) {
+                $stmtAssign->bind_param('iii', $taskId, $empId, $taskUserId);
+                $stmtAssign->execute();
+            }
+            
+            $db->commit();
+            $updateSuccess = true;
+        } catch (Exception $e) {
+            $db->rollback();
+            $updateSuccess = false;
         }
 
-        $stmtUpdate = $db->prepare(
-            "UPDATE tasks
-                SET title = ?, description = ?, task_type = ?, tender_request_id = ?,
-                    assigned_to = ?, priority = ?, status = ?, start_date = ?, due_date = ?
-              WHERE id = ?"
-        );
-        $stmtUpdate->bind_param(
-            'sssiissssi',
-            $form['title'],
-            $form['description'],
-            $form['task_type'],
-            $tenderRequestId,
-            $assignedTo,
-            $form['priority'],
-            $form['status'],
-            $startDate,
-            $dueDate,
-            $taskId
-        );
-
-        if ($stmtUpdate->execute()) {
+        if ($updateSuccess) {
             // ----- Record meaningful changes in task history -----
             $old = $task; // loaded before update
             if ($form['title'] !== (string) $old['title']) {
@@ -154,7 +197,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     isset($tenderRow['tenderID']) ? (string) $tenderRow['tenderID'] : 'None'
                 );
             }
-            if ((int) $old['assigned_to'] !== $assignedTo) {
+            $oldAssignedIds = !empty($old['assigned_user_ids']) ? explode(',', $old['assigned_user_ids']) : [$old['assigned_to']];
+            sort($oldAssignedIds);
+            $newAssignedIds = $employeeIds;
+            sort($newAssignedIds);
+            if (implode(',', $oldAssignedIds) !== implode(',', $newAssignedIds)) {
                 task_log_history($db, $taskId, $taskUserId, 'Assigned to changed', (string) $old['assigned_username'], $newAssignedUsername);
             }
             if ($form['priority'] !== (string) $old['priority']) {
@@ -237,6 +284,17 @@ if ($empResult) {
     <link rel="stylesheet" href="assets/css/plugins/select2.min.css">
     <link rel="stylesheet" href="assets/css/plugins/select.bootstrap4.min.css">
     <link rel="stylesheet" href="assets/css/style.css">
+    <style>
+        /* ---- Employee Multi-Select Fix ---- */
+        #assigned_user_ids + .select2-container .select2-selection--multiple {
+            min-height: 43px;
+            padding: 4px;
+        }
+        #assigned_user_ids + .select2-container .select2-search--inline .select2-search__field {
+            margin-top: 6px;
+            font-family: inherit;
+        }
+    </style>
 </head>
 <body class="">
     <div class="loader-bg">
@@ -329,11 +387,12 @@ if ($empResult) {
                                     </div>
                                     <div class="col-md-6">
                                         <div class="form-group">
-                                            <label>Assigned Employee</label>
-                                            <select name="assigned_to" class="form-control" required>
-                                                <option value="">Select Employee ▼</option>
-                                                <?php foreach ($employees as $emp): ?>
-                                                    <option value="<?php echo e($emp['id']); ?>" <?php echo $form['assigned_to'] === (string) $emp['id'] ? 'selected' : ''; ?>>
+                                            <label>Assigned Employee(s)</label>
+                                            <select name="assigned_user_ids[]" id="assigned_user_ids" style="width: 100%;" multiple required data-placeholder="Select Employee(s)">
+                                                <?php 
+                                                $selectedIds = !empty($form['assigned_user_ids']) ? $form['assigned_user_ids'] : (!empty($task['assigned_user_ids']) ? explode(',', $task['assigned_user_ids']) : [$task['assigned_to']]);
+                                                foreach ($employees as $emp): ?>
+                                                    <option value="<?php echo e($emp['id']); ?>" <?php echo in_array((string)$emp['id'], (array)$selectedIds) ? 'selected' : ''; ?>>
                                                         <?php echo e($emp['username']); ?>
                                                     </option>
                                                 <?php endforeach; ?>
@@ -444,6 +503,11 @@ if ($empResult) {
             }
             $('input.task-type-radio').on('change', toggleTenderGroup);
             toggleTenderGroup();
+
+            $('#assigned_user_ids').select2({
+                placeholder: 'Select Employee(s)',
+                allowClear: true
+            });
 
             $('#tender_request_id').select2({
                 theme: 'bootstrap4',

@@ -143,7 +143,18 @@ function task_valid_date($value)
 function task_load($db, $taskId)
 {
     $sql = "SELECT t.*,
-                   assigned.username   AS assigned_username,
+                   (
+                       SELECT GROUP_CONCAT(DISTINCT a.username SEPARATOR ', ')
+                       FROM admin a
+                       WHERE a.id = t.assigned_to 
+                          OR a.id IN (SELECT ta.employee_id FROM task_assignees ta WHERE ta.task_id = t.id)
+                   ) AS assigned_username,
+                   (
+                       SELECT GROUP_CONCAT(DISTINCT a.id SEPARATOR ',')
+                       FROM admin a
+                       WHERE a.id = t.assigned_to 
+                          OR a.id IN (SELECT ta.employee_id FROM task_assignees ta WHERE ta.task_id = t.id)
+                   ) AS assigned_user_ids,
                    creator.username    AS created_username,
                    utr.tenderID        AS tender_id_number,
                    utr.reference_code  AS tender_reference_code,
@@ -152,7 +163,6 @@ function task_load($db, $taskId)
                    m.name              AS tender_member_name,
                    m.firm_name         AS tender_member_firm
               FROM tasks t
-              LEFT JOIN admin assigned ON assigned.id = t.assigned_to
               LEFT JOIN admin creator  ON creator.id  = t.created_by
               LEFT JOIN user_tender_requests utr ON utr.id = t.tender_request_id
               LEFT JOIN members m ON m.member_id = utr.member_id
@@ -172,7 +182,8 @@ function task_can_view_row($task, $taskUserId, $taskCanViewAll)
     if ($taskCanViewAll) {
         return true;
     }
-    return (int) $task['assigned_to'] === (int) $taskUserId;
+    $assignedIds = !empty($task['assigned_user_ids']) ? explode(',', $task['assigned_user_ids']) : [];
+    return in_array((string)$taskUserId, $assignedIds, true) || (int) $task['assigned_to'] === (int) $taskUserId;
 }
 
 /** Record an entry in task_history. */

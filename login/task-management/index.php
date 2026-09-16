@@ -27,9 +27,10 @@ $types  = '';
 
 // Employees only ever see their own tasks; managers/admins see everything.
 if (!$taskCanViewAll) {
-    $where[]  = 't.assigned_to = ?';
+    $where[]  = '(t.assigned_to = ? OR EXISTS(SELECT 1 FROM task_assignees ta WHERE ta.task_id = t.id AND ta.employee_id = ?))';
     $params[] = $taskUserId;
-    $types   .= 'i';
+    $params[] = $taskUserId;
+    $types   .= 'ii';
 }
 
 if ($filters['q'] !== '') {
@@ -55,9 +56,10 @@ if ($filters['priority'] !== '') {
 if ($taskCanViewAll && $filters['employee'] !== '') {
     $employeeId = task_get_int($filters['employee']);
     if ($employeeId !== false) {
-        $where[]  = 't.assigned_to = ?';
+        $where[]  = '(t.assigned_to = ? OR EXISTS(SELECT 1 FROM task_assignees ta WHERE ta.task_id = t.id AND ta.employee_id = ?))';
         $params[] = $employeeId;
-        $types   .= 'i';
+        $params[] = $employeeId;
+        $types   .= 'ii';
     }
 }
 
@@ -77,12 +79,16 @@ if ($filters['tender_ref'] !== '') {
 
 $sql = "SELECT t.id, t.title, t.task_type, t.priority, t.status,
                t.start_date, t.due_date, t.created_at, t.updated_at, t.tender_request_id,
-               assigned.username AS assigned_username,
+               (
+                   SELECT GROUP_CONCAT(DISTINCT a.username SEPARATOR ', ')
+                   FROM admin a
+                   WHERE a.id = t.assigned_to 
+                      OR a.id IN (SELECT ta.employee_id FROM task_assignees ta WHERE ta.task_id = t.id)
+               ) AS assigned_username,
                creator.username  AS created_username,
                utr.tenderID      AS tender_id_number,
                utr.reference_code AS tender_reference_code
           FROM tasks t
-          LEFT JOIN admin assigned ON assigned.id = t.assigned_to
           LEFT JOIN admin creator  ON creator.id  = t.created_by
           LEFT JOIN user_tender_requests utr ON utr.id = t.tender_request_id";
 if (!empty($where)) {

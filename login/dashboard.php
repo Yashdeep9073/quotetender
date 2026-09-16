@@ -101,9 +101,9 @@ try {
                 SUM(CASE WHEN status = 'Completed' THEN 1 ELSE 0 END) as completed_tasks,
                 SUM(CASE WHEN status = 'Cancelled' THEN 1 ELSE 0 END) as cancelled_tasks,
                 SUM(CASE WHEN due_date IS NOT NULL AND due_date < CURDATE() AND status NOT IN ('Completed', 'Cancelled') THEN 1 ELSE 0 END) as overdue_tasks
-            FROM tasks WHERE assigned_to = ?
+            FROM tasks WHERE assigned_to = ? OR EXISTS(SELECT 1 FROM task_assignees ta WHERE ta.task_id = tasks.id AND ta.employee_id = ?)
         ");
-        $stmtTaskStats->bind_param('i', $adminId);
+        $stmtTaskStats->bind_param('ii', $adminId, $adminId);
         $stmtTaskStats->execute();
     }
     $taskStats = $stmtTaskStats->get_result()->fetch_array(MYSQLI_ASSOC);
@@ -125,7 +125,7 @@ try {
                 END
             ) AS overdue_tasks
         FROM admin a
-        LEFT JOIN tasks t ON t.assigned_to = a.id
+        LEFT JOIN tasks t ON t.assigned_to = a.id OR EXISTS(SELECT 1 FROM task_assignees ta WHERE ta.task_id = t.id AND ta.employee_id = a.id)
         GROUP BY a.id, a.username
         ORDER BY assigned_tasks DESC
         LIMIT 10
@@ -138,8 +138,8 @@ try {
         $stmtTaskDist = $db->prepare("SELECT status, COUNT(*) AS total FROM tasks GROUP BY status ORDER BY total DESC");
         $stmtTaskDist->execute();
     } else {
-        $stmtTaskDist = $db->prepare("SELECT status, COUNT(*) AS total FROM tasks WHERE assigned_to = ? GROUP BY status ORDER BY total DESC");
-        $stmtTaskDist->bind_param('i', $adminId);
+        $stmtTaskDist = $db->prepare("SELECT status, COUNT(*) AS total FROM tasks WHERE assigned_to = ? OR EXISTS(SELECT 1 FROM task_assignees ta WHERE ta.task_id = tasks.id AND ta.employee_id = ?) GROUP BY status ORDER BY total DESC");
+        $stmtTaskDist->bind_param('ii', $adminId, $adminId);
         $stmtTaskDist->execute();
     }
     $taskDist = $stmtTaskDist->get_result()->fetch_all(MYSQLI_ASSOC);
@@ -440,7 +440,7 @@ $name = $_SESSION['login_user'];
                 </div>
                 <div class="col-md-6 col-xl-3">
                     <div class="card bg-c-green order-card">
-                        <a href="alot-tender.php"> <!-- Or link to confirm-tender page if exists -->
+                        <a href="award-tender.php">
                             <div class="card-body">
                                 <h6 class="text-white">Confirm Tender</h6>
                                 <h2 class="text-right text-white">
@@ -466,20 +466,28 @@ $name = $_SESSION['login_user'];
                         <div class="card-body p-3">
                             <div class="row text-center">
                                 <div class="col">
-                                    <h3 class="mb-1 text-primary"><i class="feather icon-users"></i> <?php echo (int)($memberTotalCount['total'] ?? 0); ?></h3>
-                                    <span class="text-muted">Total Members</span>
+                                    <a href="registered-users.php" style="text-decoration: none; color: inherit; display: block;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+                                        <h3 class="mb-1 text-primary"><i class="feather icon-users"></i> <?php echo (int)($memberTotalCount['total'] ?? 0); ?></h3>
+                                        <span class="text-muted">Total Members</span>
+                                    </a>
                                 </div>
                                 <div class="col">
-                                    <h3 class="mb-1 text-success"><i class="feather icon-user-check"></i> <?php echo (int)($activeMemberRealCount['total'] ?? 0); ?></h3>
-                                    <span class="text-muted">Active Members</span>
+                                    <a href="registered-users.php" style="text-decoration: none; color: inherit; display: block;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+                                        <h3 class="mb-1 text-success"><i class="feather icon-user-check"></i> <?php echo (int)($activeMemberRealCount['total'] ?? 0); ?></h3>
+                                        <span class="text-muted">Active Members</span>
+                                    </a>
                                 </div>
                                 <div class="col">
-                                    <h3 class="mb-1 text-danger"><i class="feather icon-user-x"></i> <?php echo (int)($inactiveMemberCount['total'] ?? 0); ?></h3>
-                                    <span class="text-muted">Inactive Members</span>
+                                    <a href="registered-users.php" style="text-decoration: none; color: inherit; display: block;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+                                        <h3 class="mb-1 text-danger"><i class="feather icon-user-x"></i> <?php echo (int)($inactiveMemberCount['total'] ?? 0); ?></h3>
+                                        <span class="text-muted">Inactive Members</span>
+                                    </a>
                                 </div>
                                 <div class="col">
-                                    <h3 class="mb-1 text-info"><i class="feather icon-user-plus"></i> <?php echo (int)($newMemberCount['total'] ?? 0); ?></h3>
-                                    <span class="text-muted">New This Month</span>
+                                    <a href="registered-users.php" style="text-decoration: none; color: inherit; display: block;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+                                        <h3 class="mb-1 text-info"><i class="feather icon-user-plus"></i> <?php echo (int)($newMemberCount['total'] ?? 0); ?></h3>
+                                        <span class="text-muted">New This Month</span>
+                                    </a>
                                 </div>
                             </div>
                         </div>
@@ -500,12 +508,16 @@ $name = $_SESSION['login_user'];
                         <div class="card-body p-3">
                             <div class="row">
                                 <div class="col-6 text-center">
-                                    <h3 class="mb-1 text-primary"><i class="feather icon-users"></i> <?php echo (int)($memberCount['total'] ?? 0); ?></h3>
-                                    <span class="text-muted">Total Employees</span>
+                                    <a href="view-user.php" style="text-decoration: none; color: inherit; display: block;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+                                        <h3 class="mb-1 text-primary"><i class="feather icon-users"></i> <?php echo (int)($memberCount['total'] ?? 0); ?></h3>
+                                        <span class="text-muted">Total Employees</span>
+                                    </a>
                                 </div>
                                 <div class="col-6 text-center">
-                                    <h3 class="mb-1 text-success"><i class="feather icon-user-check"></i> <?php echo (int)($activeMemberCount['total'] ?? 0); ?></h3>
-                                    <span class="text-muted">Active Employees</span>
+                                    <a href="view-user.php" style="text-decoration: none; color: inherit; display: block;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+                                        <h3 class="mb-1 text-success"><i class="feather icon-user-check"></i> <?php echo (int)($activeMemberCount['total'] ?? 0); ?></h3>
+                                        <span class="text-muted">Active Employees</span>
+                                    </a>
                                 </div>
                             </div>
                         </div>
@@ -517,29 +529,39 @@ $name = $_SESSION['login_user'];
                 <div class="col-md-<?php echo ($isAdmin || hasPermission('Dashboard Employee Stats', $privileges, $roleData['role_name'])) ? '8' : '12'; ?>">
                     <div class="card">
                         <div class="card-header">
-                            <h5><i class="feather icon-check-square"></i> <?php echo $isDashAdmin ? "Task Statistics" : "My Tasks"; ?></h5>
+                            <h5><i class="feather icon-check-square"></i> <?php echo $isDashAdmin ? "Task Management" : "My Tasks"; ?> <span class="badge badge-primary">TASK</span></h5>
                         </div>
                         <div class="card-body p-3">
                             <div class="row text-center">
                                 <div class="col">
-                                    <h3 class="mb-1"><i class="feather icon-clipboard"></i> <?php echo (int)($taskStats['total_tasks'] ?? 0); ?></h3>
-                                    <span class="text-muted">Total</span>
+                                    <a href="task-management/index.php" style="text-decoration: none; color: inherit; display: block;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+                                        <h3 class="mb-1"><i class="feather icon-clipboard"></i> <?php echo (int)($taskStats['total_tasks'] ?? 0); ?></h3>
+                                        <span class="text-muted">Total</span>
+                                    </a>
                                 </div>
                                 <div class="col">
-                                    <h3 class="mb-1 text-warning"><i class="feather icon-clock"></i> <?php echo (int)($taskStats['pending_tasks'] ?? 0); ?></h3>
-                                    <span class="text-muted">Pending</span>
+                                    <a href="task-management/index.php?status=Pending" style="text-decoration: none; color: inherit; display: block;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+                                        <h3 class="mb-1 text-warning"><i class="feather icon-clock"></i> <?php echo (int)($taskStats['pending_tasks'] ?? 0); ?></h3>
+                                        <span class="text-muted">Pending</span>
+                                    </a>
                                 </div>
                                 <div class="col">
-                                    <h3 class="mb-1 text-info"><i class="feather icon-loader"></i> <?php echo (int)($taskStats['in_progress_tasks'] ?? 0); ?></h3>
-                                    <span class="text-muted">In Progress</span>
+                                    <a href="task-management/index.php?status=In+Progress" style="text-decoration: none; color: inherit; display: block;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+                                        <h3 class="mb-1 text-info"><i class="feather icon-loader"></i> <?php echo (int)($taskStats['in_progress_tasks'] ?? 0); ?></h3>
+                                        <span class="text-muted">In Progress</span>
+                                    </a>
                                 </div>
                                 <div class="col">
-                                    <h3 class="mb-1 text-success"><i class="feather icon-check-circle"></i> <?php echo (int)($taskStats['completed_tasks'] ?? 0); ?></h3>
-                                    <span class="text-muted">Completed</span>
+                                    <a href="task-management/index.php?status=Completed" style="text-decoration: none; color: inherit; display: block;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+                                        <h3 class="mb-1 text-success"><i class="feather icon-check-circle"></i> <?php echo (int)($taskStats['completed_tasks'] ?? 0); ?></h3>
+                                        <span class="text-muted">Completed</span>
+                                    </a>
                                 </div>
                                 <div class="col">
-                                    <h3 class="mb-1 text-danger"><i class="feather icon-alert-circle"></i> <?php echo (int)($taskStats['overdue_tasks'] ?? 0); ?></h3>
-                                    <span class="text-muted">Overdue</span>
+                                    <a href="task-management/index.php" style="text-decoration: none; color: inherit; display: block;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+                                        <h3 class="mb-1 text-danger"><i class="feather icon-alert-circle"></i> <?php echo (int)($taskStats['overdue_tasks'] ?? 0); ?></h3>
+                                        <span class="text-muted">Overdue</span>
+                                    </a>
                                 </div>
                             </div>
                         </div>

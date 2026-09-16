@@ -300,7 +300,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_whatsapp_gateway
             <div class="gateway-page">
                 <div class="card gateway-card">
                     <div class="card-body p-4 p-md-5">
-                        <h3 class="mb-2">WhatsApp Gateway Integration</h3>
+                        <h3 class="mb-2">AiSensy WhatsApp Integration</h3>
                         <p class="text-muted mb-4">Configure your HMAC-secured gateway credentials for sending WhatsApp
                             notifications.</p>
 

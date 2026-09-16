@@ -28,7 +28,17 @@ $adminID = $_SESSION["login_user_id"];
 if (isset($_POST['action']) && $_POST['action'] === 'assign_tender_task') {
     header('Content-Type: application/json');
     $tenderId = (int)($_POST['tender_request_id'] ?? 0);
-    $employeeId = (int)($_POST['employee_id'] ?? 0);
+    $employeeIdsRaw = $_POST['employee_ids'] ?? [];
+    if (!is_array($employeeIdsRaw)) {
+        $employeeIdsRaw = [$employeeIdsRaw];
+    }
+    $employeeIds = [];
+    foreach ($employeeIdsRaw as $eid) {
+        $val = (int)$eid;
+        if ($val > 0) $employeeIds[$val] = $val;
+    }
+    $employeeIds = array_values($employeeIds);
+
     $title = trim($_POST['title'] ?? '');
     $description = trim($_POST['description'] ?? '');
     $priority = $_POST['priority'] ?? 'Medium';
@@ -36,7 +46,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'assign_tender_task') {
     
     if (empty($dueDate)) $dueDate = null;
 
-    if ($tenderId <= 0 || $employeeId <= 0 || empty($title)) {
+    if ($tenderId <= 0 || empty($employeeIds) || empty($title)) {
         echo json_encode(['status' => 400, 'error' => 'Invalid input data.']);
         exit;
     }
@@ -97,48 +107,75 @@ if (isset($_POST['action']) && $_POST['action'] === 'assign_tender_task') {
         exit;
     }
 
-    
-    // Check if employee is active
-    $stmtEmp = $db->prepare("SELECT username FROM admin WHERE id = ? AND status = 1");
-    $stmtEmp->bind_param('i', $employeeId);
+    // Check if employees are active
+    $placeholdersEmp = implode(',', array_fill(0, count($employeeIds), '?'));
+    $typesEmp = str_repeat('i', count($employeeIds));
+    $stmtEmp = $db->prepare("SELECT id FROM admin WHERE id IN ($placeholdersEmp) AND status = 1");
+    $stmtEmp->bind_param($typesEmp, ...$employeeIds);
     $stmtEmp->execute();
-    $empRes = $stmtEmp->get_result()->fetch_assoc();
-    if (!$empRes) {
-        echo json_encode(['status' => 400, 'error' => 'Selected employee does not exist or is inactive.']);
+    $validEmps = [];
+    $res = $stmtEmp->get_result();
+    while ($row = $res->fetch_assoc()) {
+        $validEmps[] = $row['id'];
+    }
+    if (count($validEmps) !== count($employeeIds)) {
+        echo json_encode(['status' => 400, 'error' => 'One or more selected employees do not exist or are inactive.']);
         exit;
     }
     
     // Check duplicate
-    $stmtDup = $db->prepare("SELECT id FROM tasks WHERE tender_request_id = ? AND assigned_to = ?");
-    $stmtDup->bind_param('ii', $tenderId, $employeeId);
+    $paramsDup = array_merge([$tenderId], $employeeIds, $employeeIds);
+    $typesDup = 'i' . $typesEmp . $typesEmp;
+    $stmtDup = $db->prepare("
+        SELECT t.id 
+        FROM tasks t
+        LEFT JOIN task_assignees ta ON ta.task_id = t.id
+        WHERE t.tender_request_id = ? 
+          AND (ta.employee_id IN ($placeholdersEmp) OR t.assigned_to IN ($placeholdersEmp))
+    ");
+    $stmtDup->bind_param($typesDup, ...$paramsDup);
     $stmtDup->execute();
     if ($stmtDup->get_result()->fetch_assoc()) {
-        echo json_encode(['status' => 400, 'error' => 'This tender request is already assigned to this employee.']);
+        echo json_encode(['status' => 400, 'error' => 'This tender request is already assigned to one of the selected employees.']);
         exit;
     }
     
-    // Insert task
-    $taskType = 'Tender/Query';
-    $status = 'Pending';
-    $startDate = date('Y-m-d');
-    
-    $stmtIns = $db->prepare("INSERT INTO tasks (title, description, task_type, tender_request_id, created_by, assigned_to, priority, status, start_date, due_date, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())");
-    $stmtIns->bind_param('sssiisssss', $title, $description, $taskType, $tenderId, $adminID, $employeeId, $priority, $status, $startDate, $dueDate);
-    
-    try { if ($stmtIns->execute()) {
+    $db->begin_transaction();
+    try {
+        $taskType = 'Tender/Query';
+        $status = 'Pending';
+        $startDate = date('Y-m-d');
+        $firstEmployeeId = $employeeIds[0];
+        
+        $stmtIns = $db->prepare("INSERT INTO tasks (title, description, task_type, tender_request_id, created_by, assigned_to, priority, status, start_date, due_date, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())");
+        $stmtIns->bind_param('sssiisssss', $title, $description, $taskType, $tenderId, $adminID, $firstEmployeeId, $priority, $status, $startDate, $dueDate);
+        
+        if (!$stmtIns->execute()) {
+            throw new Exception('Database error during task creation.');
+        }
         $newTaskId = $stmtIns->insert_id;
+        
+        $stmtAssign = $db->prepare("INSERT IGNORE INTO task_assignees (task_id, employee_id, assigned_by) VALUES (?, ?, ?)");
+        foreach ($employeeIds as $empId) {
+            $stmtAssign->bind_param('iii', $newTaskId, $empId, $adminID);
+            $stmtAssign->execute();
+        }
+        
+        $db->commit();
         
         // Notify
         require_once __DIR__ . '/service/NotificationService.php';
         $ns = new NotificationService($db);
-        $ns->notifyTaskAssigned($newTaskId, $employeeId, $title);
+        foreach ($employeeIds as $empId) {
+            try {
+                $ns->notifyTaskAssigned($newTaskId, $empId, $title);
+            } catch (Exception $e) { }
+        }
         
         echo json_encode(['status' => 200, 'message' => 'Task assigned successfully']);
-    } else {
-        echo json_encode(['status' => 500, 'error' => 'Database error during task creation.']);
-    }
-    } catch (\mysqli_sql_exception $e) {
-        echo json_encode(['status' => 500, 'error' => 'Invalid Tender Request ID or Database Error']);
+    } catch (Exception $e) {
+        $db->rollback();
+        echo json_encode(['status' => 500, 'error' => $e->getMessage()]);
     }
     exit;
 }
@@ -3225,9 +3262,8 @@ while ($rowEmp = mysqli_fetch_assoc($empResult)) {
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label">Employee</label>
-                        <select name="employee_id" class="form-select form-control" required>
-                            <option value="">Select Employee ▼</option>
+                        <label class="form-label">Employee(s)</label>
+                        <select name="employee_ids[]" id="assign-employee-select" class="form-select form-control select2" multiple="multiple" required data-placeholder="Select Employee(s)">
                             <?php foreach ($activeEmployees as $emp): ?>
                                 <option value="<?php echo htmlspecialchars($emp['id']); ?>">
                                     <?php echo htmlspecialchars($emp['username']) . (!empty($emp['email']) ? ' (' . htmlspecialchars($emp['email']) . ')' : ''); ?>
@@ -3273,6 +3309,13 @@ while ($rowEmp = mysqli_fetch_assoc($empResult)) {
 
 <script>
 $(document).ready(function() {
+    if ($.fn.select2) {
+        $('#assign-employee-select').select2({
+            dropdownParent: $('#assign-task-modal'),
+            width: '100%'
+        });
+    }
+
     // Open Modal and populate data
     $(document).on('click', '.assign-task-dropdown-btn', function(e) {
         var tenderId = $(this).data('tender-id');
@@ -3289,6 +3332,9 @@ $(document).ready(function() {
         $('#assign-dept').text(dept || 'N/A');
         $('#assign-section').text(sec || 'N/A');
         $('#assign-division').text(div || 'N/A');
+        if ($.fn.select2) {
+            $('#assign-employee-select').val(null).trigger('change');
+        }
 
         if (dueDate) {
             var cleanDate = String(dueDate).trim().split(' ')[0];
@@ -3371,6 +3417,9 @@ $(document).ready(function() {
 
                     notifyUser('success', response.message || "Task assigned successfully.");
                     $('#assign-task-form')[0].reset();
+                    if ($.fn.select2) {
+                        $('#assign-employee-select').val(null).trigger('change');
+                    }
                 } else {
                     notifyUser('error', response.error || "Error assigning task.");
                 }

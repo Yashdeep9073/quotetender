@@ -69,14 +69,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmtComment = $db->prepare("INSERT INTO task_comments (task_id, user_id, comment) VALUES (?, ?, ?)");
         $stmtComment->bind_param('iis', $taskId, $taskUserId, $comment);
         if ($stmtComment->execute()) {
-            // Notify the assignee when someone else adds a comment
+            // Notify the assignees when someone else adds a comment
             $notificationService = new NotificationService($db);
-            $notificationService->notifyTaskCommented(
-                $taskId,
-                $taskUserId,
-                (int) $task['assigned_to'],
-                $task['title']
-            );
+            $assignees = !empty($task['assigned_user_ids']) ? explode(',', $task['assigned_user_ids']) : [$task['assigned_to']];
+            foreach ($assignees as $assigneeId) {
+                if ((int)$assigneeId > 0) {
+                    try {
+                        $notificationService->notifyTaskCommented(
+                            $taskId,
+                            $taskUserId,
+                            (int) $assigneeId,
+                            $task['title']
+                        );
+                    } catch (Exception $e) {}
+                }
+            }
 
             task_redirect('view.php?id=' . $taskId, 'success', 'Comment added.');
         } else {

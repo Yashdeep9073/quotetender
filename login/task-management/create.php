@@ -15,7 +15,7 @@ $form = [
     'task_type'         => 'General',
     'tender_request_id' => '',
     'tender_label'      => '',
-    'assigned_to'       => '',
+    'assigned_user_ids' => [],
     'priority'          => 'Medium',
     'status'            => 'Pending',
     'start_date'        => '',
@@ -27,7 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $form['description'] = isset($_POST['description']) ? trim((string) $_POST['description']) : '';
     $form['task_type']   = isset($_POST['task_type']) ? (string) $_POST['task_type'] : 'General';
     $form['tender_request_id'] = isset($_POST['tender_request_id']) ? (string) $_POST['tender_request_id'] : '';
-    $form['assigned_to'] = isset($_POST['assigned_to']) ? (string) $_POST['assigned_to'] : '';
+    $form['assigned_user_ids'] = isset($_POST['assigned_user_ids']) ? $_POST['assigned_user_ids'] : [];
     $form['priority']    = isset($_POST['priority']) ? (string) $_POST['priority'] : '';
     $form['status']      = isset($_POST['status']) ? (string) $_POST['status'] : 'Pending';
     $form['start_date']  = isset($_POST['start_date']) ? (string) $_POST['start_date'] : '';
@@ -45,15 +45,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // 2. Assigned employee must exist
-    $assignedTo = task_get_int($form['assigned_to']);
-    if ($assignedTo === false) {
-        $errors[] = 'Please select a valid employee.';
+    $employeeIdsRaw = $form['assigned_user_ids'];
+    if (!is_array($employeeIdsRaw)) {
+        $employeeIdsRaw = [$employeeIdsRaw];
+    }
+    $employeeIds = [];
+    foreach ($employeeIdsRaw as $eid) {
+        $val = (int)$eid;
+        if ($val > 0) $employeeIds[$val] = $val;
+    }
+    $employeeIds = array_values($employeeIds);
+    $form['assigned_user_ids'] = $employeeIds;
+    
+    if (empty($employeeIds)) {
+        $errors[] = 'Please select at least one valid employee.';
     } else {
-        $stmtEmp = $db->prepare("SELECT id FROM admin WHERE id = ? AND status = 1");
-        $stmtEmp->bind_param('i', $assignedTo);
+        $placeholdersEmp = implode(',', array_fill(0, count($employeeIds), '?'));
+        $typesEmp = str_repeat('i', count($employeeIds));
+        $stmtEmp = $db->prepare("SELECT id FROM admin WHERE id IN ($placeholdersEmp) AND status = 1");
+        $stmtEmp->bind_param($typesEmp, ...$employeeIds);
         $stmtEmp->execute();
-        if (!$stmtEmp->get_result()->fetch_assoc()) {
-            $errors[] = 'The selected employee does not exist or is inactive.';
+        $validEmps = [];
+        $res = $stmtEmp->get_result();
+        while ($row = $res->fetch_assoc()) {
+            $validEmps[] = $row['id'];
+        }
+        if (count($validEmps) !== count($employeeIds)) {
+            $errors[] = 'One or more selected employees do not exist or are inactive.';
         }
     }
 
@@ -106,41 +124,60 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (empty($errors)) {
-        // Server determines the creator – never trust client input.
-        $stmtInsert = $db->prepare(
-            "INSERT INTO tasks
-                (title, description, task_type, tender_request_id, created_by, assigned_to,
-                 priority, status, start_date, due_date)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-        );
-        $stmtInsert->bind_param(
-            'sssiiissss',
-            $form['title'],
-            $form['description'],
-            $form['task_type'],
-            $tenderRequestId,
-            $taskUserId,
-            $assignedTo,
-            $form['priority'],
-            $form['status'],
-            $startDate,
-            $dueDate
-        );
+        $db->begin_transaction();
+        try {
+            $firstAssignedTo = $employeeIds[0];
+            $stmtInsert = $db->prepare(
+                "INSERT INTO tasks
+                    (title, description, task_type, tender_request_id, created_by, assigned_to,
+                     priority, status, start_date, due_date)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+            );
+            $stmtInsert->bind_param(
+                'sssiiissss',
+                $form['title'],
+                $form['description'],
+                $form['task_type'],
+                $tenderRequestId,
+                $taskUserId,
+                $firstAssignedTo,
+                $form['priority'],
+                $form['status'],
+                $startDate,
+                $dueDate
+            );
 
-        if ($stmtInsert->execute()) {
+            if (!$stmtInsert->execute()) {
+                throw new Exception("Insert task failed");
+            }
+
             $newTaskId = (int) $stmtInsert->insert_id;
+            
+            $stmtAssign = $db->prepare("INSERT IGNORE INTO task_assignees (task_id, employee_id, assigned_by) VALUES (?, ?, ?)");
+            foreach ($employeeIds as $empId) {
+                $stmtAssign->bind_param('iii', $newTaskId, $empId, $taskUserId);
+                $stmtAssign->execute();
+            }
+            
+            $db->commit();
+            
             task_log_history($db, $newTaskId, $taskUserId, 'Task created');
 
-            // Notify the assigned employee (in-app + email handled by the service)
+            // Notify the assigned employees (in-app + email handled by the service)
             $notificationService = new NotificationService($db);
-            if ($form['task_type'] === 'Tender/Query') {
-                $notificationService->notifyTenderTaskAssigned($newTaskId, $assignedTo, $form['title']);
-            } else {
-                $notificationService->notifyTaskAssigned($newTaskId, $assignedTo, $form['title']);
+            foreach ($employeeIds as $empId) {
+                try {
+                    if ($form['task_type'] === 'Tender/Query') {
+                        $notificationService->notifyTenderTaskAssigned($newTaskId, $empId, $form['title']);
+                    } else {
+                        $notificationService->notifyTaskAssigned($newTaskId, $empId, $form['title']);
+                    }
+                } catch (Exception $e) {}
             }
 
             task_redirect('view.php?id=' . $newTaskId, 'success', 'Task created successfully.');
-        } else {
+        } catch (Exception $e) {
+            $db->rollback();
             $errors[] = 'Failed to save the task. Please try again.';
         }
     }
@@ -192,6 +229,16 @@ if ($empResult) {
     <link rel="stylesheet" href="assets/css/plugins/select.bootstrap4.min.css">
     <link rel="stylesheet" href="assets/css/style.css">
     <style>
+        /* ---- Employee Multi-Select Fix ---- */
+        #assigned_user_ids + .select2-container .select2-selection--multiple {
+            min-height: 43px;
+            padding: 4px;
+        }
+        #assigned_user_ids + .select2-container .select2-search--inline .select2-search__field {
+            margin-top: 6px;
+            font-family: inherit;
+        }
+
         /* ---- Related Tender/Query selector (create task page) ---- */
         .tender-picker { position: relative; }
         .tender-picker .tender-search-icon {
@@ -336,11 +383,10 @@ if ($empResult) {
                                     </div>
                                     <div class="col-md-6">
                                         <div class="form-group">
-                                            <label>Assigned Employee</label>
-                                            <select name="assigned_to" class="form-control" required>
-                                                <option value="">Select Employee ▼</option>
+                                            <label>Assigned Employee(s)</label>
+                                            <select name="assigned_user_ids[]" id="assigned_user_ids" style="width: 100%;" multiple required data-placeholder="Select Employee(s)">
                                                 <?php foreach ($employees as $emp): ?>
-                                                    <option value="<?php echo e($emp['id']); ?>" <?php echo $form['assigned_to'] === (string) $emp['id'] ? 'selected' : ''; ?>>
+                                                    <option value="<?php echo e($emp['id']); ?>" <?php echo in_array((string)$emp['id'], (array)$form['assigned_user_ids']) ? 'selected' : ''; ?>>
                                                         <?php echo e($emp['username']); ?>
                                                     </option>
                                                 <?php endforeach; ?>
@@ -559,6 +605,11 @@ if ($empResult) {
                     if ($search.length) { $search.focus(); }
                 });
             }
+
+            $('#assigned_user_ids').select2({
+                placeholder: 'Select Employee(s)',
+                allowClear: true
+            });
 
             $('#tender_request_id').select2({
                 theme: 'bootstrap4',
