@@ -276,6 +276,32 @@ $name = $_SESSION['login_user'];
     <!-- Chart.js for charts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.js"></script>
+
+    <style>
+        .employee-dashboard-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 9px;
+            color: #334155;
+            text-decoration: none !important;
+        }
+        .employee-dashboard-link:hover {
+            color: #4099ff;
+        }
+        .employee-avatar-mini {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #eef4ff;
+            color: #4099ff;
+            font-weight: 700;
+            flex: 0 0 34px;
+        }
+    </style>
+
 </head>
 
 <body class="">
@@ -652,7 +678,19 @@ $name = $_SESSION['login_user'];
                                     <tbody>
                                         <?php foreach ($empPerformance as $emp): ?>
                                         <tr>
-                                            <td><?php echo htmlspecialchars($emp['username']); ?></td>
+                                            <td>
+                                                <a href="employee-dashboard.php?id=<?php echo (int)$emp['id']; ?>"
+                                                   class="employee-dashboard-link"
+                                                   title="Open employee dashboard">
+                                                    <span class="employee-avatar-mini">
+                                                        <?php echo strtoupper(substr((string)$emp['username'], 0, 1)); ?>
+                                                    </span>
+                                                    <span>
+                                                        <strong><?php echo htmlspecialchars($emp['username']); ?></strong>
+                                                        <small class="d-block text-muted">View dashboard</small>
+                                                    </span>
+                                                </a>
+                                            </td>
                                             <td class="text-center"><?php echo (int)$emp['assigned_tasks']; ?></td>
                                             <td class="text-center text-success"><?php echo (int)$emp['completed_tasks']; ?></td>
                                             <td class="text-center text-danger"><?php echo (int)$emp['overdue_tasks']; ?></td>

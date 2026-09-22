@@ -44,7 +44,9 @@ $allowedAction=!in_array('All',$userPermissions2) && in_array( 'Update Tenders',
  dv.division_name,
  sd.subdivision,
  ur.auto_quotation,
- ur.email_sent_date
+ ur.email_sent_date,
+ ur.updated_by,
+ creator.id AS updated_by_id
 FROM 
  user_tender_requests ur
 INNER JOIN 
@@ -57,6 +59,8 @@ INNER JOIN
  division dv ON ur.section_id = dv.section_id
 INNER JOIN
  sub_division sd ON ur.division_id = sd.division_id
+LEFT JOIN
+ admin creator ON creator.username = ur.updated_by
 WHERE ur.status = 'Sent'AND ur.delete_tender = '0'
 GROUP BY 
  ur.id
@@ -332,6 +336,7 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                 echo "<th>Due Date</th>";
                                 echo "<th>Date Added</th>";
                                 echo "<th>TIME Added</th>";
+                                echo "<th>Created By</th>";
                                 echo "<th>Sent Date</th>";
                                 if($allowedAction=='all' || $allowedAction=='update' ){
                                 echo "<th>Edit</th>";
@@ -379,6 +384,20 @@ while ($item = mysqli_fetch_row($adminPermissionResult)) {
                                     $istTime = date('h:i A', $timestamp + 5.5 * 3600);
                                     echo "<td>" . $istDate . "</td>";
                                     echo "<td>" . $istTime . "</td>";
+
+                                    $createdByName = (string) ($row['updated_by'] ?? '');
+                                    $createdById = (int) ($row['updated_by_id'] ?? 0);
+                                    if ($createdById > 0) {
+                                        $createdByInitial = strtoupper(substr($createdByName, 0, 1));
+                                        echo '<td>
+                                            <a href="../employee-dashboard.php?id=' . $createdById . '" class="employee-dashboard-link" title="Open employee dashboard">
+                                                <span class="employee-avatar-mini" style="width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:#e8f0fe;color:#2563eb;font-weight:700;font-size:12px;">' . htmlspecialchars($createdByInitial, ENT_QUOTES, 'UTF-8') . '</span>
+                                                <span><strong>' . htmlspecialchars($createdByName, ENT_QUOTES, 'UTF-8') . '</strong><small class="d-block text-muted">View dashboard</small></span>
+                                            </a>
+                                        </td>';
+                                    } else {
+                                        echo '<td>' . htmlspecialchars($createdByName, ENT_QUOTES, 'UTF-8') . '</td>';
+                                    }
 
                                     echo "<td>" .date_format(date_create($row['sent_at']),"d-m-Y ") . "<br/>" . '<a href="../login/tender/' . $row['file_name'] . '"  target="_blank"/>View file 1 </a> </br> ' ;
 

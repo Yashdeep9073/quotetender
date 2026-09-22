@@ -77,6 +77,98 @@ class ScheduledTaskNotificationService
         ];
     }
 
+    /**
+     * Validate notification controls before a task is created.
+     * An empty channel list is valid: task creation can happen without notifications.
+     */
+    public function validateDispatchRequest(array $channels, $delivery, $scheduleDate = '', $scheduleTime = '')
+    {
+        foreach ($channels as $channel) {
+            if (!is_scalar($channel)) {
+                throw new InvalidArgumentException('Invalid notification channel.');
+            }
+            if (trim((string) $channel) !== '' && $this->normalizeChannel($channel) === false) {
+                throw new InvalidArgumentException('Invalid notification channel.');
+            }
+        }
+        $channels = $this->normalizeChannels($channels);
+        if (!is_scalar($delivery)) {
+            throw new InvalidArgumentException('Invalid notification delivery mode.');
+        }
+        $delivery = strtolower(trim((string) $delivery));
+        if (!in_array($delivery, ['now', 'later'], true)) {
+            throw new InvalidArgumentException('Invalid notification delivery mode.');
+        }
+
+        $scheduledAt = null;
+        if ($delivery === 'later' && !empty($channels)) {
+            $scheduleDate = trim((string) $scheduleDate);
+            $scheduleTime = trim((string) $scheduleTime);
+            if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $scheduleDate)
+                || !preg_match('/^\d{2}:\d{2}$/', $scheduleTime)) {
+                throw new InvalidArgumentException('Please select a valid schedule date and time.');
+            }
+
+            $tz = new DateTimeZone('Asia/Kolkata');
+            $scheduledDateTime = DateTime::createFromFormat('!Y-m-d H:i', $scheduleDate . ' ' . $scheduleTime, $tz);
+            $errors = DateTime::getLastErrors();
+            if (!$scheduledDateTime || ($errors && ($errors['warning_count'] > 0 || $errors['error_count'] > 0))) {
+                throw new InvalidArgumentException('Please select a valid schedule date and time.');
+            }
+            if ($scheduledDateTime <= new DateTime('now', $tz)) {
+                throw new InvalidArgumentException('Schedule date and time must be in the future.');
+            }
+            $scheduledAt = $scheduledDateTime->format('Y-m-d H:i:s');
+        }
+
+        return [
+            'channels' => $channels,
+            'delivery' => $delivery,
+            'scheduled_at' => $scheduledAt,
+        ];
+    }
+
+    /**
+     * Dispatch independent channels after task creation. A provider failure is
+     * returned per channel and never rolls back the already-created task.
+     */
+    public function dispatch($taskId, array $channels, $delivery, $note, $scheduledAt, $createdBy)
+    {
+        $channels = $this->normalizeChannels($channels);
+        $delivery = strtolower(trim((string) $delivery));
+        $result = [
+            'total' => 0,
+            'sent' => 0,
+            'scheduled' => 0,
+            'failed' => [],
+        ];
+
+        foreach ($channels as $channel) {
+            try {
+                if ($delivery === 'later') {
+                    $created = $this->schedule($taskId, $channel, $note, $scheduledAt, $createdBy);
+                    if ($created < 1) {
+                        $result['failed'][] = $channel . ': notification is already scheduled for this time.';
+                    } else {
+                        $result['scheduled'] += $created;
+                    }
+                    continue;
+                }
+
+                $channelResult = $this->sendNow($taskId, $channel, $note, $createdBy);
+                $result['total'] += (int) $channelResult['total'];
+                $result['sent'] += (int) $channelResult['sent'];
+                foreach ($channelResult['failed'] as $failure) {
+                    $result['failed'][] = $channel . ': ' . $this->safeError($failure);
+                }
+            } catch (Throwable $e) {
+                $result['failed'][] = $channel . ': ' . $this->safeError($e->getMessage());
+            }
+        }
+
+        return $result;
+    }
+
     public function schedule($taskId, $channel, $note, $scheduledAt, $createdBy)
     {
         if (!$this->tableExists()) {
@@ -268,6 +360,24 @@ class ScheduledTaskNotificationService
     {
         $channel = strtoupper((string) $channel);
         return in_array($channel, ['EMAIL', 'WHATSAPP'], true) ? $channel : false;
+    }
+
+    private function normalizeChannels(array $channels)
+    {
+        $normalized = [];
+        foreach ($channels as $channel) {
+            $channel = $this->normalizeChannel($channel);
+            if ($channel !== false && !in_array($channel, $normalized, true)) {
+                $normalized[] = $channel;
+            }
+        }
+        return $normalized;
+    }
+
+    private function safeError($error)
+    {
+        $error = trim(preg_replace('/\s+/', ' ', (string) $error));
+        return $error !== '' ? substr($error, 0, 300) : 'Notification failed.';
     }
 
     private function userCanAccessTask($taskId, $userId)

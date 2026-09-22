@@ -86,6 +86,12 @@ $sql = "SELECT t.id, t.title, t.task_type, t.priority, t.status,
                    WHERE a.id = t.assigned_to 
                       OR a.id IN (SELECT ta.employee_id FROM task_assignees ta WHERE ta.task_id = t.id)
                ) AS assigned_username,
+               (
+                   SELECT GROUP_CONCAT(DISTINCT a.id ORDER BY a.username SEPARATOR ',')
+                   FROM admin a
+                   WHERE a.id = t.assigned_to
+                      OR a.id IN (SELECT ta.employee_id FROM task_assignees ta WHERE ta.task_id = t.id)
+               ) AS assigned_employee_ids,
                creator.username  AS created_username,
                utr.tenderID      AS tender_id_number,
                utr.reference_code AS tender_reference_code
@@ -312,7 +318,27 @@ if ($taskCanViewAll) {
                                                     <?php endif; ?>
                                                 </td>
                                                 <?php if ($taskCanViewAll): ?>
-                                                <td><?php echo e($task['assigned_username'] ?? '—'); ?></td>
+                                                <td>
+                                                    <?php
+                                                    $assignedNames = preg_split('/,\s*/', (string) ($task['assigned_username'] ?? ''), -1, PREG_SPLIT_NO_EMPTY);
+                                                    $assignedIds = array_values(array_filter(array_map('intval', explode(',', (string) ($task['assigned_employee_ids'] ?? '')))));
+                                                    if (empty($assignedIds)): ?>
+                                                        <?php echo e($task['assigned_username'] ?? '—'); ?>
+                                                    <?php else: ?>
+                                                        <?php foreach ($assignedIds as $assignedIndex => $assignedId):
+                                                            $assignedName = $assignedNames[$assignedIndex] ?? 'Employee';
+                                                            $initial = strtoupper(substr($assignedName, 0, 1)); ?>
+                                                            <a href="employee-dashboard.php?id=<?php echo $assignedId; ?>"
+                                                               class="employee-dashboard-link d-inline-flex align-items-center mr-2 mb-1"
+                                                               title="Open employee dashboard">
+                                                                <span class="employee-avatar-mini mr-1" style="width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:#e8f0fe;color:#2563eb;font-weight:700;font-size:12px;">
+                                                                    <?php echo e($initial); ?>
+                                                                </span>
+                                                                <span><strong><?php echo e($assignedName); ?></strong><small class="d-block text-muted">View dashboard</small></span>
+                                                            </a>
+                                                        <?php endforeach; ?>
+                                                    <?php endif; ?>
+                                                </td>
                                                 <td><?php echo e($task['created_username'] ?? '—'); ?></td>
                                                 <td><?php echo $task['start_date'] ? e(date('d M Y', strtotime($task['start_date']))) : '—'; ?></td>
                                                 <?php endif; ?>

@@ -48,35 +48,33 @@ try {
             task_notification_json(false, 'Notification note is too long (max 1000 characters).');
         }
 
-        if ($action === 'send_now') {
-            $result = $service->sendNow($taskId, $channel, $note, $taskUserId);
+        $delivery = $action === 'send_now' ? 'now' : 'later';
+        $dispatchRequest = $service->validateDispatchRequest(
+            [$channel],
+            $delivery,
+            $_POST['schedule_date'] ?? '',
+            $_POST['schedule_time'] ?? ''
+        );
+        $result = $service->dispatch(
+            $taskId,
+            $dispatchRequest['channels'],
+            $dispatchRequest['delivery'],
+            $note,
+            $dispatchRequest['scheduled_at'],
+            $taskUserId
+        );
+
+        if ($delivery === 'now') {
             $message = $channel . ' notification sent to ' . (int) $result['sent'] . ' of ' . (int) $result['total'] . ' recipient(s).';
-            task_notification_json(true, $message, ['result' => $result]);
+        } else {
+            $scheduledDateTime = new DateTime($dispatchRequest['scheduled_at'], new DateTimeZone('Asia/Kolkata'));
+            $message = !empty($result['failed'])
+                ? 'Notification scheduling completed with errors.'
+                : 'Notification scheduled successfully.';
         }
-
-        $scheduleDate = task_valid_date($_POST['schedule_date'] ?? null);
-        $scheduleTime = isset($_POST['schedule_time']) ? (string) $_POST['schedule_time'] : '';
-        if ($scheduleDate === false || !preg_match('/^\d{2}:\d{2}$/', $scheduleTime)) {
-            task_notification_json(false, 'Please select a valid schedule date and time.');
-        }
-
-        $tz = new DateTimeZone('Asia/Kolkata');
-        $scheduledDateTime = DateTime::createFromFormat('Y-m-d H:i', $scheduleDate . ' ' . $scheduleTime, $tz);
-        $errors = DateTime::getLastErrors();
-        if (!$scheduledDateTime || ($errors && ($errors['warning_count'] > 0 || $errors['error_count'] > 0))) {
-            task_notification_json(false, 'Please select a valid schedule date and time.');
-        }
-        if ($scheduledDateTime <= new DateTime('now', $tz)) {
-            task_notification_json(false, 'Schedule date and time must be in the future.');
-        }
-
-        $created = $service->schedule($taskId, $channel, $note, $scheduledDateTime->format('Y-m-d H:i:s'), $taskUserId);
-        if ($created < 1) {
-            task_notification_json(false, 'This notification is already scheduled for the selected time.');
-        }
-        task_notification_json(true, 'Notification scheduled successfully.', [
-            'scheduled_at' => $scheduledDateTime->format('d M Y H:i'),
-            'count' => $created,
+        task_notification_json(true, $message, [
+            'result' => $result,
+            'scheduled_at' => $delivery === 'later' ? $scheduledDateTime->format('d M Y H:i') : null,
         ]);
     }
 

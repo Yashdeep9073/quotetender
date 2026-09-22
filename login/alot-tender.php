@@ -11,6 +11,7 @@ if (!isset($_SESSION["login_user"])) {
 $name = $_SESSION['login_user'];
 
 include("db/config.php");
+require_once __DIR__ . '/service/ScheduledTaskNotificationService.php';
 
 $adminID = $_SESSION['login_user_id'];
 
@@ -18,18 +19,65 @@ $adminID = $_SESSION['login_user_id'];
 if (isset($_POST['action']) && $_POST['action'] === 'assign_tender_task') {
     header('Content-Type: application/json');
     $tenderId = (int)($_POST['tender_request_id'] ?? 0);
-    $employeeId = (int)($_POST['employee_id'] ?? 0);
+    $employeeIdsRaw = $_POST['employee_ids'] ?? [];
+    if (!is_array($employeeIdsRaw)) {
+        $employeeIdsRaw = [$employeeIdsRaw];
+    }
+    $employeeIds = [];
+    foreach ($employeeIdsRaw as $eid) {
+        $val = (int)$eid;
+        if ($val > 0) $employeeIds[$val] = $val;
+    }
+    $employeeIds = array_values($employeeIds);
+
     $title = trim($_POST['title'] ?? '');
     $description = trim($_POST['description'] ?? '');
     $priority = $_POST['priority'] ?? 'Medium';
     $dueDate = $_POST['due_date'] ?? null;
-
+    $notificationChannels = $_POST['notification_channels'] ?? [];
+    if (!is_array($notificationChannels)) {
+        $notificationChannels = [$notificationChannels];
+    }
+    $notificationDelivery = $_POST['notification_delivery'] ?? 'now';
+    $notificationNote = trim((string) ($_POST['message'] ?? ''));
+    
     if (empty($dueDate)) $dueDate = null;
 
-    if ($tenderId <= 0 || $employeeId <= 0 || empty($title)) {
+    if ($tenderId <= 0 || empty($employeeIds) || empty($title)) {
         echo json_encode(['status' => 400, 'error' => 'Invalid input data.']);
         exit;
     }
+    $stmtTender = $db->prepare('SELECT id FROM user_tender_requests WHERE id = ? LIMIT 1');
+    $stmtTender->bind_param('i', $tenderId);
+    $stmtTender->execute();
+    if (!$stmtTender->get_result()->fetch_assoc()) {
+        echo json_encode(['status' => 400, 'error' => 'Invalid Tender Request ID.']);
+        exit;
+    }
+    if (mb_strlen($notificationNote) > 1000) {
+        echo json_encode(['status' => 400, 'error' => 'Notification message is too long (max 1000 characters).']);
+        exit;
+    }
+    $taskNotificationService = new ScheduledTaskNotificationService($db);
+    try {
+        $notificationRequest = $taskNotificationService->validateDispatchRequest(
+            $notificationChannels,
+            $notificationDelivery,
+            $_POST['schedule_date'] ?? '',
+            $_POST['schedule_time'] ?? ''
+        );
+    } catch (Throwable $e) {
+        echo json_encode(['status' => 400, 'error' => $e->getMessage()]);
+        exit;
+    }
+    // Resolve adminID if not set in session
+    if (empty($adminID) && !empty($_SESSION['login_user'])) {
+        $stmtFind = $db->prepare("SELECT id FROM admin WHERE username = ? LIMIT 1");
+        $stmtFind->bind_param('s', $_SESSION['login_user']);
+        $stmtFind->execute();
+        $adminID = $stmtFind->get_result()->fetch_assoc()['id'] ?? 0;
+    }
+
     // Check permission
     $stmtAdminRole = $db->prepare("SELECT role_id FROM admin WHERE id = ?");
     $stmtAdminRole->bind_param('i', $adminID);
@@ -44,18 +92,26 @@ if (isset($_POST['action']) && $_POST['action'] === 'assign_tender_task') {
         $stmtRolesData->bind_param('i', $roleId);
         $stmtRolesData->execute();
         $roleName = $stmtRolesData->get_result()->fetch_assoc()['role_name'] ?? '';
-
-        if ($roleName === 'Admin' || $roleName === 'Super Admin') {
+        
+        if (in_array(strtolower($roleName), ['admin', 'super admin'], true)) {
             $isAdminRole = true;
         }
+        
+        $allowedPermissions = [
+            'Task Management',
+            'Add Task'
+        ];
+        $placeholders = implode(',', array_fill(0, count($allowedPermissions), '?'));
+        $types = 'i' . str_repeat('s', count($allowedPermissions));
+        $params = array_merge([$roleId], $allowedPermissions);
 
         $stmtPriv = $db->prepare("
-            SELECT p.permission_name
+            SELECT p.permission_name 
             FROM permissions p
             JOIN role_permissions rp ON p.permission_id = rp.permission_id
-            WHERE rp.role_id = ? AND p.permission_name = 'Task Management'
+            WHERE rp.role_id = ? AND p.permission_name IN ($placeholders)
         ");
-        $stmtPriv->bind_param('i', $roleId);
+        $stmtPriv->bind_param($types, ...$params);
         $stmtPriv->execute();
         if ($stmtPriv->get_result()->fetch_assoc()) {
             $hasTaskPerm = true;
@@ -63,55 +119,100 @@ if (isset($_POST['action']) && $_POST['action'] === 'assign_tender_task') {
     }
 
     if (!$isAdminRole && !$hasTaskPerm) {
-        echo json_encode(['status' => 403, 'error' => 'Permission denied. You do not have Task Management rights.']);
+        echo json_encode(['status' => 403, 'error' => 'Permission denied. You do not have rights to assign tasks.']);
         exit;
     }
 
-    // Check if employee is active
-    $stmtEmp = $db->prepare("SELECT username FROM admin WHERE id = ? AND status = 1");
-    $stmtEmp->bind_param('i', $employeeId);
+    // Check if employees are active
+    $placeholdersEmp = implode(',', array_fill(0, count($employeeIds), '?'));
+    $typesEmp = str_repeat('i', count($employeeIds));
+    $stmtEmp = $db->prepare("SELECT id FROM admin WHERE id IN ($placeholdersEmp) AND status = 1");
+    $stmtEmp->bind_param($typesEmp, ...$employeeIds);
     $stmtEmp->execute();
-    $empRes = $stmtEmp->get_result()->fetch_assoc();
-    if (!$empRes) {
-        echo json_encode(['status' => 400, 'error' => 'Selected employee does not exist or is inactive.']);
+    $validEmps = [];
+    $res = $stmtEmp->get_result();
+    while ($row = $res->fetch_assoc()) {
+        $validEmps[] = $row['id'];
+    }
+    if (count($validEmps) !== count($employeeIds)) {
+        echo json_encode(['status' => 400, 'error' => 'One or more selected employees do not exist or are inactive.']);
         exit;
     }
-
+    
     // Check duplicate
-    $stmtDup = $db->prepare("SELECT id FROM tasks WHERE tender_request_id = ? AND assigned_to = ?");
-    $stmtDup->bind_param('ii', $tenderId, $employeeId);
+    $paramsDup = array_merge([$tenderId], $employeeIds, $employeeIds);
+    $typesDup = 'i' . $typesEmp . $typesEmp;
+    $stmtDup = $db->prepare("
+        SELECT t.id 
+        FROM tasks t
+        LEFT JOIN task_assignees ta ON ta.task_id = t.id
+        WHERE t.tender_request_id = ? 
+          AND (ta.employee_id IN ($placeholdersEmp) OR t.assigned_to IN ($placeholdersEmp))
+    ");
+    $stmtDup->bind_param($typesDup, ...$paramsDup);
     $stmtDup->execute();
     if ($stmtDup->get_result()->fetch_assoc()) {
-        echo json_encode(['status' => 400, 'error' => 'This tender request is already assigned to this employee.']);
+        echo json_encode(['status' => 400, 'error' => 'This tender request is already assigned to one of the selected employees.']);
         exit;
     }
-
-    // Insert task
-    $taskType = 'Tender/Query';
-    $status = 'Pending';
-    $startDate = date('Y-m-d');
-
-    $stmtIns = $db->prepare("INSERT INTO tasks (title, description, task_type, tender_request_id, created_by, assigned_to, priority, status, start_date, due_date, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())");
-    $stmtIns->bind_param('sssiisssss', $title, $description, $taskType, $tenderId, $adminID, $employeeId, $priority, $status, $startDate, $dueDate);
-
-    try { if ($stmtIns->execute()) {
+    
+    $db->begin_transaction();
+    try {
+        $taskType = 'Tender/Query';
+        $status = 'Pending';
+        $startDate = date('Y-m-d');
+        $firstEmployeeId = $employeeIds[0];
+        
+        $stmtIns = $db->prepare("INSERT INTO tasks (title, description, task_type, tender_request_id, created_by, assigned_to, priority, status, start_date, due_date, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())");
+        $stmtIns->bind_param('sssiisssss', $title, $description, $taskType, $tenderId, $adminID, $firstEmployeeId, $priority, $status, $startDate, $dueDate);
+        
+        if (!$stmtIns->execute()) {
+            throw new Exception('Database error during task creation.');
+        }
         $newTaskId = $stmtIns->insert_id;
+        
+        $stmtAssign = $db->prepare("INSERT IGNORE INTO task_assignees (task_id, employee_id, assigned_by) VALUES (?, ?, ?)");
+        foreach ($employeeIds as $empId) {
+            $stmtAssign->bind_param('iii', $newTaskId, $empId, $adminID);
+            $stmtAssign->execute();
+        }
+        
+        $db->commit();
+        
+        try {
+            $notificationResult = $taskNotificationService->dispatch(
+                $newTaskId,
+                $notificationRequest['channels'],
+                $notificationRequest['delivery'],
+                $notificationNote,
+                $notificationRequest['scheduled_at'],
+                $adminID
+            );
+        } catch (Throwable $e) {
+            $notificationResult = ['sent' => 0, 'scheduled' => 0, 'failed' => ['Notification dispatch failed.']];
+        }
+        $message = 'Task assigned successfully.';
+        if ($notificationResult['sent'] > 0) {
+            $message .= ' ' . $notificationResult['sent'] . ' notification(s) sent.';
+        }
+        if ($notificationResult['scheduled'] > 0) {
+            $message .= ' ' . $notificationResult['scheduled'] . ' notification(s) scheduled.';
+        }
+        foreach ($notificationResult['failed'] as $failure) {
+            $message .= ' ' . $failure;
+        }
 
-        // Notify
-        require_once __DIR__ . '/service/NotificationService.php';
-        $ns = new NotificationService($db);
-        $ns->notifyTaskAssigned($newTaskId, $employeeId, $title);
-
-        echo json_encode(['status' => 200, 'message' => 'Task assigned successfully']);
-    } else {
-        echo json_encode(['status' => 500, 'error' => 'Database error during task creation.']);
-    }
-    } catch (\mysqli_sql_exception $e) {
-        echo json_encode(['status' => 500, 'error' => 'Invalid Tender Request ID or Database Error']);
+        echo json_encode([
+            'status' => 200,
+            'message' => $message,
+            'notification' => $notificationResult,
+        ]);
+    } catch (Exception $e) {
+        $db->rollback();
+        echo json_encode(['status' => 500, 'error' => $e->getMessage()]);
     }
     exit;
 }
-
 
 if (
     $_SERVER['REQUEST_METHOD'] == 'GET' &&
@@ -208,6 +309,7 @@ if (
             ur.tentative_cost,
             sm.city_state,
             ur.updated_by,
+            creator.id AS updated_by_id,
             MAX(st.state_name) AS state_name,  -- Get state_name from state table, not members
             MAX(ct.city_name) AS city_name    -- Use MAX() for consistency
         FROM
@@ -228,6 +330,8 @@ if (
             state st ON CONVERT(sm.state_code USING utf8mb4) = CONVERT(st.state_code USING utf8mb4)  -- Fix collation
         LEFT JOIN   
             cities ct ON CAST(sm.city_state AS UNSIGNED) = ct.city_id  -- Convert string to number
+        LEFT JOIN
+            admin creator ON creator.username = ur.updated_by
         $whereClause
         GROUP BY
             ur.id
@@ -267,6 +371,7 @@ if (
     MAX(sd.subdivision) AS subdivision,
     ur.tentative_cost,
     ur.updated_by,
+    creator.id AS updated_by_id,
     MAX(st.state_name) AS state_name,  -- Get state_name from state table, not members
     MAX(ct.city_name) AS city_name    -- Use MAX() for consistency
 FROM
@@ -287,6 +392,8 @@ LEFT JOIN
          state st ON CONVERT(sm.state_code USING utf8mb4) = CONVERT(st.state_code USING utf8mb4)  -- Fix collation
 LEFT JOIN
          cities ct ON CAST(sm.city_state AS UNSIGNED) = ct.city_id  -- Convert string to number
+LEFT JOIN
+         admin creator ON creator.username = ur.updated_by
 WHERE
     ur.status = 'Allotted'
     AND ur.delete_tender = '0'
@@ -1075,7 +1182,43 @@ if ($empResult) {
                 justify-content: flex-end;
             }
         }
-    </style>
+    
+        /* ---------- compact Assign Task modal ---------- */
+                        #assign-task-modal .modal-content { border:0; border-radius:12px; overflow:hidden; box-shadow:0 12px 40px rgba(15,23,42,.14); }
+                        #assign-task-modal .modal-header { padding:12px 16px; border-bottom:1px solid #e9ecef; }
+                        #assign-task-modal .modal-title { display:flex; align-items:center; gap:8px; margin:0; font-size:16px; font-weight:600; }
+                        #assign-task-modal .modal-title i, #assign-task-modal .notification-heading i { color:#33cc33; }
+                        #assign-task-modal .modal-body { padding:14px 16px; }
+                        #assign-task-modal .modal-footer { padding:10px 16px; border-top:1px solid #e9ecef; }
+                        #assign-task-modal .row { --bs-gutter-x:12px; }
+                        #assign-task-modal .mb-3 { margin-bottom:10px !important; }
+                        #assign-task-modal .form-label { display:flex; align-items:center; gap:6px; margin-bottom:5px; font-size:13px; font-weight:600; color:#344054; }
+                        #assign-task-modal .form-label i { width:15px; color:#667085; }
+                        #assign-task-modal .form-control, #assign-task-modal .form-select, #assign-task-modal .select2-container .select2-selection--multiple { min-height:36px; border:1px solid #d0d5dd; border-radius:7px; font-size:13px; }
+                        #assign-task-modal textarea.form-control { min-height:62px; resize:vertical; }
+                        #assign-task-modal .form-control:focus, #assign-task-modal .form-select:focus { border-color:#33cc33; box-shadow:0 0 0 3px rgba(51,204,51,.10); }
+                        #assign-task-modal .assign-tender-info { display:flex; align-items:flex-start; gap:9px; padding:8px 10px; margin-bottom:10px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:7px; font-size:12.5px; line-height:1.55; color:#475467; }
+                        #assign-task-modal .assign-tender-info > i { margin-top:2px; color:#33cc33; font-size:16px; }
+                        #assign-task-modal .notification-section { margin-top:2px; padding-top:10px; border-top:1px solid #eaecf0; }
+                        #assign-task-modal .notification-heading { display:flex; align-items:center; gap:7px; margin-bottom:8px; font-size:13px; font-weight:600; color:#344054; }
+                        #assign-task-modal .notification-options, #assign-task-modal .delivery-options { display:flex; flex-wrap:wrap; gap:7px; margin-bottom:9px; }
+                        #assign-task-modal .notification-option, #assign-task-modal .delivery-option { display:inline-flex; align-items:center; gap:6px; padding:6px 10px; margin:0; border:1px solid #d0d5dd; border-radius:7px; background:#fff; cursor:pointer; font-size:12.5px; font-weight:500; }
+                        #assign-task-modal .notification-option:hover, #assign-task-modal .delivery-option:hover { background:#f8fafc; border-color:#98a2b3; }
+                        #assign-task-modal .notification-option input, #assign-task-modal .delivery-option input { margin:0; }
+                        #assign-task-modal .notification-option.email i { color:#2563eb; }
+                        #assign-task-modal .notification-option.whatsapp i { color:#16a34a; }
+                        #assign-task-modal .schedule-fields { padding:9px 10px 1px; margin:0 0 9px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:7px; }
+                        #assign-task-modal .modal-footer .btn { display:inline-flex; align-items:center; gap:6px; min-height:34px; padding:6px 13px; border-radius:7px; font-size:13px; font-weight:500; }
+                        @media (max-width:575.98px) { #assign-task-modal .modal-body { padding:12px; } #assign-task-modal .notification-options, #assign-task-modal .delivery-options { flex-direction:column; } #assign-task-modal .notification-option, #assign-task-modal .delivery-option { width:100%; } }
+                
+                        /* Keep SweetAlert above Bootstrap modal/backdrop */
+                        .swal2-container {
+                            z-index: 20000 !important;
+                        }
+                
+                    
+        
+</style>
 
 
 </head>
@@ -1460,7 +1603,24 @@ if ($empResult) {
                                                     } ?>
                                                 </td>
 
-                                                <td><?php echo $row['updated_by']; ?></td>
+                                                <td>
+                                                    <?php $updatedByName = (string) ($row['updated_by'] ?? ''); ?>
+                                                    <?php if (!empty($row['updated_by_id'])): ?>
+                                                        <a href="employee-dashboard.php?id=<?php echo (int) $row['updated_by_id']; ?>"
+                                                           class="employee-dashboard-link"
+                                                           title="Open employee dashboard">
+                                                            <span class="employee-avatar-mini" style="width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:#e8f0fe;color:#2563eb;font-weight:700;font-size:12px;">
+                                                                <?php echo htmlspecialchars(strtoupper(substr($updatedByName, 0, 1)), ENT_QUOTES, 'UTF-8'); ?>
+                                                            </span>
+                                                            <span>
+                                                                <strong><?php echo htmlspecialchars($updatedByName, ENT_QUOTES, 'UTF-8'); ?></strong>
+                                                                <small class="d-block text-muted">View dashboard</small>
+                                                            </span>
+                                                        </a>
+                                                    <?php else: ?>
+                                                        <?php echo htmlspecialchars($updatedByName, ENT_QUOTES, 'UTF-8'); ?>
+                                                    <?php endif; ?>
+                                                </td>
 
 
                                                 <td>
@@ -1507,7 +1667,7 @@ if ($empResult) {
                                                             <?php } ?>
                                                             <!-- Assign Task -->
                                                             <li>
-                                                                <a class="dropdown-item assign-task-dropdown-btn" href="javascript:void(0);"
+                                                                <a class="dropdown-item assign-task-dropdown-btn" href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#assign-task-modal"
                                                                    data-tender-id="<?php echo htmlspecialchars($row['t_id'] ?? ''); ?>"
                                                                    data-tender-no="<?php echo htmlspecialchars($row['tenderID'] ?? ''); ?>"
                                                                    data-ref-code="<?php echo htmlspecialchars($row['reference_code'] ?? ''); ?>"
@@ -2170,80 +2330,120 @@ if ($empResult) {
 
 <!-- Assign Task Modal -->
 <div class="modal fade" id="assign-task-modal" tabindex="-1" aria-labelledby="assignTaskLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="assignTaskLabel">Assign Task</h5>
+                <h5 class="modal-title" id="assignTaskLabel"><i class="feather icon-check-square"></i> Assign Task</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
-                <form id="assign-task-form">
+            <form id="assign-task-form">
+                <div class="modal-body">
                     <input type="hidden" name="action" value="assign_tender_task">
                     <input type="hidden" name="tender_request_id" id="assign-tender-id">
 
-                    <!-- Informational summary -->
-                    <div class="alert alert-info py-2 mb-3">
-                        <small>
-                            <strong>Tender ID:</strong> <span id="assign-tender-no"></span> |
-                            <strong>Ref:</strong> <span id="assign-ref-code"></span><br>
-                            <strong>Dept:</strong> <span id="assign-dept"></span> |
-                            <strong>Sec:</strong> <span id="assign-section"></span> |
-                            <strong>Div:</strong> <span id="assign-division"></span>
-                        </small>
+                    <div class="assign-tender-info">
+                        <i class="feather icon-file-text"></i>
+                        <div>
+                            <strong>Tender:</strong> <span id="assign-tender-no"></span>
+                            &nbsp;•&nbsp; <strong>Ref:</strong> <span id="assign-ref-code"></span><br>
+                            <strong>Dept:</strong> <span id="assign-dept"></span>
+                            &nbsp;•&nbsp; <strong>Sec:</strong> <span id="assign-section"></span>
+                            &nbsp;•&nbsp; <strong>Div:</strong> <span id="assign-division"></span>
+                        </div>
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label">Employee</label>
-                        <select name="employee_id" class="form-select form-control" required>
-                            <option value="">Select Employee ▼</option>
+                        <label class="form-label"><i class="feather icon-users"></i> Employee(s) <span class="text-danger">*</span></label>
+                        <select name="employee_ids[]" id="assign-employee-select" class="form-select form-control select2" multiple="multiple" required data-placeholder="Select Employee(s)">
                             <?php foreach ($activeEmployees as $emp): ?>
-                                <option value="<?php echo htmlspecialchars($emp['id']); ?>">
-                                    <?php echo htmlspecialchars($emp['username']) . (!empty($emp['email']) ? ' (' . htmlspecialchars($emp['email']) . ')' : ''); ?>
-                                </option>
+                                <option value="<?php echo htmlspecialchars($emp['id']); ?>"><?php echo htmlspecialchars($emp['username']) . (!empty($emp['email']) ? ' (' . htmlspecialchars($emp['email']) . ')' : ''); ?></option>
                             <?php endforeach; ?>
                         </select>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label">Task Title</label>
-                        <input type="text" name="title" id="assign-title" class="form-control" required>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label">Description</label>
-                        <textarea name="description" id="assign-description" class="form-control" rows="5"></textarea>
+                        <div id="assign-employee-dashboard-links" class="mt-2"></div>
                     </div>
 
                     <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Priority</label>
+                        <div class="col-md-8 mb-3">
+                            <label class="form-label"><i class="feather icon-edit-3"></i> Task Title <span class="text-danger">*</span></label>
+                            <input type="text" name="title" id="assign-title" class="form-control" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label"><i class="feather icon-flag"></i> Priority</label>
                             <select name="priority" class="form-select form-control">
-                                <option value="Low">Low</option>
-                                <option value="Medium" selected>Medium</option>
-                                <option value="High">High</option>
-                                <option value="Urgent">Urgent</option>
+                                <option value="Low">Low</option><option value="Medium" selected>Medium</option><option value="High">High</option><option value="Urgent">Urgent</option>
                             </select>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Due Date</label>
+                        <div class="col-md-8 mb-3">
+                            <label class="form-label"><i class="feather icon-align-left"></i> Description</label>
+                            <textarea name="description" id="assign-description" class="form-control" rows="2"></textarea>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label"><i class="feather icon-calendar"></i> Due Date</label>
                             <input type="date" name="due_date" id="assign-due-date" class="form-control">
                         </div>
                     </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="submit" id="assign-task-submit-btn" form="assign-task-form" class="btn btn-primary">Assign Task</button>
-            </div>
+
+                    <div class="notification-section">
+                        <div class="notification-heading"><i class="feather icon-bell"></i> Notification</div>
+                        <div class="notification-options">
+                            <label class="notification-option email" for="assign-email-channel"><input type="checkbox" id="assign-email-channel" name="notification_channels[]" value="EMAIL"><i class="feather icon-mail"></i> Email</label>
+                            <label class="notification-option whatsapp" for="assign-whatsapp-channel"><input type="checkbox" id="assign-whatsapp-channel" name="notification_channels[]" value="WHATSAPP"><i class="fab fa-whatsapp"></i> WhatsApp</label>
+                        </div>
+                        <div class="delivery-options">
+                            <label class="delivery-option" for="assign-delivery-now"><input type="radio" id="assign-delivery-now" name="notification_delivery" value="now" checked><i class="feather icon-send"></i> Send Now</label>
+                            <label class="delivery-option" for="assign-delivery-later"><input type="radio" id="assign-delivery-later" name="notification_delivery" value="later"><i class="feather icon-clock"></i> Schedule Later</label>
+                        </div>
+                        <div id="assign-schedule-fields" class="schedule-fields" style="display:none;">
+                            <div class="row">
+                                <div class="col-md-6 mb-2"><label class="form-label" for="assign-schedule-date"><i class="feather icon-calendar"></i> Schedule Date</label><input type="date" class="form-control" id="assign-schedule-date" name="schedule_date"></div>
+                                <div class="col-md-6 mb-2"><label class="form-label" for="assign-schedule-time"><i class="feather icon-clock"></i> Schedule Time</label><input type="time" class="form-control" id="assign-schedule-time" name="schedule_time"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="form-label" for="assign-notification-message"><i class="feather icon-message-square"></i> Message <span class="text-muted fw-normal">(optional)</span></label>
+                            <textarea class="form-control" id="assign-notification-message" name="message" rows="2" maxlength="1000" placeholder="Add a notification message..."></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal"><i class="feather icon-x"></i> Cancel</button>
+                    <button type="submit" id="assign-task-submit-btn" class="btn btn-success"><i class="feather icon-check"></i> Assign Task</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
 
 <script>
 $(document).ready(function() {
+    if ($.fn.select2) {
+        $('#assign-employee-select').select2({
+            dropdownParent: $('#assign-task-modal'),
+            width: '100%'
+        });
+    }
+
+    function refreshAssignmentNotificationFields() {
+        $('#assign-schedule-fields').toggle($('#assign-delivery-later').is(':checked'));
+    }
+    $('input[name="notification_delivery"]').on('change', refreshAssignmentNotificationFields);
+
+    function refreshEmployeeDashboardLinks() {
+        var $links = $('#assign-employee-dashboard-links').empty();
+        $('#assign-employee-select option:selected').each(function() {
+            var employeeId = parseInt($(this).val(), 10);
+            var employeeName = $.trim($(this).text().split(' (')[0]);
+            if (!employeeId) return;
+            var $link = $('<a>', { href: 'employee-dashboard.php?id=' + employeeId, title: 'Open employee dashboard', class: 'employee-dashboard-link d-inline-flex align-items-center mr-2 mb-1' });
+            $('<span>', { class: 'employee-avatar-mini mr-1', text: employeeName.substring(0, 1).toUpperCase(), css: { width: '28px', height: '28px', borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: '#e8f0fe', color: '#2563eb', fontWeight: '700', fontSize: '12px' } }).appendTo($link);
+            $('<span>').append($('<strong>', { text: employeeName })).append($('<small>', { class: 'd-block text-muted', text: 'View dashboard' })).appendTo($link);
+            $links.append($link);
+        });
+    }
+    $('#assign-employee-select').on('change', refreshEmployeeDashboardLinks);
+
     // Open Modal and populate data
     $(document).on('click', '.assign-task-dropdown-btn', function(e) {
-        e.preventDefault();
         var tenderId = $(this).data('tender-id');
         var tenderNo = $(this).data('tender-no');
         var refCode = $(this).data('ref-code');
@@ -2258,16 +2458,18 @@ $(document).ready(function() {
         $('#assign-dept').text(dept || 'N/A');
         $('#assign-section').text(sec || 'N/A');
         $('#assign-division').text(div || 'N/A');
+        if ($.fn.select2) {
+            $('#assign-employee-select').val(null).trigger('change');
+        }
 
-        // Format dates if needed, HTML5 date input needs YYYY-MM-DD
         if (dueDate) {
-            var cleanDate = dueDate.split(' ')[0];
+            var cleanDate = String(dueDate).trim().split(' ')[0];
             $('#assign-due-date').val(cleanDate);
         } else {
             $('#assign-due-date').val('');
         }
 
-        var title = 'Tender Request - ' + (tenderNo ? tenderNo : tenderId);
+        var title = 'Allot Tender - ' + (tenderNo ? tenderNo : tenderId);
         $('#assign-title').val(title);
 
         var desc = "Tender ID: " + (tenderNo || 'N/A') + "\n" +
@@ -2277,69 +2479,182 @@ $(document).ready(function() {
                    "Division: " + (div || 'N/A') + "\n" +
                    "Due Date: " + (dueDate || 'N/A');
         $('#assign-description').val(desc);
+        $('#assign-email-channel, #assign-whatsapp-channel').prop('checked', false);
+        $('#assign-delivery-now').prop('checked', true);
+        $('#assign-schedule-date, #assign-schedule-time, #assign-notification-message').val('');
+        refreshAssignmentNotificationFields();
+        refreshEmployeeDashboardLinks();
 
-        $('#assign-task-modal').modal('show');
+        // Fallback open if data-bs-toggle didn't trigger
+        try {
+            if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                var modalEl = document.getElementById('assign-task-modal');
+                var modalInstance = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                modalInstance.show();
+            } else if (typeof $.fn.modal !== 'undefined') {
+                $('#assign-task-modal').modal('show');
+            }
+        } catch (err) {}
     });
 
     // Form submission via AJAX
-    $('#assign-task-form').on('submit', function(e) {
+    $('#assign-task-form').off('submit.assignTask').on('submit.assignTask', function(e) {
         e.preventDefault();
-        var formData = $(this).serialize();
 
-        // Show loader on the submit button while the request is in flight
+        var $form = $(this);
         var $submitBtn = $('#assign-task-submit-btn');
-        var originalBtnText = $submitBtn.html();
-        $submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Assigning...');
+
+        // Prevent accidental double submit while a request is already running.
+        if ($form.data('submitting') === true) {
+            return;
+        }
+
+        var formData = $form.serialize();
+        var originalBtnText = $submitBtn.data('original-html') || $submitBtn.html();
+        $submitBtn.data('original-html', originalBtnText);
+
+        function restoreAssignTaskButton() {
+            $form.data('submitting', false);
+            $submitBtn.prop('disabled', false).html(originalBtnText);
+        }
+
+        function getServerErrorMessage(xhr, fallback) {
+            var message = fallback || 'An unexpected error occurred while assigning the task.';
+
+            if (!xhr) return message;
+
+            if (xhr.responseJSON) {
+                if (xhr.responseJSON.error) return xhr.responseJSON.error;
+                if (xhr.responseJSON.message) return xhr.responseJSON.message;
+            }
+
+            if (xhr.responseText) {
+                try {
+                    var parsed = JSON.parse(xhr.responseText);
+                    if (parsed.error) return parsed.error;
+                    if (parsed.message) return parsed.message;
+                } catch (e) {
+                    // Ignore HTML/non-JSON server responses and use the safe fallback below.
+                }
+            }
+
+            if (xhr.status === 403) return 'Permission denied. You do not have rights to assign tasks.';
+            if (xhr.status === 404) return 'Assign Task endpoint was not found.';
+            if (xhr.status === 500) return 'Server error while assigning the task. Please try again.';
+
+            return message;
+        }
+
+        function notifyUser(type, message) {
+            if (typeof Swal !== 'undefined') {
+                return Swal.fire({
+                    title: type === 'success' ? 'Success!' : 'Unable to Assign Task',
+                    text: message,
+                    icon: type,
+                    confirmButtonColor: type === 'success' ? '#33cc33' : '#d33',
+                    timer: type === 'success' ? 2000 : undefined,
+                    timerProgressBar: type === 'success',
+                    showConfirmButton: type !== 'success',
+                    allowOutsideClick: true,
+                    allowEscapeKey: true,
+                    didOpen: function() {
+                        // Legacy Bootstrap/PCoded styles can otherwise render Swal behind the modal.
+                        $('.swal2-container').css('z-index', '20000');
+                    }
+                });
+            }
+
+            if (typeof Notyf !== 'undefined') {
+                var notyf = new Notyf({ duration: 4000, position: { x: 'right', y: 'top' }, dismissible: true });
+                if (type === 'success') notyf.success(message);
+                else notyf.error(message);
+                return;
+            }
+
+            alert(message);
+        }
+
+        $form.data('submitting', true);
+        $submitBtn
+            .prop('disabled', true)
+            .html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Assigning...');
 
         $.ajax({
-            url: window.location.href.split('?')[0],
+            url: window.location.pathname,
             type: 'POST',
             data: formData,
             dataType: 'json',
-            success: function(response) {
-                if (response.status === 200) {
-                    $('#assign-task-modal').modal('hide');
-                    Swal.fire({
-                        title: 'Success!',
-                        text: response.message || "Task assigned successfully.",
-                        icon: 'success',
-                        confirmButtonColor: "#33cc33",
-                        timer: 1500,
-                        timerProgressBar: true,
-                        showConfirmButton: false
-                    });
-                    $('#assign-task-form')[0].reset();
-                } else {
-                    Swal.fire({
-                        title: 'Error!',
-                        text: response.error || "Error assigning task.",
-                        icon: 'error',
-                        confirmButtonColor: "#dc3545",
-                        timer: 1500,
-                        timerProgressBar: true,
-                        showConfirmButton: false
-                    });
-                }
-            },
-            error: function() {
-                Swal.fire({
-                    title: 'Error!',
-                    text: "An unexpected error occurred while assigning the task.",
-                    icon: 'error',
-                    confirmButtonColor: "#dc3545",
-                    timer: 1500,
-                    timerProgressBar: true,
-                    showConfirmButton: false
-                });
-            },
-            complete: function() {
-                $submitBtn.prop('disabled', false).html(originalBtnText);
+            timeout: 30000
+        })
+        .done(function(response) {
+            if (!response || Number(response.status) !== 200) {
+                var serverMessage = (response && (response.error || response.message))
+                    ? (response.error || response.message)
+                    : 'Unable to assign task.';
+
+                restoreAssignTaskButton();
+                notifyUser('error', serverMessage);
+                return;
             }
+
+            restoreAssignTaskButton();
+
+            // On success close the Bootstrap modal first, then show Swal.
+            var modalEl = document.getElementById('assign-task-modal');
+            var shownSuccess = false;
+
+            function showSuccessOnce() {
+                if (shownSuccess) return;
+                shownSuccess = true;
+
+                $('.modal-backdrop').remove();
+                $('body').removeClass('modal-open').css('padding-right', '');
+
+                notifyUser('success', response.message || 'Task assigned successfully.');
+
+                if ($form[0]) {
+                    $form[0].reset();
+                }
+                if ($.fn.select2) {
+                    $('#assign-employee-select').val(null).trigger('change');
+                }
+                refreshAssignmentNotificationFields();
+            }
+
+            try {
+                if (typeof bootstrap !== 'undefined' && bootstrap.Modal && modalEl) {
+                    var modalInstance = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                    $(modalEl).one('hidden.bs.modal.assignTaskSuccess', showSuccessOnce);
+                    modalInstance.hide();
+                    setTimeout(showSuccessOnce, 400);
+                    return;
+                }
+            } catch (e) {}
+
+            try {
+                $('#assign-task-modal').one('hidden.bs.modal.assignTaskSuccess', showSuccessOnce).modal('hide');
+                setTimeout(showSuccessOnce, 400);
+            } catch (e) {
+                showSuccessOnce();
+            }
+        })
+        .fail(function(xhr, textStatus) {
+            // IMPORTANT: keep the Assign Task modal open on failure so the user can fix inputs and retry.
+            restoreAssignTaskButton();
+
+            var fallback = textStatus === 'timeout'
+                ? 'The request timed out. Please try again.'
+                : 'An unexpected error occurred while assigning the task.';
+
+            notifyUser('error', getServerErrorMessage(xhr, fallback));
+        })
+        .always(function() {
+            // Final safety net: the button must never remain disabled after request completion.
+            restoreAssignTaskButton();
         });
     });
 });
 </script>
-
 </body>
 
 </html> 
