@@ -1,16 +1,39 @@
 <?php
+
 require __DIR__ . '/../../vendor/autoload.php';
 require __DIR__ . '/../../env.php';
-
 
 define('DB_SERVER', getenv("DB_SERVER"));
 define('DB_USERNAME', getenv("DB_USERNAME"));
 define('DB_PASSWORD', getenv("DB_PASSWORD"));
 define('DB_NAME', getenv("DB_NAME"));
 
-$db = mysqli_connect(DB_SERVER, DB_USERNAME, DB_PASSWORD, DB_NAME);
+$db = mysqli_connect(
+    DB_SERVER,
+    DB_USERNAME,
+    DB_PASSWORD,
+    DB_NAME
+);
+
+if (!$db) {
+    die("Database connection failed: " . mysqli_connect_error());
+}
 
 mysqli_select_db($db, DB_NAME);
+
+// Application timezone
+date_default_timezone_set('Asia/Kolkata');
+
+// MariaDB/MySQL session timezone
+if (!mysqli_query($db, "SET time_zone = '+05:30'")) {
+    error_log(
+        "Failed to set database timezone: " .
+        mysqli_error($db)
+    );
+}
+
+// Optional but recommended
+mysqli_set_charset($db, 'utf8mb4');
 
 
 $stmtFetchEmailSettingData = $db->prepare("SELECT * FROM email_settings");
