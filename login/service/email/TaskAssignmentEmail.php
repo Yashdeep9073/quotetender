@@ -2,8 +2,8 @@
 /**
  * Task Assignment Email template.
  *
- * Renders the professional HTML + plain-text versions of the task assignment
- * email (TASK_ASSIGNED / TENDER_TASK_ASSIGNED).
+ * Renders the professional HTML + plain-text versions of task emails
+ * (TASK_ASSIGNED / TENDER_TASK_ASSIGNED / TASK_REMINDER).
  *
  * Pure presentation: no database access, no mail transport, no external
  * assets. Every dynamic value is escaped before it is inserted into HTML so
@@ -20,9 +20,12 @@ class TaskAssignmentEmail
         $this->appName = $appName;
     }
 
-    /** Dynamic subject for the assignment email. */
+    /** Dynamic subject for the task email. */
     public function subject(array $task, $type = 'TASK_ASSIGNED')
     {
+        if ($type === 'TASK_REMINDER') {
+            return 'Task Reminder – #' . (int) $task['id'] . ' ' . $task['title'];
+        }
         if ($type === 'TENDER_TASK_ASSIGNED' && !empty($task['tenderID'])) {
             return 'New Tender Task Assigned — ' . $task['tenderID'];
         }
@@ -36,6 +39,10 @@ class TaskAssignmentEmail
         $subject  = $this->subject($task, $type);
         $employee = $this->h($task['assigned_username']);
         $taskUrl  = $baseUrl . '/login/task-management/view.php?id=' . (int) $task['id'];
+        $subtitle  = $type === 'TASK_REMINDER' ? 'TASK REMINDER' : 'Task Assignment Notification';
+        $message   = $type === 'TASK_REMINDER'
+            ? 'This is a reminder for your assigned task.'
+            : 'You have been assigned a new task.';
 
         // Task details key/value rows (empty fields are skipped)
         $rows = '';
@@ -79,6 +86,14 @@ class TaskAssignmentEmail
                 . '</p>';
         }
 
+        $noteSection = '';
+        if ($type === 'TASK_REMINDER' && !empty($task['manual_note'])) {
+            $noteSection = $this->sectionHeader('Reminder Note')
+                . '<p style="margin:0 0 22px 0;padding:12px 14px;background-color:#f8fafc;border:1px solid #eef1f5;border-radius:4px;color:#333333;">'
+                . nl2br($this->h($task['manual_note']))
+                . '</p>';
+        }
+
         $html = <<<HTML
 <!DOCTYPE html>
 <html lang="en">
@@ -95,13 +110,13 @@ class TaskAssignmentEmail
           <tr>
             <td style="background-color:#33cc33;padding:24px 28px;">
               <div style="font-size:22px;font-weight:bold;color:#ffffff;font-family:Arial,Helvetica,sans-serif;">{$appName}</div>
-              <div style="font-size:12px;color:#eafff4;margin-top:4px;text-transform:uppercase;letter-spacing:1px;font-family:Arial,Helvetica,sans-serif;">Task Assignment Notification</div>
+              <div style="font-size:12px;color:#eafff4;margin-top:4px;text-transform:uppercase;letter-spacing:1px;font-family:Arial,Helvetica,sans-serif;">{$this->h($subtitle)}</div>
             </td>
           </tr>
           <tr>
             <td style="padding:26px 28px 30px 28px;font-family:Arial,Helvetica,sans-serif;color:#222222;font-size:14px;line-height:1.6;">
               <p style="margin:0 0 6px 0;">Dear {$employee},</p>
-              <p style="margin:0;">You have been assigned a new task.</p>
+              <p style="margin:0;">{$this->h($message)}</p>
 
               {$this->sectionHeader('Task Details')}
               {$this->kvTable($rows)}
@@ -109,6 +124,8 @@ class TaskAssignmentEmail
               {$tenderSection}
 
               {$descriptionSection}
+
+              {$noteSection}
 
               <table role="presentation" cellpadding="0" cellspacing="0" style="margin:4px 0 0 0;">
                 <tr>
@@ -141,13 +158,17 @@ HTML;
     {
         $appName = $this->appName;
         $taskUrl = $baseUrl . '/login/task-management/view.php?id=' . (int) $task['id'];
+        $subtitle = $type === 'TASK_REMINDER' ? 'TASK REMINDER' : 'Task Assignment Notification';
+        $message = $type === 'TASK_REMINDER'
+            ? 'This is a reminder for your assigned task.'
+            : 'You have been assigned a new task.';
 
         $lines = [];
-        $lines[] = $appName . ' — Task Assignment Notification';
+        $lines[] = $appName . ' — ' . $subtitle;
         $lines[] = '';
         $lines[] = 'Dear ' . $task['assigned_username'] . ',';
         $lines[] = '';
-        $lines[] = 'You have been assigned a new task.';
+        $lines[] = $message;
         $lines[] = '';
 
         $lines[] = 'TASK DETAILS';
@@ -192,6 +213,12 @@ HTML;
         if (!empty($task['description'])) {
             $lines[] = 'TASK DESCRIPTION';
             $lines[] = $task['description'];
+            $lines[] = '';
+        }
+
+        if ($type === 'TASK_REMINDER' && !empty($task['manual_note'])) {
+            $lines[] = 'REMINDER NOTE';
+            $lines[] = $task['manual_note'];
             $lines[] = '';
         }
 

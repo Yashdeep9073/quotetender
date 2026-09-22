@@ -72,7 +72,7 @@ And give them these API names:
 | Customers/Members | `/login/api/customers.php` |
 | Roles | `/login/api/roles.php` |
 | Permissions | `/login/api/permissions.php` |
-| Award Tenders | `/login/api/awardTenders.php` |
+| Award (Orders) Tenders | `/login/api/awardTenders.php` |
 
 **Important:** the developer needs the **secret key**, because they must generate a fresh `ts` and `sig` for each request. Don't send them one generated URL and expect it to work permanently—the timestamp/signature expires.
 

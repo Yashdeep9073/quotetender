@@ -184,10 +184,16 @@ class NotificationService
                 return ['success' => false, 'error' => 'Recipient email is missing.'];
             }
 
-            $subject = 'Task Reminder - #' . (int) $taskId . ' ' . $task['title'];
-            $body = $this->buildTaskReminderBody($task, $note);
-            $html = '<p>Dear ' . htmlspecialchars((string) $task['assigned_username'], ENT_QUOTES, 'UTF-8') . ',</p>'
-                . '<p>' . nl2br(htmlspecialchars($body, ENT_QUOTES, 'UTF-8')) . '</p>';
+            if (trim((string) $note) !== '') {
+                $task['manual_note'] = trim((string) $note);
+            }
+
+            // Reuse the same professional task email renderer as TASK_ASSIGNED.
+            $builder  = new TaskAssignmentEmail();
+            $baseUrl  = $this->baseUrl();
+            $subject  = $builder->subject($task, $type);
+            $html     = $builder->html($task, $type, $baseUrl);
+            $body     = $builder->text($task, $type, $baseUrl);
 
             $sent = $this->sendMail($task['assigned_email'], $task['assigned_username'], $subject, $html, $body);
             if (!$sent) {
@@ -439,6 +445,8 @@ class NotificationService
             }
 
             $mail->isHTML(true);
+            $mail->CharSet = 'UTF-8';
+            $mail->Encoding = 'base64';
             $mail->Subject = $subject;
             $mail->Body    = $htmlBody;
             $mail->AltBody = $textBody;
