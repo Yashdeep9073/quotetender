@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/inc/init.php';
+require_once __DIR__ . '/../service/ScheduledTaskNotificationService.php';
 
 // ---------- Filters (executed against the database via prepared statements) ----------
 $filters = [
@@ -102,6 +103,18 @@ if (!empty($params)) {
 }
 $stmt->execute();
 $tasks = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+
+$taskCanNotify = $taskCanViewAll || $taskCanCreate || $taskCanEdit;
+$taskNotificationService = new ScheduledTaskNotificationService($db);
+$taskRecipients = [];
+$taskScheduleStatuses = [];
+if (!empty($tasks) && $taskCanNotify) {
+    foreach ($tasks as $taskRow) {
+        $taskIdForNotify = (int) $taskRow['id'];
+        $taskRecipients[$taskIdForNotify] = $taskNotificationService->recipientsForTask($taskIdForNotify);
+        $taskScheduleStatuses[$taskIdForNotify] = $taskNotificationService->statusesForTask($taskIdForNotify);
+    }
+}
 
 // Employee dropdown for the filter (managers/admins only)
 $employees = [];
@@ -323,6 +336,44 @@ if ($taskCanViewAll) {
                                                     <?php if ($taskCanEdit): ?>
                                                         <a href="task-management/edit.php?id=<?php echo (int) $task['id']; ?>" class="btn btn-warning btn-sm"><i class="feather icon-edit"></i> Edit</a>
                                                     <?php endif; ?>
+                                                    <?php if ($taskCanNotify): ?>
+                                                        <?php
+                                                        $notifyTaskId = (int) $task['id'];
+                                                        $recipients = $taskRecipients[$notifyTaskId] ?? [];
+                                                        $recipientNames = array_map(function ($recipient) {
+                                                            return $recipient['username'];
+                                                        }, $recipients);
+                                                        $taskLabel = 'Task #' . $notifyTaskId . ' - ' . $task['title'];
+                                                        if (!empty($task['tender_id_number'])) {
+                                                            $taskLabel .= ' - ' . $task['tender_id_number'];
+                                                        }
+                                                        $recipientJson = e(json_encode(array_values($recipientNames)));
+                                                        ?>
+                                                        <button type="button"
+                                                                class="btn btn-light btn-sm task-notify-btn"
+                                                                title="Email notification"
+                                                                data-task-id="<?php echo $notifyTaskId; ?>"
+                                                                data-task-label="<?php echo e($taskLabel); ?>"
+                                                                data-channel="EMAIL"
+                                                                data-recipients="<?php echo $recipientJson; ?>">
+                                                            <i class="feather icon-mail"></i>
+                                                        </button>
+                                                        <button type="button"
+                                                                class="btn btn-success btn-sm task-notify-btn"
+                                                                title="WhatsApp notification"
+                                                                data-task-id="<?php echo $notifyTaskId; ?>"
+                                                                data-task-label="<?php echo e($taskLabel); ?>"
+                                                                data-channel="WHATSAPP"
+                                                                data-recipients="<?php echo $recipientJson; ?>">
+                                                            <i class="fab fa-whatsapp"></i>
+                                                        </button>
+                                                        <button type="button"
+                                                                class="btn btn-secondary btn-sm task-schedule-status-btn"
+                                                                title="Scheduled notification status"
+                                                                data-task-id="<?php echo $notifyTaskId; ?>">
+                                                            <i class="feather icon-clock"></i>
+                                                        </button>
+                                                    <?php endif; ?>
                                                     <?php if ($taskCanDelete): ?>
                                                         <form action="task-management/delete.php" method="post" class="d-inline delete-task-form">
                                                             <input type="hidden" name="id" value="<?php echo (int) $task['id']; ?>">
@@ -343,6 +394,123 @@ if ($taskCanViewAll) {
         </div>
     </section>
 
+    <?php if ($taskCanNotify): ?>
+    <div class="modal fade" id="taskNotificationModal" tabindex="-1" role="dialog" aria-labelledby="taskNotificationModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <form class="modal-content" id="taskNotificationForm">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="taskNotificationModalLabel">Send Task Notification</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="task_id" id="notifyTaskId">
+                    <input type="hidden" name="channel" id="notifyChannel">
+                    <div class="mb-3">
+                        <strong>Task:</strong>
+                        <div id="notifyTaskLabel" class="text-muted"></div>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Channel:</strong>
+                        <span id="notifyChannelLabel" class="badge badge-info"></span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Recipients:</strong>
+                        <ul id="notifyRecipients" class="mb-0 pl-3"></ul>
+                    </div>
+                    <div class="form-group">
+                        <label>Delivery</label>
+                        <div class="custom-control custom-radio">
+                            <input type="radio" id="deliveryNow" name="delivery" value="now" class="custom-control-input" checked>
+                            <label class="custom-control-label" for="deliveryNow">Send Now</label>
+                        </div>
+                        <div class="custom-control custom-radio">
+                            <input type="radio" id="deliveryLater" name="delivery" value="later" class="custom-control-input">
+                            <label class="custom-control-label" for="deliveryLater">Schedule for Later</label>
+                        </div>
+                    </div>
+                    <div id="scheduleFields" class="row" style="display:none;">
+                        <div class="form-group col-md-6">
+                            <label for="scheduleDate">Schedule Date</label>
+                            <input type="date" class="form-control" id="scheduleDate" name="schedule_date">
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label for="scheduleTime">Schedule Time</label>
+                            <input type="time" class="form-control" id="scheduleTime" name="schedule_time">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="notifyMessage">Message / notification note</label>
+                        <textarea class="form-control" id="notifyMessage" name="message" rows="3" maxlength="1000"></textarea>
+                    </div>
+                    <div class="alert d-none" id="notifyModalAlert"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="notifySubmitBtn">Send Now</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal fade" id="taskScheduleStatusModal" tabindex="-1" role="dialog" aria-labelledby="taskScheduleStatusModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="taskScheduleStatusModalLabel">Scheduled Notification Status</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <?php foreach ($tasks as $task): ?>
+                        <?php $notifyTaskId = (int) $task['id']; ?>
+                        <div class="task-status-table" data-task-id="<?php echo $notifyTaskId; ?>" style="display:none;">
+                            <?php if (empty($taskScheduleStatuses[$notifyTaskId])): ?>
+                                <p class="text-muted mb-0">No scheduled notifications found for this task.</p>
+                            <?php else: ?>
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-bordered mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>Channel</th>
+                                                <th>Recipient</th>
+                                                <th>Scheduled At</th>
+                                                <th>Status</th>
+                                                <th>Error</th>
+                                                <th>Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <?php foreach ($taskScheduleStatuses[$notifyTaskId] as $statusRow): ?>
+                                                <tr data-schedule-row="<?php echo (int) $statusRow['id']; ?>">
+                                                    <td><?php echo e($statusRow['channel']); ?></td>
+                                                    <td><?php echo e($statusRow['username']); ?></td>
+                                                    <td><?php echo fmt($statusRow['scheduled_at'], true); ?></td>
+                                                    <td><span class="badge badge-secondary"><?php echo e($statusRow['status']); ?></span></td>
+                                                    <td class="text-muted" style="max-width:220px;white-space:normal;"><?php echo e($statusRow['error_message'] ?? ''); ?></td>
+                                                    <td>
+                                                        <?php if ($statusRow['status'] === 'PENDING'): ?>
+                                                            <button type="button" class="btn btn-danger btn-sm cancel-schedule-btn" data-schedule-id="<?php echo (int) $statusRow['id']; ?>">Cancel</button>
+                                                        <?php else: ?>
+                                                            <span class="text-muted">—</span>
+                                                        <?php endif; ?>
+                                                    </td>
+                                                </tr>
+                                            <?php endforeach; ?>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
+
     <script src="assets/js/vendor-all.min.js"></script>
     <script src="assets/js/plugins/bootstrap.min.js"></script>
     <script src="assets/js/pcoded.min.js"></script>
@@ -354,6 +522,154 @@ if ($taskCanViewAll) {
                 }
             }
         });
+
+        <?php if ($taskCanNotify): ?>
+        (function () {
+            var modalAlert = document.getElementById('notifyModalAlert');
+            var scheduleFields = document.getElementById('scheduleFields');
+            var submitBtn = document.getElementById('notifySubmitBtn');
+            var form = document.getElementById('taskNotificationForm');
+
+            function showAlert(type, message) {
+                modalAlert.className = 'alert alert-' + type;
+                modalAlert.textContent = message;
+            }
+
+            function clearAlert() {
+                modalAlert.className = 'alert d-none';
+                modalAlert.textContent = '';
+            }
+
+            function refreshDeliveryState() {
+                var later = document.getElementById('deliveryLater').checked;
+                scheduleFields.style.display = later ? '' : 'none';
+                submitBtn.textContent = later ? 'Schedule Notification' : 'Send Now';
+            }
+
+            document.querySelectorAll('input[name="delivery"]').forEach(function (input) {
+                input.addEventListener('change', refreshDeliveryState);
+            });
+
+            document.querySelectorAll('.task-notify-btn').forEach(function (button) {
+                button.addEventListener('click', function () {
+                    var recipients = [];
+                    try {
+                        recipients = JSON.parse(button.getAttribute('data-recipients') || '[]');
+                    } catch (e) {}
+                    document.getElementById('notifyTaskId').value = button.getAttribute('data-task-id');
+                    document.getElementById('notifyChannel').value = button.getAttribute('data-channel');
+                    document.getElementById('notifyTaskLabel').textContent = button.getAttribute('data-task-label');
+                    document.getElementById('notifyChannelLabel').textContent = button.getAttribute('data-channel');
+                    document.getElementById('notifyMessage').value = '';
+                    document.getElementById('deliveryNow').checked = true;
+                    document.getElementById('scheduleDate').value = '';
+                    document.getElementById('scheduleTime').value = '';
+
+                    var list = document.getElementById('notifyRecipients');
+                    list.innerHTML = '';
+                    if (recipients.length === 0) {
+                        var empty = document.createElement('li');
+                        empty.className = 'text-muted';
+                        empty.textContent = 'No active recipients found';
+                        list.appendChild(empty);
+                    } else {
+                        recipients.forEach(function (name) {
+                            var li = document.createElement('li');
+                            li.textContent = name;
+                            list.appendChild(li);
+                        });
+                    }
+                    clearAlert();
+                    refreshDeliveryState();
+                    $('#taskNotificationModal').modal('show');
+                });
+            });
+
+            form.addEventListener('submit', function (evt) {
+                evt.preventDefault();
+                clearAlert();
+
+                var delivery = document.querySelector('input[name="delivery"]:checked').value;
+                var channel = document.getElementById('notifyChannel').value;
+                var recipientCount = document.querySelectorAll('#notifyRecipients li:not(.text-muted)').length;
+                var confirmText = delivery === 'later'
+                    ? 'Schedule ' + channel + ' notification for ' + recipientCount + ' assigned employee(s)?'
+                    : 'Send ' + channel + ' notification to ' + recipientCount + ' assigned employee(s)?';
+
+                if (!window.confirm(confirmText)) {
+                    return;
+                }
+
+                submitBtn.disabled = true;
+                var data = new FormData(form);
+                data.append('action', delivery === 'later' ? 'schedule' : 'send_now');
+
+                fetch('task-management/notification-action.php', {
+                    method: 'POST',
+                    body: data,
+                    credentials: 'same-origin'
+                }).then(function (response) {
+                    return response.json();
+                }).then(function (payload) {
+                    if (!payload.success) {
+                        showAlert('danger', payload.message || 'Notification action failed.');
+                        return;
+                    }
+                    var message = payload.message || 'Notification action completed.';
+                    if (delivery === 'later' && payload.scheduled_at) {
+                        message = 'Notification scheduled successfully for ' + payload.scheduled_at + '.';
+                    }
+                    showAlert('success', message);
+                    setTimeout(function () {
+                        window.location.reload();
+                    }, 900);
+                }).catch(function () {
+                    showAlert('danger', 'Notification action failed.');
+                }).finally(function () {
+                    submitBtn.disabled = false;
+                });
+            });
+
+            document.querySelectorAll('.task-schedule-status-btn').forEach(function (button) {
+                button.addEventListener('click', function () {
+                    var taskId = button.getAttribute('data-task-id');
+                    document.querySelectorAll('.task-status-table').forEach(function (table) {
+                        table.style.display = table.getAttribute('data-task-id') === taskId ? '' : 'none';
+                    });
+                    $('#taskScheduleStatusModal').modal('show');
+                });
+            });
+
+            document.querySelectorAll('.cancel-schedule-btn').forEach(function (button) {
+                button.addEventListener('click', function () {
+                    if (!window.confirm('Cancel this pending scheduled notification?')) {
+                        return;
+                    }
+                    button.disabled = true;
+                    var data = new FormData();
+                    data.append('action', 'cancel_schedule');
+                    data.append('schedule_id', button.getAttribute('data-schedule-id'));
+                    fetch('task-management/notification-action.php', {
+                        method: 'POST',
+                        body: data,
+                        credentials: 'same-origin'
+                    }).then(function (response) {
+                        return response.json();
+                    }).then(function (payload) {
+                        if (payload.success) {
+                            window.location.reload();
+                            return;
+                        }
+                        alert(payload.message || 'Unable to cancel scheduled notification.');
+                        button.disabled = false;
+                    }).catch(function () {
+                        alert('Unable to cancel scheduled notification.');
+                        button.disabled = false;
+                    });
+                });
+            });
+        })();
+        <?php endif; ?>
     </script>
 </body>
 </html>

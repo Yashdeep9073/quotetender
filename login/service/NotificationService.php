@@ -166,6 +166,100 @@ class NotificationService
     }
 
     /**
+     * Manual/scheduled task reminder over a single channel.
+     * The caller resolves recipients server-side and passes one user at a time.
+     */
+    public function sendTaskReminder($taskId, $assignedUserId, $channel, $note = '')
+    {
+        $type = 'TASK_REMINDER';
+        $channel = strtoupper((string) $channel);
+
+        if ($channel === 'EMAIL') {
+            if (!$this->userAllows((int) $assignedUserId, $type, 'email')) {
+                return ['success' => false, 'error' => 'Recipient email notifications are disabled.'];
+            }
+
+            $task = $this->loadTaskAssignmentData((int) $taskId, (int) $assignedUserId);
+            if (!$task || empty($task['assigned_email'])) {
+                return ['success' => false, 'error' => 'Recipient email is missing.'];
+            }
+
+            $subject = 'Task Reminder - #' . (int) $taskId . ' ' . $task['title'];
+            $body = $this->buildTaskReminderBody($task, $note);
+            $html = '<p>Dear ' . htmlspecialchars((string) $task['assigned_username'], ENT_QUOTES, 'UTF-8') . ',</p>'
+                . '<p>' . nl2br(htmlspecialchars($body, ENT_QUOTES, 'UTF-8')) . '</p>';
+
+            $sent = $this->sendMail($task['assigned_email'], $task['assigned_username'], $subject, $html, $body);
+            if (!$sent) {
+                return ['success' => false, 'error' => 'Email could not be sent. Please check SMTP settings/logs.'];
+            }
+
+            $this->createInAppNotification($assignedUserId, $type, 'Task Reminder', $body, 'task', $taskId);
+            return ['success' => true, 'error' => ''];
+        }
+
+        if ($channel === 'WHATSAPP') {
+            if (!$this->aiSensy->isEnabled()) {
+                return ['success' => false, 'error' => 'AiSensy is not enabled or is missing API configuration.'];
+            }
+
+            $task = $this->loadTaskAssignmentData((int) $taskId, (int) $assignedUserId);
+            if (!$task) {
+                return ['success' => false, 'error' => 'Task or recipient could not be resolved.'];
+            }
+
+            if ($note !== '') {
+                $task['manual_note'] = $note;
+            }
+
+            $sent = $this->aiSensy->sendTaskNotification($assignedUserId, $type, $task);
+            if (!$sent) {
+                $error = $this->aiSensy->getLastError();
+                return ['success' => false, 'error' => $error !== '' ? $error : 'WhatsApp notification could not be sent.'];
+            }
+
+            $this->createInAppNotification($assignedUserId, $type, 'Task Reminder', $this->buildTaskReminderBody($task, $note), 'task', $taskId);
+            return ['success' => true, 'error' => ''];
+        }
+
+        return ['success' => false, 'error' => 'Invalid notification channel.'];
+    }
+
+    private function buildTaskReminderBody(array $task, $note = '')
+    {
+        $baseUrl = $this->baseUrl();
+        $lines = [];
+        $lines[] = 'Task Reminder';
+        $lines[] = 'Task Title: ' . ($task['title'] ?? '');
+        $lines[] = 'Task ID: #' . (int) ($task['id'] ?? 0);
+        if (!empty($task['priority'])) {
+            $lines[] = 'Priority: ' . $task['priority'];
+        }
+        if (!empty($task['status'])) {
+            $lines[] = 'Status: ' . $task['status'];
+        }
+        if (!empty($task['due_date'])) {
+            $lines[] = 'Due Date: ' . $task['due_date'];
+        }
+        if (!empty($task['tenderID'])) {
+            $lines[] = 'Tender ID: ' . $task['tenderID'];
+        }
+        if (!empty($task['reference_code'])) {
+            $lines[] = 'Reference Code: ' . $task['reference_code'];
+        }
+        if (!empty($task['assigned_username'])) {
+            $lines[] = 'Assigned Employee: ' . $task['assigned_username'];
+        }
+        if (trim((string) $note) !== '') {
+            $lines[] = '';
+            $lines[] = 'Note: ' . trim((string) $note);
+        }
+        $lines[] = '';
+        $lines[] = 'View Task: ' . $baseUrl . '/login/task-management/view.php?id=' . (int) ($task['id'] ?? 0);
+        return implode("\n", $lines);
+    }
+
+    /**
      * Reusable Email Sender Adapter (generic notifications).
      * Builds a simple HTML + plain-text message and sends via sendMail().
      */
@@ -410,6 +504,7 @@ class NotificationService
             'TASK_DUE_SOON'        => 'task_due_soon',
             'TASK_OVERDUE'         => 'task_overdue',
             'TENDER_TASK_ASSIGNED' => 'task_assigned',
+            'TASK_REMINDER'        => null,
         ];
         return isset($map[$type]) ? $map[$type] : null;
     }

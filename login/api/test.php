@@ -5,13 +5,56 @@ require("../../env.php");
 
 $token = getenv("TOKEN");
 $secretKey = getenv("SECRET_KEY");
-$timestamp = time();
-$serverUrl = getenv("SEVER_URL");
-$signature = hash_hmac('sha256', $token . $timestamp, $secretKey);
-$apiUrl = $serverUrl . "/login/api/awardTenders.php?token=" . urlencode($token) . "&ts=" . $timestamp
-    . "&sig=" . $signature;
 
-// echo $apiUrl;
+// Keep compatibility with your current env typo,
+// but prefer SERVER_URL if you add the corrected variable later.
+$serverUrl = getenv("SERVER_URL") ?: getenv("SEVER_URL");
+
+if (!$token || !$secretKey || !$serverUrl) {
+    die("Missing TOKEN, SECRET_KEY or SERVER_URL/SEVER_URL in env.php");
+}
+
+$timestamp = time();
+
+$signature = hash_hmac(
+    'sha256',
+    $token . $timestamp,
+    $secretKey
+);
+
+$query = http_build_query([
+    'token' => $token,
+    'ts'    => $timestamp,
+    'sig'   => $signature,
+]);
+
+$apis = [
+
+    // Existing Tender API
+    'Award Tenders' => '/login/api/awardTenders.php',
+
+    // Staff / Admin API
+    'Staff' => '/login/api/staff.php',
+
+    // Members / Customers API
+    'Customers' => '/login/api/customers.php',
+
+    // Roles API
+    'Roles' => '/login/api/roles.php',
+
+    // Permissions API
+    'Permissions' => '/login/api/permissions.php',
+];
+
+header('Content-Type: text/plain; charset=utf-8');
+
+foreach ($apis as $name => $path) {
+
+    $apiUrl = rtrim($serverUrl, '/') . $path . '?' . $query;
+
+    echo $name . " API\n";
+    echo $apiUrl . "\n\n";
+}
 
 // // Initialize cURL
 // $ch = curl_init();

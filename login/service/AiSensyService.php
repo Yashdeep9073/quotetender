@@ -6,6 +6,7 @@
     private $baseUrl;
     private $apiKey;
     private $enabled;
+    private $lastError = '';
 
     public function __construct($db)
     {
@@ -25,6 +26,11 @@
         return $this->enabled && !empty($this->baseUrl) && !empty($this->apiKey);
     }
 
+    public function getLastError()
+    {
+        return $this->lastError;
+    }
+
     /**
      * Send an AiSensy notification for a task event.
      * Note: As per instructions, since the AiSensy API documentation/payload 
@@ -34,6 +40,7 @@
     public function sendTaskNotification($userId, $type, $taskData)
     {
         if (!$this->isEnabled()) {
+            $this->lastError = 'AiSensy is not enabled or is missing API configuration.';
             return false;
         }
 
@@ -44,13 +51,15 @@
         $user = $stmt->get_result()->fetch_assoc();
 
         if (!$user || empty($user['mobile'])) {
-            $this->logDeliveryAttempt($taskData['id'] ?? null, $userId, 'no_mobile', $type, 'Failed', 'User has no valid mobile number.');
+            $this->lastError = 'User has no valid mobile number.';
+            $this->logDeliveryAttempt($taskData['id'] ?? null, $userId, 'no_mobile', $type, 'Failed', $this->lastError);
             return false;
         }
 
         $mobile = $this->normalizeMobile($user['mobile']);
         if (!$mobile) {
-            $this->logDeliveryAttempt($taskData['id'] ?? null, $userId, $user['mobile'], $type, 'Failed', 'Invalid mobile number format.');
+            $this->lastError = 'Invalid mobile number format.';
+            $this->logDeliveryAttempt($taskData['id'] ?? null, $userId, $user['mobile'], $type, 'Failed', $this->lastError);
             return false;
         }
 
@@ -59,7 +68,8 @@
         $payload = $this->buildPayload($type, $user, $taskData, $mobile);
 
         if (!$payload) {
-            $this->logDeliveryAttempt($taskData['id'] ?? null, $userId, $mobile, $type, 'Failed', 'Template mapping missing for type: ' . $type);
+            $this->lastError = 'WhatsApp template is not configured for ' . $type . '.';
+            $this->logDeliveryAttempt($taskData['id'] ?? null, $userId, $mobile, $type, 'Failed', $this->lastError);
             return false;
         }
 
@@ -110,6 +120,8 @@
         } else if (!$errorMsg) {
             $errorMsg = "HTTP $httpCode: $response";
         }
+
+        $this->lastError = $errorMsg;
 
         $this->logDeliveryAttempt($taskId, $userId, $mobile, $type, $status, $errorMsg);
 
