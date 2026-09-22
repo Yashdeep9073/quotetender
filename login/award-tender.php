@@ -1335,6 +1335,15 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
         }
     
         /* ---------- compact Assign Task modal ---------- */
+        #assign-task-modal .assign-employee-checklist { max-height:190px; overflow-y:auto; padding:8px; border:1px solid #d0d5dd; border-radius:8px; background:#f8fafc; }
+        #assign-task-modal .assign-employee-checkbox { display:flex; align-items:center; gap:10px; padding:8px 10px; margin:0 0 6px; border:1px solid #e2e8f0; border-radius:7px; background:#fff; cursor:pointer; }
+        #assign-task-modal .assign-employee-checkbox:last-child { margin-bottom:0; }
+        #assign-task-modal .assign-employee-checkbox:hover { border-color:#98a2b3; background:#f9fafb; }
+        #assign-task-modal .assign-employee-checkbox:has(.assign-employee-check:checked) { border-color:#33cc33; background:rgba(51,204,51,.06); }
+        #assign-task-modal .assign-employee-check { width:17px; height:17px; margin:0; accent-color:#33cc33; flex:0 0 auto; }
+        #assign-task-modal .assign-employee-details { display:flex; flex-direction:column; min-width:0; line-height:1.25; }
+        #assign-task-modal .assign-employee-details strong { color:#344054; font-size:13px; font-weight:600; }
+        #assign-task-modal .assign-employee-details small { margin-top:2px; color:#667085; font-size:11.5px; word-break:break-word; }
                         #assign-task-modal .modal-content { border:0; border-radius:12px; overflow:hidden; box-shadow:0 12px 40px rgba(15,23,42,.14); }
                         #assign-task-modal .modal-header { padding:12px 16px; border-bottom:1px solid #e9ecef; }
                         #assign-task-modal .modal-title { display:flex; align-items:center; gap:8px; margin:0; font-size:16px; font-weight:600; }
@@ -2455,11 +2464,18 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
 
                     <div class="mb-3">
                         <label class="form-label"><i class="feather icon-users"></i> Employee(s) <span class="text-danger">*</span></label>
-                        <select name="employee_ids[]" id="assign-employee-select" class="form-select form-control select2" multiple="multiple" required data-placeholder="Select Employee(s)">
+                        <div class="assign-employee-checklist" id="assign-employee-checklist">
                             <?php foreach ($activeEmployees as $emp): ?>
-                                <option value="<?php echo htmlspecialchars($emp['id']); ?>"><?php echo htmlspecialchars($emp['username']) . (!empty($emp['email']) ? ' (' . htmlspecialchars($emp['email']) . ')' : ''); ?></option>
+                                <label class="assign-employee-checkbox" for="assign-employee-<?php echo (int)$emp['id']; ?>">
+                                    <input type="checkbox" class="assign-employee-check" id="assign-employee-<?php echo (int)$emp['id']; ?>" name="employee_ids[]" value="<?php echo (int)$emp['id']; ?>" data-employee-name="<?php echo htmlspecialchars($emp['username'], ENT_QUOTES, 'UTF-8'); ?>">
+                                    <span class="assign-employee-details">
+                                        <strong><?php echo htmlspecialchars($emp['username']); ?></strong>
+                                        <?php if (!empty($emp['email'])): ?><small><?php echo htmlspecialchars($emp['email']); ?></small><?php endif; ?>
+                                    </span>
+                                </label>
                             <?php endforeach; ?>
-                        </select>
+                        </div>
+                        <small class="text-muted d-block mt-1">Select one or more employees.</small>
                         <div id="assign-employee-dashboard-links" class="mt-2"></div>
                     </div>
 
@@ -2517,13 +2533,6 @@ if (isset($_POST['stateCode']) && $_SERVER['REQUEST_METHOD'] == "POST") {
 
 <script>
 $(document).ready(function() {
-    if ($.fn.select2) {
-        $('#assign-employee-select').select2({
-            dropdownParent: $('#assign-task-modal'),
-            width: '100%'
-        });
-    }
-
     function refreshAssignmentNotificationFields() {
         $('#assign-schedule-fields').toggle($('#assign-delivery-later').is(':checked'));
     }
@@ -2531,9 +2540,9 @@ $(document).ready(function() {
 
     function refreshEmployeeDashboardLinks() {
         var $links = $('#assign-employee-dashboard-links').empty();
-        $('#assign-employee-select option:selected').each(function() {
+        $('.assign-employee-check:checked').each(function() {
             var employeeId = parseInt($(this).val(), 10);
-            var employeeName = $.trim($(this).text().split(' (')[0]);
+            var employeeName = $.trim($(this).data('employee-name') || '');
             if (!employeeId) return;
             var $link = $('<a>', { href: 'employee-dashboard.php?id=' + employeeId, title: 'Open employee dashboard', class: 'employee-dashboard-link d-inline-flex align-items-center mr-2 mb-1' });
             $('<span>', { class: 'employee-avatar-mini mr-1', text: employeeName.substring(0, 1).toUpperCase(), css: { width: '28px', height: '28px', borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: '#e8f0fe', color: '#2563eb', fontWeight: '700', fontSize: '12px' } }).appendTo($link);
@@ -2541,7 +2550,7 @@ $(document).ready(function() {
             $links.append($link);
         });
     }
-    $('#assign-employee-select').on('change', refreshEmployeeDashboardLinks);
+    $(document).on('change', '.assign-employee-check', refreshEmployeeDashboardLinks);
 
     // Open Modal and populate data
     $(document).on('click', '.assign-task-dropdown-btn', function(e) {
@@ -2559,9 +2568,7 @@ $(document).ready(function() {
         $('#assign-dept').text(dept || 'N/A');
         $('#assign-section').text(sec || 'N/A');
         $('#assign-division').text(div || 'N/A');
-        if ($.fn.select2) {
-            $('#assign-employee-select').val(null).trigger('change');
-        }
+        $('.assign-employee-check').prop('checked', false);
 
         if (dueDate) {
             var cleanDate = String(dueDate).trim().split(' ')[0];
@@ -2607,6 +2614,11 @@ $(document).ready(function() {
 
         // Prevent accidental double submit while a request is already running.
         if ($form.data('submitting') === true) {
+            return;
+        }
+
+        if ($('.assign-employee-check:checked').length === 0) {
+            notifyUser('error', 'Please select at least one employee.');
             return;
         }
 
@@ -2716,9 +2728,8 @@ $(document).ready(function() {
                 if ($form[0]) {
                     $form[0].reset();
                 }
-                if ($.fn.select2) {
-                    $('#assign-employee-select').val(null).trigger('change');
-                }
+                $('.assign-employee-check').prop('checked', false);
+                refreshEmployeeDashboardLinks();
                 refreshAssignmentNotificationFields();
             }
 
