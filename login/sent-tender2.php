@@ -1838,7 +1838,7 @@ try {
 
                                                                 <li>
                                                                     <a class="dropdown-item"
-                                                                        href="tender-edit.php?id=<?php echo $res . "&is_update=" . 1; ?>">
+                                                                        href="tender-modify.php?id=<?php echo urlencode($res); ?>">
                                                                         <i class="feather icon-edit me-2"></i>Update
                                                                     </a>
                                                                 </li>
